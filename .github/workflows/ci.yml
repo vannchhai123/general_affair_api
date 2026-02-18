@@ -1,4 +1,4 @@
-name: Spring Boot PR CI
+name: CI pipeline
 
 on:
   pull_request:
