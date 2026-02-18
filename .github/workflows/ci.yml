@@ -1,0 +1,29 @@
+name: Spring Boot PR CI
+
+on:
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test
+        run: mvn clean verify
+
+      - name: Check Google Format
+        run: mvn fmt:check

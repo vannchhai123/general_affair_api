@@ -1,0 +1,36 @@
+name: Spring Boot CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Test GHCR Login
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u vannchhai123 --password-stdin
+      - name: Build & Push with Jib
+        run: mvn compile jib:build
+        env:
+          JIB_TO_AUTH_USERNAME: ${{ github.actor }}
+          JIB_TO_AUTH_PASSWORD: ${{ secrets.GHCR_TOKEN }}
+      - name: Trigger Railway Deploy
+        run: |
+          curl -X POST https://backboard.railway.com/graphql/v2 \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            --data '{
+              "query": "mutation { serviceInstanceRedeploy(serviceId: \"${{ vars.RAILWAY_SERVICE_ID }}\", environmentId: \"${{ vars.RAILWAY_ENVIRONMENT_ID }}\") }"
+            }'
