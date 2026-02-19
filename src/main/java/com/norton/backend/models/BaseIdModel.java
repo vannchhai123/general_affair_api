@@ -18,7 +18,11 @@ public class BaseIdModel {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @CreatedDate private Instant createdAt;
+  @Column(nullable = false, updatable = false)
+  @CreatedDate
+  private Instant createdAt;
 
-  @LastModifiedDate private Instant updatedAt;
+  @LastModifiedDate
+  @Column(nullable = false)
+  private Instant updatedAt;
 }
