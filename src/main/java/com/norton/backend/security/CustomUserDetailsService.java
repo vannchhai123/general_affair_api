@@ -1,7 +1,6 @@
 package com.norton.backend.security;
 
 import com.norton.backend.exceptions.ResourceNotFoundException;
-import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;

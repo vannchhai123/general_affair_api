@@ -5,12 +5,11 @@ import com.norton.backend.models.UserModel;
 import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.repositories.UserRoleRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -28,13 +27,18 @@ public class UserDataLoading implements CommandLineRunner {
       roleRepository.saveAll(List.of(adminRole, userRole));
     }
 
-    UserRoleModel adminRole = roleRepository.findByRoleName("ADMIN")
+    UserRoleModel adminRole =
+        roleRepository
+            .findByRoleName("ADMIN")
             .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
-    UserRoleModel userRole = roleRepository.findByRoleName("USER")
+    UserRoleModel userRole =
+        roleRepository
+            .findByRoleName("USER")
             .orElseThrow(() -> new RuntimeException("USER role not found"));
 
     if (userRepository.count() == 0) {
-      UserModel admin = UserModel.builder()
+      UserModel admin =
+          UserModel.builder()
               .fullName("Admin User")
               .email("admin@gmail.com")
               .passwordHash(passwordEncoder.encode("admin123"))
@@ -42,7 +46,8 @@ public class UserDataLoading implements CommandLineRunner {
               .userStatus(UserStatus.ACTIVE)
               .build();
 
-      UserModel normalUser = UserModel.builder()
+      UserModel normalUser =
+          UserModel.builder()
               .fullName("John Doe")
               .email("user@gmail.com")
               .passwordHash(passwordEncoder.encode("user123"))
@@ -50,7 +55,8 @@ public class UserDataLoading implements CommandLineRunner {
               .userStatus(UserStatus.ACTIVE)
               .build();
 
-      UserModel bannedUser = UserModel.builder()
+      UserModel bannedUser =
+          UserModel.builder()
               .fullName("Banned User")
               .email("banned@gmail.com")
               .passwordHash(passwordEncoder.encode("banned123"))
