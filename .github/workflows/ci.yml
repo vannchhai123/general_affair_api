@@ -3,6 +3,8 @@ name: CI pipeline
 on:
   pull_request:
     branches: [ main, dev ]
+  push:
+    branches: [main, dev ]
 
 jobs:
   build-test:
