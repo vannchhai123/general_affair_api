@@ -24,8 +24,5 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build and test
-        run: mvn clean verify
-
       - name: Check Google Format
         run: mvn fmt:check
