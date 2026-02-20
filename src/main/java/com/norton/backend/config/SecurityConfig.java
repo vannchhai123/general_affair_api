@@ -51,10 +51,7 @@ public class SecurityConfig {
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/v1/api/auth/**")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
+                auth.requestMatchers("/v1/api/auth/**").permitAll().anyRequest().authenticated())
         .addFilterBefore(requestLoggingFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(requestTimingFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
