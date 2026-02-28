@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Order(value = 2)
-@Profile("dev")
+//@Profile("dev")
 public class UserRoleDataLoading implements CommandLineRunner {
 
   private final UserRoleRepository roleRepository;
