@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserRoleRepository extends JpaRepository<UserRoleModel, Long> {
   Optional<UserRoleModel> findByRoleName(String roleName);
+
+  boolean existsByRoleName(String roleName);
 }

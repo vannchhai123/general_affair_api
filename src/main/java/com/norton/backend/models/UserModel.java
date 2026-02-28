@@ -29,8 +29,11 @@ public class UserModel extends BaseIdModel implements UserDetails {
   private String fullName;
 
   @NotBlank(message = "Email is required")
-  @Email(message = "Invalid email format")
   @Column(unique = true)
+  private String username;
+
+  @Email(message = "Invalid email format")
+  @Column(unique = true, nullable = true)
   private String email;
 
   @NotBlank(message = "Password is required")
@@ -60,7 +63,7 @@ public class UserModel extends BaseIdModel implements UserDetails {
 
   @Override
   public String getUsername() {
-    return email;
+    return username;
   }
 
   @Override

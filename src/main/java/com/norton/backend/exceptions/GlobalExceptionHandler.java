@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import javax.naming.AuthenticationException;
+
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -71,5 +73,16 @@ public class GlobalExceptionHandler {
         ErrorResponse.of(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI());
     response.setErrors(errors);
     return response;
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ErrorResponse> handleAuthenticationException(
+      AuthenticationException ex, HttpServletRequest request) {
+
+    ErrorResponse response =
+        ErrorResponse.of(
+            HttpStatus.UNAUTHORIZED, "Invalid username or password", request.getRequestURI());
+
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
   }
 }

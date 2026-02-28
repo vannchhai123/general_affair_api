@@ -5,68 +5,71 @@ import com.norton.backend.models.UserModel;
 import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.repositories.UserRoleRepository;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Order(1)
+@Profile("dev")
 public class UserDataLoading implements CommandLineRunner {
 
   private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
   private final UserRoleRepository roleRepository;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
-  public void run(String... args) throws Exception {
-    if (roleRepository.count() == 0) {
-      UserRoleModel adminRole = UserRoleModel.builder().roleName("ADMIN").build();
-      UserRoleModel userRole = UserRoleModel.builder().roleName("USER").build();
-      roleRepository.saveAll(List.of(adminRole, userRole));
-    }
+  public void run(String... args) {
 
-    UserRoleModel adminRole =
-        roleRepository
-            .findByRoleName("ADMIN")
-            .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
-    UserRoleModel userRole =
-        roleRepository
-            .findByRoleName("USER")
-            .orElseThrow(() -> new RuntimeException("USER role not found"));
+    UserRoleModel adminRole = createRoleIfNotExists("ROLE_ADMIN", "System Administrator");
+    UserRoleModel userRole = createRoleIfNotExists("ROLE_USER", "Default User");
 
-    if (userRepository.count() == 0) {
-      UserModel admin =
-          UserModel.builder()
-              .fullName("Admin User")
-              .email("admin@gmail.com")
-              .passwordHash(passwordEncoder.encode("admin123"))
-              .role(adminRole)
-              .userStatus(UserStatus.ACTIVE)
-              .build();
+    createUserIfNotExists(
+        "admin", "admin@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
 
-      UserModel normalUser =
-          UserModel.builder()
-              .fullName("John Doe")
-              .email("user@gmail.com")
-              .passwordHash(passwordEncoder.encode("user123"))
-              .role(userRole)
-              .userStatus(UserStatus.ACTIVE)
-              .build();
+    createUserIfNotExists(
+        "user", "user@gmail.com", "John Doe", "user123", userRole, UserStatus.ACTIVE);
 
-      UserModel bannedUser =
-          UserModel.builder()
-              .fullName("Banned User")
-              .email("banned@gmail.com")
-              .passwordHash(passwordEncoder.encode("banned123"))
-              .role(userRole)
-              .userStatus(UserStatus.BANNED)
-              .build();
-
-      userRepository.saveAll(List.of(admin, normalUser, bannedUser));
-    }
+    createUserIfNotExists(
+        "banned", "banned@gmail.com", "Banned User", "banned123", userRole, UserStatus.BANNED);
 
     System.out.println("✅ Seed data loaded successfully!");
+  }
+
+  private UserRoleModel createRoleIfNotExists(String roleName, String description) {
+    return roleRepository
+        .findByRoleName(roleName)
+        .orElseGet(
+            () ->
+                roleRepository.save(
+                    UserRoleModel.builder().roleName(roleName).description(description).build()));
+  }
+
+  private void createUserIfNotExists(
+      String username,
+      String email,
+      String fullName,
+      String rawPassword,
+      UserRoleModel role,
+      UserStatus status) {
+
+    if (!userRepository.existsByUsername(username)) {
+
+      UserModel user =
+          UserModel.builder()
+              .username(username)
+              .email(email)
+              .fullName(fullName)
+              .passwordHash(passwordEncoder.encode(rawPassword))
+              .role(role)
+              .userStatus(status)
+              .build();
+
+      userRepository.save(user);
+    }
   }
 }

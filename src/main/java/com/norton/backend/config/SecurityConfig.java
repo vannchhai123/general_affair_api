@@ -1,5 +1,6 @@
 package com.norton.backend.config;
 
+import com.norton.backend.controllers.auth.AuthController;
 import com.norton.backend.security.JwtAuthenticationFilter;
 import com.norton.backend.security.RequestLoggingFilter;
 import com.norton.backend.security.RequestTimingFilter;
@@ -51,7 +52,7 @@ public class SecurityConfig {
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/v1/api/auth/**")
+                auth.requestMatchers(AuthController.BASE_URL + "/**")
                     .permitAll()
                     .requestMatchers("/")
                     .permitAll()
