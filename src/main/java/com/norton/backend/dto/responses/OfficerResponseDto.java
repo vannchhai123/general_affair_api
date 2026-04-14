@@ -1,0 +1,28 @@
+package com.norton.backend.dto.responses;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+
+@Data
+public class OfficerResponseDto {
+  private Long id;
+
+  @JsonProperty("user_id")
+  private Long userId;
+
+  private String uuid;
+  private String officerCode;
+
+  @JsonProperty("first_name")
+  private String firstName;
+
+  @JsonProperty("last_name")
+  private String lastName;
+
+  private String email;
+  private String position;
+  private String department;
+  private String phone;
+  private String status;
+  private String username;
+}

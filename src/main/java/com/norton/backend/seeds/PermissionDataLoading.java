@@ -4,6 +4,7 @@ import com.norton.backend.models.PermissionModel;
 import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.PermissionRepository;
 import com.norton.backend.repositories.UserRoleRepository;
+import java.util.HashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Order(value = 1)
+@Order(1)
 @Profile("dev")
 public class PermissionDataLoading implements CommandLineRunner {
 
@@ -23,30 +24,43 @@ public class PermissionDataLoading implements CommandLineRunner {
   @Override
   public void run(String... args) {
 
-    PermissionModel createUser = createPermission("CREATE_USER");
-    PermissionModel deleteUser = createPermission("DELETE_USER");
-    PermissionModel updateUser = createPermission("UPDATE_USER");
-    PermissionModel viewUser = createPermission("VIEW_USER");
-    PermissionModel manageRoles = createPermission("MANAGE_ROLES");
+    PermissionModel officerView =
+        createPermission("officer.view", "View officer records", "Officers");
+    PermissionModel officerCreate =
+        createPermission("officer.create", "Create new officer records", "Officers");
+    PermissionModel officerEdit =
+        createPermission("officer.edit", "Edit officer records", "Officers");
+    PermissionModel officerDelete =
+        createPermission("officer.delete", "Delete officer records", "Officers");
+
+    PermissionModel manageRoles =
+        createPermission("MANAGE_ROLES", "Manage system roles and permissions", "System");
 
     createOrUpdateRole(
         "ROLE_ADMIN",
         "System Administrator",
-        Set.of(createUser, deleteUser, updateUser, viewUser, manageRoles));
+        Set.of(officerView, officerCreate, officerEdit, officerDelete, manageRoles));
 
-    createOrUpdateRole("ROLE_MANAGER", "Manager Role", Set.of(createUser, updateUser, viewUser));
+    createOrUpdateRole(
+        "ROLE_MANAGER", "Manager Role", Set.of(officerView, officerCreate, officerEdit));
 
-    createOrUpdateRole("ROLE_OFFICER", "Officer Role", Set.of(viewUser));
+    createOrUpdateRole("ROLE_OFFICER", "Officer Role", Set.of(officerView));
   }
 
-  private PermissionModel createPermission(String name) {
+  private PermissionModel createPermission(String name, String description, String category) {
     return permissionRepository
         .findByPermissionName(name)
         .orElseGet(
             () ->
-                permissionRepository.save(PermissionModel.builder().permissionName(name).build()));
+                permissionRepository.save(
+                    PermissionModel.builder()
+                        .permissionName(name)
+                        .description(description)
+                        .category(category)
+                        .build()));
   }
 
+  /** Create or update role with permissions */
   private void createOrUpdateRole(
       String roleName, String description, Set<PermissionModel> permissions) {
 
@@ -59,9 +73,10 @@ public class PermissionDataLoading implements CommandLineRunner {
                         UserRoleModel.builder()
                             .roleName(roleName)
                             .description(description)
-                            .permissions(new java.util.HashSet<>())
+                            .permissions(new HashSet<>())
                             .build()));
 
+    // Reset and set permissions
     role.getPermissions().clear();
     role.getPermissions().addAll(permissions);
 

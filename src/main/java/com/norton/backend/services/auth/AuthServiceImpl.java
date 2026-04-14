@@ -2,6 +2,7 @@ package com.norton.backend.services.auth;
 
 import com.norton.backend.dto.request.LoginRequest;
 import com.norton.backend.dto.responses.AuthResponse;
+import com.norton.backend.dto.responses.MeResponse;
 import com.norton.backend.dto.responses.UserDto;
 import com.norton.backend.mapper.UserMapper;
 import com.norton.backend.models.UserModel;
@@ -12,6 +13,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -64,5 +66,13 @@ public class AuthServiceImpl implements AuthService {
         .refreshToken(newRefreshToken)
         .data(userMapper.toDto(user))
         .build();
+  }
+
+  @Override
+  public MeResponse getMyProfile() {
+    UserModel currentUser =
+        (UserModel) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+    return userMapper.toMeResponse(currentUser);
   }
 }

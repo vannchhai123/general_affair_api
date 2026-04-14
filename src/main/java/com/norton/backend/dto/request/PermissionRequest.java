@@ -1,9 +1,10 @@
 package com.norton.backend.dto.request;
 
-import java.util.List;
 import lombok.Data;
 
 @Data
 public class PermissionRequest {
-  private List<String> permissions;
+  private String permissionName;
+  private String description;
+  private String category;
 }

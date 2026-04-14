@@ -4,6 +4,8 @@ import com.norton.backend.enums.GenderEnum;
 import com.norton.backend.enums.OfficerStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.*;
 
@@ -57,6 +59,9 @@ public class OfficerModel extends BaseIdModel {
   @ManyToOne
   @JoinColumn(name = "position_id", nullable = false)
   private PositionModel position;
+
+  @OneToMany(mappedBy = "officer", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OfficerPermission> officerPermissions = new ArrayList<>();
 
   @OneToOne
   @JoinColumn(name = "user_id", nullable = false, unique = true)
