@@ -1,7 +1,7 @@
 package com.norton.backend.mapper;
 
 import com.norton.backend.dto.request.PermissionRequest;
-import com.norton.backend.dto.responses.PermissionResponse;
+import com.norton.backend.dto.responses.permissions.PermissionResponse;
 import com.norton.backend.models.PermissionModel;
 import java.util.List;
 import org.mapstruct.Mapper;

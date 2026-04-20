@@ -1,4 +1,4 @@
-package com.norton.backend.dto.responses;
+package com.norton.backend.dto.responses.officers;
 
 import lombok.Data;
 

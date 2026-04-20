@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AttendanceStatusRepository extends JpaRepository<AttendanceStatusModel, Long> {
   Optional<AttendanceStatusModel> findByCode(String code);
+
+  Optional<AttendanceStatusModel> findByNameIgnoreCase(String name);
 }

@@ -11,6 +11,21 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AttendanceRepository extends JpaRepository<AttendanceModel, Long> {
 
+  boolean existsByOfficerIdAndDate(Long officerId, java.time.LocalDate date);
+
+  @Query(
+      """
+      SELECT a
+      FROM Attendance a
+      JOIN FETCH a.officer o
+      JOIN FETCH o.position p
+      JOIN FETCH p.department
+      LEFT JOIN FETCH a.status
+      LEFT JOIN FETCH a.approvedBy
+      WHERE a.id = :id
+      """)
+  java.util.Optional<AttendanceModel> findByIdWithDetails(Long id);
+
   @Query(
       """
     SELECT new com.norton.backend.dto.responses.attendances.AttendanceResponse(

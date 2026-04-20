@@ -1,8 +1,10 @@
 package com.norton.backend.services.officer;
 
-import com.norton.backend.dto.responses.MeResponse;
-import com.norton.backend.dto.responses.OfficerResponseDto;
 import com.norton.backend.dto.responses.PageResponse;
+import com.norton.backend.dto.responses.officers.MeResponse;
+import com.norton.backend.dto.responses.officers.OfficerResponseDto;
+import com.norton.backend.dto.responses.officers.OfficerStatsResponse;
+import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.mapper.OfficerMapper;
 import com.norton.backend.mapper.UserMapper;
 import com.norton.backend.models.OfficerModel;
@@ -47,5 +49,16 @@ public class OfficerServiceImpl implements OfficerService {
         .totalPages(officer.getTotalPages())
         .last(officer.isLast())
         .build();
+  }
+
+  @Override
+  public OfficerStatsResponse getOfficerStats() {
+    long total = officerRepository.count();
+
+    long active = officerRepository.countByStatus(OfficerStatus.ACTIVE);
+    long inactive = officerRepository.countByStatus(OfficerStatus.INACTIVE);
+    long onLeave = officerRepository.countByStatus(OfficerStatus.ON_LEAVE);
+
+    return officerMapper.toStatsResponse(total, active, inactive, onLeave);
   }
 }

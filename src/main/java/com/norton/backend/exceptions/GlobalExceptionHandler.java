@@ -8,6 +8,7 @@ import javax.naming.AuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -72,6 +73,17 @@ public class GlobalExceptionHandler {
         ErrorResponse.of(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI());
     response.setErrors(errors);
     return response;
+  }
+
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+      HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+    ErrorResponse response =
+        ErrorResponse.of(
+            HttpStatus.METHOD_NOT_ALLOWED,
+            "Method not allowed for this endpoint",
+            request.getRequestURI());
+    return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
   }
 
   @ExceptionHandler(AuthenticationException.class)

@@ -18,4 +18,14 @@ public interface OfficerPermissionRepository extends JpaRepository<OfficerPermis
     JOIN FETCH op.permission p
 """)
   Page<OfficerPermission> findAllWithRelations(Pageable pageable);
+
+  @Query(
+      """
+    SELECT op FROM OfficerPermission op
+    JOIN FETCH op.officer o
+    JOIN FETCH o.user
+    JOIN FETCH o.position
+    JOIN FETCH op.permission
+""")
+  Page<OfficerPermission> findAllWithDetails(Pageable pageable);
 }

@@ -1,4 +1,4 @@
-package com.norton.backend.dto.responses;
+package com.norton.backend.dto.responses.permissions;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

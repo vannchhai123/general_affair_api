@@ -1,9 +1,11 @@
-package com.norton.backend.dto.responses;
+package com.norton.backend.dto.responses.permissions;
 
 import java.time.LocalDateTime;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class OfficerPermissionResponse {
 
   private Long id;
@@ -11,10 +13,4 @@ public class OfficerPermissionResponse {
   private Long permissionId;
   private LocalDateTime grantedAt;
   private Long grantedBy;
-
-  private String officerName;
-  private String officerDepartment;
-
-  private String permissionName;
-  private String permissionCategory;
 }

@@ -1,15 +1,25 @@
 package com.norton.backend.services.role;
 
+import static java.time.LocalDateTime.*;
+
+import com.norton.backend.dto.request.OfficerPermissionRequest;
 import com.norton.backend.dto.request.PermissionRequest;
 import com.norton.backend.dto.responses.PageResponse;
-import com.norton.backend.dto.responses.PermissionResponse;
+import com.norton.backend.dto.responses.officers.OfficerPermissionResponse;
+import com.norton.backend.dto.responses.permissions.PermissionResponse;
 import com.norton.backend.exceptions.ConflictException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
+import com.norton.backend.mapper.OfficerPermissionMapper;
 import com.norton.backend.mapper.PermissionMapper;
+import com.norton.backend.models.OfficerModel;
+import com.norton.backend.models.OfficerPermission;
 import com.norton.backend.models.PermissionModel;
 import com.norton.backend.models.UserRoleModel;
+import com.norton.backend.repositories.OfficerPermissionRepository;
+import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.PermissionRepository;
 import com.norton.backend.repositories.UserRoleRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +35,9 @@ public class PermissionService {
   private final PermissionRepository permissionRepository;
   private final UserRoleRepository userRoleRepository;
   private final PermissionMapper permissionMapper;
+  private final OfficerPermissionRepository repository;
+  private final OfficerRepository officerRepository;
+  private final OfficerPermissionMapper mapper;
 
   public void assignPermissionsToRole(String roleName, List<String> permissionNames) {
     UserRoleModel role =
@@ -132,5 +145,30 @@ public class PermissionService {
         .totalPages(page.getTotalPages())
         .last(page.isLast())
         .build();
+  }
+
+  public OfficerPermissionResponse create(OfficerPermissionRequest request, Long grantedBy) {
+
+    OfficerModel officer =
+        officerRepository
+            .findById(request.getOfficerId())
+            .orElseThrow(() -> new EntityNotFoundException("Officer not found"));
+
+    PermissionModel permission =
+        permissionRepository
+            .findById(request.getPermissionId())
+            .orElseThrow(() -> new EntityNotFoundException("Permission not found"));
+
+    OfficerPermission entity =
+        OfficerPermission.builder()
+            .officer(officer)
+            .permission(permission)
+            .grantedAt(now())
+            .grantedBy(grantedBy)
+            .build();
+
+    repository.save(entity);
+
+    return mapper.toResponse(entity);
   }
 }

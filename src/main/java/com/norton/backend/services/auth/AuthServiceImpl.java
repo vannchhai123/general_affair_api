@@ -2,8 +2,8 @@ package com.norton.backend.services.auth;
 
 import com.norton.backend.dto.request.LoginRequest;
 import com.norton.backend.dto.responses.AuthResponse;
-import com.norton.backend.dto.responses.MeResponse;
 import com.norton.backend.dto.responses.UserDto;
+import com.norton.backend.dto.responses.officers.MeResponse;
 import com.norton.backend.mapper.UserMapper;
 import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.UserRepository;

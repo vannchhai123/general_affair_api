@@ -1,7 +1,7 @@
 package com.norton.backend.services.role;
 
-import com.norton.backend.dto.responses.OfficerPermissionResponse;
 import com.norton.backend.dto.responses.PageResponse;
+import com.norton.backend.dto.responses.officers.OfficerPermissionResponse;
 import com.norton.backend.mapper.OfficerPermissionMapper;
 import com.norton.backend.models.OfficerPermission;
 import com.norton.backend.repositories.OfficerPermissionRepository;

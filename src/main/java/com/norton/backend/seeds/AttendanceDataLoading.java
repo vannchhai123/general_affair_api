@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Order(6)
+@Order(7)
 public class AttendanceDataLoading implements CommandLineRunner {
 
   private final AttendanceRepository attendanceRepository;
@@ -41,18 +41,12 @@ public class AttendanceDataLoading implements CommandLineRunner {
     AttendanceStatusModel present =
         statusRepository
             .findByCode("PRESENT")
-            .orElseGet(
-                () ->
-                    statusRepository.save(
-                        AttendanceStatusModel.builder().code("PRESENT").name("Present").build()));
+            .orElseThrow(() -> new RuntimeException("Attendance status PRESENT not found"));
 
     AttendanceStatusModel late =
         statusRepository
             .findByCode("LATE")
-            .orElseGet(
-                () ->
-                    statusRepository.save(
-                        AttendanceStatusModel.builder().code("LATE").name("Late").build()));
+            .orElseThrow(() -> new RuntimeException("Attendance status LATE not found"));
 
     AttendanceModel a1 =
         AttendanceModel.builder()

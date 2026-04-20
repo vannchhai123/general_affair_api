@@ -1,8 +1,9 @@
 package com.norton.backend.controllers.officer;
 
-import com.norton.backend.dto.responses.MeResponse;
-import com.norton.backend.dto.responses.OfficerResponseDto;
 import com.norton.backend.dto.responses.PageResponse;
+import com.norton.backend.dto.responses.officers.MeResponse;
+import com.norton.backend.dto.responses.officers.OfficerResponseDto;
+import com.norton.backend.dto.responses.officers.OfficerStatsResponse;
 import com.norton.backend.services.officer.OfficerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -31,5 +32,9 @@ public class OfficerController {
       @PageableDefault(size = 10, sort = "id") Pageable request) {
     return ResponseEntity.ok(officerService.getAllOfficers(request));
   }
-  ;
+
+  @GetMapping("/stats")
+  public OfficerStatsResponse getStats() {
+    return officerService.getOfficerStats();
+  }
 }
