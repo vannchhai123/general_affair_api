@@ -9,7 +9,7 @@ import lombok.Getter;
 public class AttendanceScanDataResponse {
   private Long attendanceId;
   private String sessionId;
-  private Long officerId;
+  private String officerCode;
   private String officerName;
   private String action;
   private String status;

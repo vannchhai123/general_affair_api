@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AttendanceScanServiceImpl implements AttendanceScanService {
+  private static final String DEFAULT_SCAN_ACTION = "check-in";
 
   private final QrSessionRepository qrSessionRepository;
   private final QrSessionCheckInRepository qrSessionCheckInRepository;
@@ -49,16 +50,17 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
 
     OfficerModel officer =
         officerRepository
-            .findByIdWithPosition(request.getEmployeeId())
+            .findByOfficerCode(request.getOfficerCode())
+            .filter(foundOfficer -> foundOfficer.getPosition() != null)
             .filter(foundOfficer -> foundOfficer.getStatus() == OfficerStatus.ACTIVE)
             .orElseThrow(
                 () ->
                     new AttendanceScanException(
                         HttpStatus.FORBIDDEN,
-                        "Employee is not allowed to check in",
-                        "EMPLOYEE_NOT_ALLOWED"));
+                        "Officer is not allowed to check in",
+                        "OFFICER_NOT_ALLOWED"));
 
-    String normalizedAction = normalizeAction(request.getAction());
+    String normalizedAction = DEFAULT_SCAN_ACTION;
     String storedStatus = mapStoredStatus(normalizedAction, request.getScannedAt());
 
     QrSessionCheckInModel savedCheckIn =
@@ -79,7 +81,7 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
             AttendanceScanDataResponse.builder()
                 .attendanceId(savedCheckIn.getId())
                 .sessionId(session.getToken())
-                .officerId(officer.getId())
+                .officerCode(officer.getOfficerCode())
                 .officerName(officer.getFirstName() + " " + officer.getLastName())
                 .action(normalizedAction)
                 .status(mapResponseStatus(storedStatus))
@@ -122,14 +124,6 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
       throw new AttendanceScanException(
           HttpStatus.GONE, "Attendance session is inactive", "SESSION_INACTIVE");
     }
-  }
-
-  private String normalizeAction(String action) {
-    String normalized = action.trim().toLowerCase();
-    if (!normalized.equals("check-in") && !normalized.equals("check-out")) {
-      throw new AttendanceScanException(HttpStatus.BAD_REQUEST, "Invalid action", "QR_INVALID");
-    }
-    return normalized;
   }
 
   private String mapStoredStatus(String action, Instant scannedAt) {

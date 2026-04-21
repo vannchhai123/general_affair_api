@@ -11,15 +11,12 @@ public class AttendanceScanRequest {
   @NotBlank(message = "token is required")
   private String token;
 
-  @NotNull(message = "employeeId is required")
-  private Long employeeId;
+  @NotBlank(message = "officerCode is required")
+  private String officerCode;
 
   @NotBlank(message = "deviceId is required")
   private String deviceId;
 
   @NotNull(message = "scannedAt is required")
   private Instant scannedAt;
-
-  @NotBlank(message = "action is required")
-  private String action;
 }
