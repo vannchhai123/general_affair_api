@@ -4,13 +4,14 @@ import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!prod")
 @RequiredArgsConstructor
 @Order(value = 2)
-// @Profile("dev")
 public class UserRoleDataLoading implements CommandLineRunner {
 
   private final UserRoleRepository roleRepository;
