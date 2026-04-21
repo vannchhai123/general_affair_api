@@ -10,10 +10,12 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@DependsOn("userDataLoading")
 @RequiredArgsConstructor
 @Order(4)
 public class OfficerDataLoading implements CommandLineRunner {

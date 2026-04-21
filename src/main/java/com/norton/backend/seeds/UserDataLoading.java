@@ -8,11 +8,13 @@ import com.norton.backend.repositories.UserRoleRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@DependsOn("userRoleDataLoading")
 @RequiredArgsConstructor
 @Order(value = 3)
 public class UserDataLoading implements CommandLineRunner {
