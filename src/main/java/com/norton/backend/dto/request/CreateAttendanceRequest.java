@@ -31,5 +31,6 @@ public class CreateAttendanceRequest {
 
   @NotBlank(message = "status is required")
   private String status;
+
   private String notes;
 }
