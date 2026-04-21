@@ -11,12 +11,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!prod")
 @RequiredArgsConstructor
 @Order(7)
 public class AttendanceDataLoading implements CommandLineRunner {
@@ -32,13 +30,13 @@ public class AttendanceDataLoading implements CommandLineRunner {
 
     OfficerModel officer1 =
         officerRepository
-            .findById(1L)
-            .orElseThrow(() -> new RuntimeException("Officer 1 not found"));
+            .findByOfficerCode("OFF-001")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-001 not found"));
 
     OfficerModel officer2 =
         officerRepository
-            .findById(2L)
-            .orElseThrow(() -> new RuntimeException("Officer 2 not found"));
+            .findByOfficerCode("OFF-002")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-002 not found"));
 
     AttendanceStatusModel present =
         statusRepository

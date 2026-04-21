@@ -10,12 +10,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!prod")
 @RequiredArgsConstructor
 @Order(5)
 public class OfficerPermissionDataLoading implements CommandLineRunner {
@@ -33,28 +31,28 @@ public class OfficerPermissionDataLoading implements CommandLineRunner {
 
     OfficerModel officer1 =
         officerRepository
-            .findById(1L)
-            .orElseThrow(() -> new RuntimeException("Officer 1 not found"));
+            .findByOfficerCode("OFF-001")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-001 not found"));
 
     OfficerModel officer2 =
         officerRepository
-            .findById(2L)
-            .orElseThrow(() -> new RuntimeException("Officer 2 not found"));
+            .findByOfficerCode("OFF-002")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-002 not found"));
 
     PermissionModel view =
         permissionRepository
-            .findById(1L)
-            .orElseThrow(() -> new RuntimeException("Permission 1 not found"));
+            .findByPermissionName("OFFICER_VIEW")
+            .orElseThrow(() -> new RuntimeException("Permission OFFICER_VIEW not found"));
 
     PermissionModel create =
         permissionRepository
-            .findById(2L)
-            .orElseThrow(() -> new RuntimeException("Permission 2 not found"));
+            .findByPermissionName("OFFICER_CREATE")
+            .orElseThrow(() -> new RuntimeException("Permission OFFICER_CREATE not found"));
 
     PermissionModel edit =
         permissionRepository
-            .findById(3L)
-            .orElseThrow(() -> new RuntimeException("Permission 3 not found"));
+            .findByPermissionName("OFFICER_UPDATE")
+            .orElseThrow(() -> new RuntimeException("Permission OFFICER_UPDATE not found"));
 
     List<OfficerPermission> data =
         List.of(
@@ -62,25 +60,25 @@ public class OfficerPermissionDataLoading implements CommandLineRunner {
                 .officer(officer1)
                 .permission(view)
                 .grantedAt(LocalDateTime.parse("2026-01-15T08:00:00"))
-                .grantedBy(1L)
+                .grantedBy(officer1.getId())
                 .build(),
             OfficerPermission.builder()
                 .officer(officer1)
                 .permission(create)
                 .grantedAt(LocalDateTime.parse("2026-01-15T08:00:00"))
-                .grantedBy(1L)
+                .grantedBy(officer1.getId())
                 .build(),
             OfficerPermission.builder()
                 .officer(officer1)
                 .permission(edit)
                 .grantedAt(LocalDateTime.parse("2026-01-15T08:00:00"))
-                .grantedBy(1L)
+                .grantedBy(officer1.getId())
                 .build(),
             OfficerPermission.builder()
                 .officer(officer2)
                 .permission(view)
                 .grantedAt(LocalDateTime.parse("2026-01-20T09:00:00"))
-                .grantedBy(1L)
+                .grantedBy(officer1.getId())
                 .build());
 
     officerPermissionRepository.saveAll(data);

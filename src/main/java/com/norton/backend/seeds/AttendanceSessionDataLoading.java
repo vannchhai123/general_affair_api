@@ -13,12 +13,10 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!prod")
 @RequiredArgsConstructor
 @Order(8)
 public class AttendanceSessionDataLoading implements CommandLineRunner {
@@ -36,23 +34,23 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
 
     AttendanceModel attendance1 =
         attendanceRepository
-            .findById(1L)
-            .orElseThrow(() -> new RuntimeException("Attendance 1 not found"));
+            .findByOfficerOfficerCodeAndDate("OFF-001", java.time.LocalDate.of(2026, 4, 14))
+            .orElseThrow(() -> new RuntimeException("Attendance OFF-001 on 2026-04-14 not found"));
 
     AttendanceModel attendance2 =
         attendanceRepository
-            .findById(2L)
-            .orElseThrow(() -> new RuntimeException("Attendance 2 not found"));
+            .findByOfficerOfficerCodeAndDate("OFF-002", java.time.LocalDate.of(2026, 4, 14))
+            .orElseThrow(() -> new RuntimeException("Attendance OFF-002 on 2026-04-14 not found"));
 
     OfficerModel officer1 =
         officerRepository
-            .findById(1L)
-            .orElseThrow(() -> new RuntimeException("Officer 1 not found"));
+            .findByOfficerCode("OFF-001")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-001 not found"));
 
     OfficerModel officer2 =
         officerRepository
-            .findById(2L)
-            .orElseThrow(() -> new RuntimeException("Officer 2 not found"));
+            .findByOfficerCode("OFF-002")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-002 not found"));
 
     List<ShiftModel> shifts = loadShifts();
     ShiftModel morningShift = shifts.get(0);
@@ -103,11 +101,11 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
   }
 
   private List<ShiftModel> loadShifts() {
-    if (shiftRepository.count() > 0) {
-      List<ShiftModel> existingShifts = shiftRepository.findAll();
-      if (existingShifts.size() >= 2) {
-        return existingShifts;
-      }
+    java.util.Optional<ShiftModel> existingMorning = shiftRepository.findByName("Morning Shift");
+    java.util.Optional<ShiftModel> existingAfternoon =
+        shiftRepository.findByName("Afternoon Shift");
+    if (existingMorning.isPresent() && existingAfternoon.isPresent()) {
+      return List.of(existingMorning.get(), existingAfternoon.get());
     }
 
     ShiftModel morningShift =

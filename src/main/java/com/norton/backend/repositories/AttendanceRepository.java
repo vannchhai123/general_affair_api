@@ -13,6 +13,9 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
 
   boolean existsByOfficerIdAndDate(Long officerId, java.time.LocalDate date);
 
+  java.util.Optional<AttendanceModel> findByOfficerOfficerCodeAndDate(
+      String officerCode, java.time.LocalDate date);
+
   @Query(
       """
       SELECT a
