@@ -1,5 +1,6 @@
 package com.norton.backend.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -10,11 +11,13 @@ import lombok.Data;
 public class CreateQrSessionRequest {
 
   @NotNull(message = "created_by is required")
+  @JsonAlias("createdBy")
   @JsonProperty("created_by")
   private Long createdBy;
 
   @NotNull(message = "duration_seconds is required")
   @Min(value = 1, message = "duration_seconds must be greater than 0")
+  @JsonAlias("durationSeconds")
   @JsonProperty("duration_seconds")
   private Integer durationSeconds;
 

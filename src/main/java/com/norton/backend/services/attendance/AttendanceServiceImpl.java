@@ -39,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
-
   private final AttendanceRepository attendanceRepository;
   private final AttendanceSessionRepository attendanceSessionRepository;
   private final OfficerRepository officerRepository;

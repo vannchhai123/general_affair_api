@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class JwtService {
     return resolver.apply(extractAllClaims(token));
   }
 
-  private Claims extractAllClaims(String token) {
+  public Claims extractAllClaims(String token) {
     return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
   }
 
@@ -68,6 +69,19 @@ public class JwtService {
         .subject(user.getUsername())
         .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
+        .signWith(getSigningKey())
+        .compact();
+  }
+
+  public String generateQrSessionKioskToken(String sessionId, Duration ttl) {
+    long now = System.currentTimeMillis();
+
+    return Jwts.builder()
+        .subject("qr-session-kiosk")
+        .claim("sessionId", sessionId)
+        .claim("purpose", "qr-kiosk")
+        .issuedAt(new Date(now))
+        .expiration(new Date(now + ttl.toMillis()))
         .signWith(getSigningKey())
         .compact();
   }

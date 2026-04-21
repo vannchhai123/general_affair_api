@@ -1,11 +1,14 @@
 package com.norton.backend.controllers;
 
+import com.norton.backend.dto.request.AttendanceScanRequest;
 import com.norton.backend.dto.request.CreateAttendanceRequest;
 import com.norton.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.norton.backend.dto.responses.PageResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceResponse;
+import com.norton.backend.dto.responses.attendances.AttendanceScanSuccessResponse;
 import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
+import com.norton.backend.services.attendance.AttendanceScanService;
 import com.norton.backend.services.attendance.AttendanceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class AttendanceController {
   public static final String BASE_PATH = "/api/v1/attendance";
 
   private final AttendanceService attendanceService;
+  private final AttendanceScanService attendanceScanService;
 
   @GetMapping
   public ResponseEntity<PageResponse<AttendanceResponse>> getAllAttendance(
@@ -45,5 +49,11 @@ public class AttendanceController {
   public ResponseEntity<UpdateAttendanceResponse> updateAttendanceStatus(
       @PathVariable Long id, @Valid @RequestBody UpdateAttendanceStatusRequest request) {
     return ResponseEntity.ok(attendanceService.updateAttendanceStatus(id, request));
+  }
+
+  @PostMapping("/scan")
+  public ResponseEntity<AttendanceScanSuccessResponse> submitAttendanceScan(
+      @Valid @RequestBody AttendanceScanRequest request) {
+    return ResponseEntity.ok(attendanceScanService.submitScan(request));
   }
 }

@@ -12,11 +12,11 @@ import lombok.Data;
 public class QrSessionCheckInResponse {
   private Long id;
 
-  @JsonProperty("employee_name")
-  private String employeeName;
+  @JsonProperty("officer_name")
+  private String officerName;
 
-  @JsonProperty("employee_code")
-  private String employeeCode;
+  @JsonProperty("officer_code")
+  private String officerCode;
 
   private String department;
   private String status;

@@ -7,9 +7,11 @@ import com.norton.backend.dto.responses.qr.CreateQrSessionResponse;
 import com.norton.backend.dto.responses.qr.EndQrSessionResponse;
 import com.norton.backend.dto.responses.qr.QrSessionCheckInResponse;
 import com.norton.backend.dto.responses.qr.QrSessionDetailsResponse;
+import com.norton.backend.dto.responses.qr.QrSessionKioskTokenResponse;
 import com.norton.backend.dto.responses.qr.QrSessionStatsResponse;
 import com.norton.backend.dto.responses.qr.UpdateQrSessionResponse;
 import com.norton.backend.exceptions.BadRequestException;
+import com.norton.backend.exceptions.GoneException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.QrSessionCheckInModel;
@@ -19,12 +21,15 @@ import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.QrSessionCheckInRepository;
 import com.norton.backend.repositories.QrSessionLogRepository;
 import com.norton.backend.repositories.QrSessionRepository;
+import com.norton.backend.security.JwtService;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,11 +39,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class QrSessionServiceImpl implements QrSessionService {
+  private static final int KIOSK_QR_EXPIRES_IN_SECONDS = 15 * 60;
+  private static final Pattern SESSION_ID_PATTERN = Pattern.compile("^sess_[A-Za-z0-9]{12}$");
 
   private final QrSessionRepository qrSessionRepository;
   private final OfficerRepository officerRepository;
   private final QrSessionCheckInRepository qrSessionCheckInRepository;
   private final QrSessionLogRepository qrSessionLogRepository;
+  private final JwtService jwtService;
 
   @Override
   @Transactional
@@ -72,11 +80,25 @@ public class QrSessionServiceImpl implements QrSessionService {
 
     return CreateQrSessionResponse.builder()
         .id(savedSession.getToken())
-        .qrToken("attendance://" + savedSession.getToken())
         .status(savedSession.getStatus())
         .createdAt(createdAt)
         .expiresAt(savedSession.getValidUntil().toInstant(ZoneOffset.UTC))
-        .qrCodeUrl("/api/qr/" + savedSession.getToken() + ".png")
+        .location(savedSession.getLocation())
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public QrSessionKioskTokenResponse getKioskQrToken(String sessionId) {
+    String normalizedSessionId = validateSessionId(sessionId);
+    QrSessionModel session = getSessionByToken(normalizedSessionId);
+    validateKioskSession(session);
+
+    return QrSessionKioskTokenResponse.builder()
+        .token(
+            jwtService.generateQrSessionKioskToken(
+                session.getToken(), Duration.ofSeconds(KIOSK_QR_EXPIRES_IN_SECONDS)))
+        .expiresIn(KIOSK_QR_EXPIRES_IN_SECONDS)
         .build();
   }
 
@@ -222,6 +244,19 @@ public class QrSessionServiceImpl implements QrSessionService {
     return "sess_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
   }
 
+  private String validateSessionId(String sessionId) {
+    if (sessionId == null || sessionId.isBlank()) {
+      throw new BadRequestException("sessionId is required");
+    }
+
+    String normalizedSessionId = sessionId.trim();
+    if (!SESSION_ID_PATTERN.matcher(normalizedSessionId).matches()) {
+      throw new BadRequestException("Invalid sessionId format");
+    }
+
+    return normalizedSessionId;
+  }
+
   private QrSessionModel getSessionByToken(String token) {
     return qrSessionRepository
         .findByTokenWithCreatedBy(token)
@@ -260,8 +295,8 @@ public class QrSessionServiceImpl implements QrSessionService {
     OfficerModel officer = checkIn.getOfficer();
     return QrSessionCheckInResponse.builder()
         .id(checkIn.getId())
-        .employeeName(officer.getFirstName() + " " + officer.getLastName())
-        .employeeCode(officer.getOfficerCode())
+        .officerName(officer.getFirstName() + " " + officer.getLastName())
+        .officerCode(officer.getOfficerCode())
         .department(officer.getPosition().getDepartment().getName())
         .status(checkIn.getStatus())
         .scannedAt(toInstant(checkIn.getScannedAt()))
@@ -302,6 +337,17 @@ public class QrSessionServiceImpl implements QrSessionService {
     if (session.getValidUntil() != null
         && session.getValidUntil().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
       throw new BadRequestException("QR session has expired");
+    }
+  }
+
+  private void validateKioskSession(QrSessionModel session) {
+    if (session.getStatus() == null || !"active".equalsIgnoreCase(session.getStatus())) {
+      throw new GoneException("QR session is inactive");
+    }
+
+    if (session.getValidUntil() != null
+        && !session.getValidUntil().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
+      throw new GoneException("QR session is expired");
     }
   }
 

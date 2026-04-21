@@ -7,12 +7,15 @@ import com.norton.backend.dto.responses.qr.CreateQrSessionResponse;
 import com.norton.backend.dto.responses.qr.EndQrSessionResponse;
 import com.norton.backend.dto.responses.qr.QrSessionCheckInResponse;
 import com.norton.backend.dto.responses.qr.QrSessionDetailsResponse;
+import com.norton.backend.dto.responses.qr.QrSessionKioskTokenResponse;
 import com.norton.backend.dto.responses.qr.QrSessionStatsResponse;
 import com.norton.backend.dto.responses.qr.UpdateQrSessionResponse;
 import java.util.List;
 
 public interface QrSessionService {
   CreateQrSessionResponse createQrSession(CreateQrSessionRequest request);
+
+  QrSessionKioskTokenResponse getKioskQrToken(String sessionId);
 
   QrSessionDetailsResponse getQrSession(String id);
 

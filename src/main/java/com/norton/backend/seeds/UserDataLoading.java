@@ -36,6 +36,9 @@ public class UserDataLoading implements CommandLineRunner {
         "user", "user@gmail.com", "John Doe", "user123", userRole, UserStatus.ACTIVE);
 
     createUserIfNotExists(
+        "Kelly", "Chhenkelly@gmail.com", "ឈិន ខិលី", "kelly@123", adminRole, UserStatus.ACTIVE);
+
+    createUserIfNotExists(
         "banned", "banned@gmail.com", "Banned User", "banned123", userRole, UserStatus.BANNED);
 
     System.out.println("✅ Seed data loaded successfully!");

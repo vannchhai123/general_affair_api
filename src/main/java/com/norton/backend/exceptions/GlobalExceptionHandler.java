@@ -1,6 +1,7 @@
 package com.norton.backend.exceptions;
 
 import com.norton.backend.dto.responses.ErrorResponse;
+import com.norton.backend.dto.responses.attendances.AttendanceScanErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 @Slf4j
@@ -39,6 +41,25 @@ public class GlobalExceptionHandler {
   @ResponseStatus(HttpStatus.CONFLICT)
   public ErrorResponse handleConflict(ConflictException ex, HttpServletRequest request) {
     return ErrorResponse.of(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
+  }
+
+  @ExceptionHandler(AttendanceScanException.class)
+  public ResponseEntity<AttendanceScanErrorResponse> handleAttendanceScanException(
+      AttendanceScanException ex) {
+    return ResponseEntity.status(ex.getStatus())
+        .body(
+            AttendanceScanErrorResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .code(ex.getCode())
+                .build());
+  }
+
+  @ExceptionHandler(GoneException.class)
+  @ResponseStatus(HttpStatus.GONE)
+  public ErrorResponse handleGone(GoneException ex, HttpServletRequest request) {
+    log.warn("Gone: {}", ex.getMessage());
+    return ErrorResponse.of(HttpStatus.GONE, ex.getMessage(), request.getRequestURI());
   }
 
   @ExceptionHandler(Exception.class)
@@ -84,6 +105,14 @@ public class GlobalExceptionHandler {
             "Method not allowed for this endpoint",
             request.getRequestURI());
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNoResourceFound(
+      NoResourceFoundException ex, HttpServletRequest request) {
+    ErrorResponse response =
+        ErrorResponse.of(HttpStatus.NOT_FOUND, "Endpoint not found", request.getRequestURI());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
   }
 
   @ExceptionHandler(AuthenticationException.class)
