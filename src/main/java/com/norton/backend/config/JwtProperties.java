@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 public class JwtProperties {
+  // testing
   @NotBlank private String secret;
 
   @Min(60000)
