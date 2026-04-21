@@ -73,7 +73,6 @@ public class SecurityConfig {
         .addFilterBefore(requestLoggingFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(requestTimingFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
     return http.build();
   }
 
