@@ -10,14 +10,13 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Order(4)
-@Profile("dev")
+// @Profile("dev")
 public class OfficerDataLoading implements CommandLineRunner {
 
   private final DepartmentRepository departmentRepository;

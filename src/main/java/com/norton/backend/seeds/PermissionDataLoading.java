@@ -9,14 +9,13 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Order(1)
-@Profile("dev")
+// @Profile("dev")
 @Transactional
 public class PermissionDataLoading implements CommandLineRunner {
 
