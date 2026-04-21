@@ -9,8 +9,8 @@ import lombok.Getter;
 public class AttendanceScanDataResponse {
   private Long attendanceId;
   private String sessionId;
-  private Long employeeId;
-  private String employeeName;
+  private Long officerId;
+  private String officerName;
   private String action;
   private String status;
   private Instant scannedAt;
