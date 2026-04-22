@@ -9,6 +9,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSessionModel, Long> {
 
+  java.util.Optional<AttendanceSessionModel> findByAttendanceIdAndShiftId(
+      Long attendanceId, Long shiftId);
+
+  List<AttendanceSessionModel> findByAttendanceId(Long attendanceId);
+
   @Query(
       """
       SELECT s

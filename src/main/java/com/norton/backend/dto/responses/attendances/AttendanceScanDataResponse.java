@@ -13,6 +13,8 @@ public class AttendanceScanDataResponse {
   private String officerName;
   private String action;
   private String status;
+  private Instant timestamp;
+  private String shift;
   private Instant scannedAt;
   private String location;
 }
