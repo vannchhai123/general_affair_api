@@ -20,6 +20,7 @@ public class UserRoleDataLoading implements CommandLineRunner {
     loadRole("ROLE_ADMIN", "System Administrator with full access");
     loadRole("ROLE_MANAGER", "System Administrator with full access");
     loadRole("ROLE_USER", "Default user role");
+    loadRole("ROLE_OFFICER", "Officer role");
   }
 
   private void loadRole(String roleName, String description) {

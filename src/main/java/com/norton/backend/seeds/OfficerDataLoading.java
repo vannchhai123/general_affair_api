@@ -45,6 +45,11 @@ public class OfficerDataLoading implements CommandLineRunner {
             .findByUsername("Kelly")
             .orElseThrow(() -> new RuntimeException("User not found"));
 
+    UserModel officerUser1 =
+        userRepository
+            .findByUsername("vannchhai")
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
     DepartmentModel hr =
         DepartmentModel.builder().name("Human Resources").status(DepartmentStatus.ACTIVE).build();
 
@@ -114,7 +119,22 @@ public class OfficerDataLoading implements CommandLineRunner {
             .user(officerUser)
             .build();
 
-    officerRepository.saveAll(List.of(officer1, officer2, officer3));
+    OfficerModel officer4 =
+        OfficerModel.builder()
+            .uuid(UUID.randomUUID().toString())
+            .officerCode("OFF-005")
+            .firstName("វ៉ាន់ៃឆ")
+            .lastName("ឆាន")
+            .gender(GenderEnum.MALE)
+            .phone("098765432")
+            .email("vannchhai123@gmail.com")
+            .imageUrl("https://example.com/images/jane.jpg")
+            .position(developer)
+            .status(OfficerStatus.ACTIVE)
+            .user(officerUser1)
+            .build();
+
+    officerRepository.saveAll(List.of(officer1, officer2, officer3, officer4));
 
     System.out.println("✅ Officer seed data inserted successfully!");
   }

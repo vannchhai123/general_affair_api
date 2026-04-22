@@ -28,6 +28,7 @@ public class UserDataLoading implements CommandLineRunner {
 
     UserRoleModel adminRole = createRoleIfNotExists("ROLE_ADMIN", "System Administrator");
     UserRoleModel userRole = createRoleIfNotExists("ROLE_USER", "Default User");
+    UserRoleModel officerRole = createRoleIfNotExists("ROLE_OFFICER", "Officer user");
 
     createUserIfNotExists(
         "admin", "admin@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
@@ -37,6 +38,14 @@ public class UserDataLoading implements CommandLineRunner {
 
     createUserIfNotExists(
         "Kelly", "Chhenkelly@gmail.com", "ឈិន ខិលី", "kelly@123", adminRole, UserStatus.ACTIVE);
+
+    createUserIfNotExists(
+        "vannchhai",
+        "vannchhai@gmail.com",
+        "Vannchhai",
+        "vannchhai@123",
+        officerRole,
+        UserStatus.ACTIVE);
 
     createUserIfNotExists(
         "banned", "banned@gmail.com", "Banned User", "banned123", userRole, UserStatus.BANNED);
