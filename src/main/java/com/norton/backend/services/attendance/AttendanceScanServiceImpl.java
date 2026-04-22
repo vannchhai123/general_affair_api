@@ -28,11 +28,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +55,9 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   private final AttendanceStatusRepository attendanceStatusRepository;
   private final ShiftRepository shiftRepository;
   private final JwtService jwtService;
+
+  @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
+  private String scanTimezone;
 
   @Override
   @Transactional
@@ -81,8 +86,9 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
                         "Officer is not allowed to check in",
                         "OFFICER_NOT_ALLOWED"));
 
-    LocalDateTime currentDateTime = LocalDateTime.now(ZoneOffset.UTC);
-    Instant currentTimestamp = currentDateTime.toInstant(ZoneOffset.UTC);
+    ZoneId scanZoneId = resolveScanZoneId();
+    Instant currentTimestamp = Instant.now();
+    LocalDateTime currentDateTime = LocalDateTime.ofInstant(currentTimestamp, scanZoneId);
     ShiftDecision shiftDecision = resolveShift(currentDateTime.toLocalTime());
     if (shiftDecision == null) {
       saveScanAudit(
@@ -387,6 +393,17 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
       return 0;
     }
     return (int) Duration.between(shiftStartTime, checkInTime).toMinutes();
+  }
+
+  private ZoneId resolveScanZoneId() {
+    try {
+      return ZoneId.of(scanTimezone);
+    } catch (Exception ex) {
+      throw new AttendanceScanException(
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          "Invalid attendance scan timezone configuration: " + scanTimezone,
+          "INVALID_SCAN_TIMEZONE");
+    }
   }
 
   private record ShiftDecision(ShiftModel shift, String label) {}
