@@ -5,9 +5,13 @@ import com.norton.backend.dto.responses.attendances.AttendanceScanDataResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceScanSuccessResponse;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.exceptions.AttendanceScanException;
+import com.norton.backend.models.AttendanceModel;
+import com.norton.backend.models.AttendanceStatusModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.QrSessionCheckInModel;
 import com.norton.backend.models.QrSessionModel;
+import com.norton.backend.repositories.AttendanceRepository;
+import com.norton.backend.repositories.AttendanceStatusRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.QrSessionCheckInRepository;
 import com.norton.backend.repositories.QrSessionRepository;
@@ -16,6 +20,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +36,8 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   private final QrSessionRepository qrSessionRepository;
   private final QrSessionCheckInRepository qrSessionCheckInRepository;
   private final OfficerRepository officerRepository;
+  private final AttendanceRepository attendanceRepository;
+  private final AttendanceStatusRepository attendanceStatusRepository;
   private final JwtService jwtService;
 
   @Override
@@ -74,6 +81,8 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
                 .deviceInfo(request.getDeviceId())
                 .build());
 
+    createAttendanceIfMissing(officer, request.getScannedAt(), storedStatus);
+
     return AttendanceScanSuccessResponse.builder()
         .success(true)
         .message("Attendance recorded successfully")
@@ -89,6 +98,29 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
                 .location(session.getLocation())
                 .build())
         .build();
+  }
+
+  private void createAttendanceIfMissing(
+      OfficerModel officer, Instant scannedAt, String storedStatus) {
+    LocalDateTime scannedDateTime = LocalDateTime.ofInstant(scannedAt, ZoneOffset.UTC);
+    LocalDate attendanceDate = scannedDateTime.toLocalDate();
+
+    if (attendanceRepository.existsByOfficerIdAndDate(officer.getId(), attendanceDate)) {
+      return;
+    }
+
+    AttendanceStatusModel attendanceStatus = resolveAttendanceStatus(storedStatus);
+
+    attendanceRepository.save(
+        AttendanceModel.builder()
+            .officer(officer)
+            .date(attendanceDate)
+            .checkIn(scannedDateTime)
+            .totalWorkMin(0)
+            .totalLateMin(calculateLateMinutes(scannedDateTime))
+            .status(attendanceStatus)
+            .notes("Auto-created from QR scan")
+            .build());
   }
 
   private Claims validateQrToken(String token) {
@@ -143,5 +175,26 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
       case "checked-out" -> "checked-out";
       default -> storedStatus;
     };
+  }
+
+  private AttendanceStatusModel resolveAttendanceStatus(String storedStatus) {
+    String statusCode = "late".equals(storedStatus) ? "LATE" : "PRESENT";
+
+    return attendanceStatusRepository
+        .findByCode(statusCode)
+        .orElseThrow(
+            () ->
+                new AttendanceScanException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Attendance status configuration missing: " + statusCode,
+                    "ATTENDANCE_STATUS_MISSING"));
+  }
+
+  private int calculateLateMinutes(LocalDateTime scannedDateTime) {
+    LocalDateTime officialStart = scannedDateTime.toLocalDate().atTime(8, 0);
+    if (!scannedDateTime.isAfter(officialStart)) {
+      return 0;
+    }
+    return (int) java.time.Duration.between(officialStart, scannedDateTime).toMinutes();
   }
 }
