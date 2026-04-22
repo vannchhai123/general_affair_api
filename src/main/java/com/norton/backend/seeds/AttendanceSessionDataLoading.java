@@ -30,6 +30,8 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
+    List<ShiftModel> shifts = loadShifts();
+
     if (attendanceSessionRepository.count() > 0) {
       return;
     }
@@ -54,7 +56,6 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
             .findByOfficerCode("OFF-002")
             .orElseThrow(() -> new RuntimeException("Officer OFF-002 not found"));
 
-    List<ShiftModel> shifts = loadShifts();
     ShiftModel morningShift = shifts.get(0);
     ShiftModel afternoonShift = shifts.get(1);
 
@@ -65,7 +66,7 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
                 .attendance(attendance1)
                 .shift(morningShift)
                 .checkIn(LocalTime.of(8, 0))
-                .checkOut(LocalTime.of(12, 0))
+                .checkOut(LocalTime.of(12, 30))
                 .status("Present")
                 .createdBy(officer1)
                 .build(),
@@ -74,7 +75,7 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
                 .attendance(attendance1)
                 .shift(afternoonShift)
                 .checkIn(LocalTime.of(13, 0))
-                .checkOut(LocalTime.of(17, 0))
+                .checkOut(LocalTime.of(18, 0))
                 .status("Present")
                 .createdBy(officer1)
                 .build(),
@@ -83,7 +84,7 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
                 .attendance(attendance2)
                 .shift(morningShift)
                 .checkIn(LocalTime.of(8, 45))
-                .checkOut(LocalTime.of(12, 0))
+                .checkOut(LocalTime.of(12, 30))
                 .status("Late")
                 .createdBy(officer2)
                 .build(),
@@ -92,7 +93,7 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
                 .attendance(attendance2)
                 .shift(afternoonShift)
                 .checkIn(LocalTime.of(13, 0))
-                .checkOut(LocalTime.of(17, 15))
+                .checkOut(LocalTime.of(18, 0))
                 .status("Present")
                 .createdBy(officer2)
                 .build());
@@ -103,28 +104,21 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
   }
 
   private List<ShiftModel> loadShifts() {
-    java.util.Optional<ShiftModel> existingMorning = shiftRepository.findByName("Morning Shift");
-    java.util.Optional<ShiftModel> existingAfternoon =
-        shiftRepository.findByName("Afternoon Shift");
-    if (existingMorning.isPresent() && existingAfternoon.isPresent()) {
-      return List.of(existingMorning.get(), existingAfternoon.get());
-    }
-
     ShiftModel morningShift =
-        ShiftModel.builder()
-            .name("Morning Shift")
-            .startTime(LocalTime.of(8, 0))
-            .endTime(LocalTime.of(12, 0))
-            .isActive(true)
-            .build();
+        shiftRepository
+            .findByName("Morning Shift")
+            .orElseGet(() -> ShiftModel.builder().name("Morning Shift").build());
+    morningShift.setStartTime(LocalTime.of(6, 0));
+    morningShift.setEndTime(LocalTime.of(12, 30));
+    morningShift.setIsActive(true);
 
     ShiftModel afternoonShift =
-        ShiftModel.builder()
-            .name("Afternoon Shift")
-            .startTime(LocalTime.of(13, 0))
-            .endTime(LocalTime.of(17, 0))
-            .isActive(true)
-            .build();
+        shiftRepository
+            .findByName("Afternoon Shift")
+            .orElseGet(() -> ShiftModel.builder().name("Afternoon Shift").build());
+    afternoonShift.setStartTime(LocalTime.of(13, 0));
+    afternoonShift.setEndTime(LocalTime.of(18, 0));
+    afternoonShift.setIsActive(true);
 
     return shiftRepository.saveAll(List.of(morningShift, afternoonShift));
   }
