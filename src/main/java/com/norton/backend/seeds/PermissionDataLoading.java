@@ -54,11 +54,6 @@ public class PermissionDataLoading implements CommandLineRunner {
         createPermission(
             "OFFICER_VIEW_PERMISSION", "View officer permissions", "OfficerPermission");
 
-    // =========================
-    // ROLES
-    // =========================
-
-    // 👑 ADMIN (FULL ACCESS)
     createOrUpdateRole(
         "ROLE_ADMIN",
         "System Administrator",

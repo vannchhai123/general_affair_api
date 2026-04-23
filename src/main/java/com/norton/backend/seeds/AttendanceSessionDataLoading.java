@@ -106,16 +106,16 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
   private List<ShiftModel> loadShifts() {
     ShiftModel morningShift =
         shiftRepository
-            .findByName("Morning Shift")
-            .orElseGet(() -> ShiftModel.builder().name("Morning Shift").build());
+            .findByName("វេនព្រឹក")
+            .orElseGet(() -> ShiftModel.builder().name("វេនព្រឹក").build());
     morningShift.setStartTime(LocalTime.of(6, 0));
     morningShift.setEndTime(LocalTime.of(12, 30));
     morningShift.setIsActive(true);
 
     ShiftModel afternoonShift =
         shiftRepository
-            .findByName("Afternoon Shift")
-            .orElseGet(() -> ShiftModel.builder().name("Afternoon Shift").build());
+            .findByName("វេនរសៀល")
+            .orElseGet(() -> ShiftModel.builder().name("វេនរសៀល").build());
     afternoonShift.setStartTime(LocalTime.of(13, 0));
     afternoonShift.setEndTime(LocalTime.of(18, 0));
     afternoonShift.setIsActive(true);
