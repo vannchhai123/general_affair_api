@@ -12,6 +12,14 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
 
   long countByStatus(OfficerStatus status);
 
+  boolean existsByOfficerCode(String officerCode);
+
+  boolean existsByEmail(String email);
+
+  boolean existsByOfficerCodeAndIdNot(String officerCode, Long id);
+
+  boolean existsByEmailAndIdNot(String email, Long id);
+
   Optional<OfficerModel> findByOfficerCode(String officerCode);
 
   @Query("SELECT COUNT(o) FROM OfficerModel o")
