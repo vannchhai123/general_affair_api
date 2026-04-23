@@ -15,7 +15,13 @@ import java.util.List;
 public interface QrSessionService {
   CreateQrSessionResponse createQrSession(CreateQrSessionRequest request);
 
+  QrSessionDetailsResponse getCurrentQrSession();
+
+  List<QrSessionDetailsResponse> getTodayQrSessions();
+
   QrSessionKioskTokenResponse getKioskQrToken(String sessionId);
+
+  QrSessionKioskTokenResponse getCurrentKioskQrToken();
 
   QrSessionDetailsResponse getQrSession(String id);
 

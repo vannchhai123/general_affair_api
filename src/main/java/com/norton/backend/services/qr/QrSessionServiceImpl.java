@@ -47,10 +47,13 @@ public class QrSessionServiceImpl implements QrSessionService {
   private final QrSessionCheckInRepository qrSessionCheckInRepository;
   private final QrSessionLogRepository qrSessionLogRepository;
   private final JwtService jwtService;
+  private final QrSessionLifecycleService qrSessionLifecycleService;
 
   @Override
   @Transactional
   public CreateQrSessionResponse createQrSession(CreateQrSessionRequest request) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
+
     OfficerModel createdBy =
         officerRepository
             .findById(request.getCreatedBy())
@@ -58,7 +61,7 @@ public class QrSessionServiceImpl implements QrSessionService {
                 () -> new ResourceNotFoundException("Officer", "id", request.getCreatedBy()));
 
     String sessionToken = generateSessionToken();
-    LocalDateTime startedAt = LocalDateTime.now(ZoneOffset.UTC);
+    LocalDateTime startedAt = qrSessionLifecycleService.now();
     LocalDateTime validUntil = startedAt.plusSeconds(request.getDurationSeconds());
 
     QrSessionModel qrSession =
@@ -69,62 +72,134 @@ public class QrSessionServiceImpl implements QrSessionService {
             .validUntil(validUntil)
             .qrRefreshInterval(request.getDurationSeconds())
             .createdBy(createdBy)
+            .sessionDate(startedAt.toLocalDate())
+            .shiftType("manual")
+            .startsAt(startedAt)
+            .endsAt(validUntil)
+            .systemGenerated(false)
             .startedAt(startedAt)
             .build();
 
     QrSessionModel savedSession = qrSessionRepository.save(qrSession);
     Instant createdAt =
-        savedSession.getCreatedAt() != null
-            ? savedSession.getCreatedAt()
-            : startedAt.toInstant(ZoneOffset.UTC);
+        savedSession.getCreatedAt() != null ? savedSession.getCreatedAt() : toInstant(startedAt);
 
     return CreateQrSessionResponse.builder()
         .id(savedSession.getToken())
         .status(savedSession.getStatus())
         .createdAt(createdAt)
-        .expiresAt(savedSession.getValidUntil().toInstant(ZoneOffset.UTC))
+        .expiresAt(toInstant(savedSession.getValidUntil()))
         .location(savedSession.getLocation())
         .build();
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public QrSessionKioskTokenResponse getKioskQrToken(String sessionId) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
+
     String normalizedSessionId = validateSessionId(sessionId);
     QrSessionModel session = getSessionByToken(normalizedSessionId);
-    validateKioskSession(session);
+    validateKioskSession(session, qrSessionLifecycleService.now());
 
     return QrSessionKioskTokenResponse.builder()
         .token(
             jwtService.generateQrSessionKioskToken(
                 session.getToken(), Duration.ofSeconds(KIOSK_QR_EXPIRES_IN_SECONDS)))
         .expiresIn(KIOSK_QR_EXPIRES_IN_SECONDS)
-        .build();
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public QrSessionDetailsResponse getQrSession(String id) {
-    QrSessionModel session = getSessionByToken(id);
-
-    return QrSessionDetailsResponse.builder()
-        .id(session.getToken())
+        .sessionId(session.getToken())
         .status(session.getStatus())
-        .createdBy(session.getCreatedBy() != null ? session.getCreatedBy().getId() : null)
-        .createdAt(toCreatedAt(session))
-        .expiresAt(toInstant(session.getValidUntil()))
-        .qrToken("attendance://" + session.getToken())
-        .scanCount(qrSessionCheckInRepository.countByQrSessionToken(session.getToken()))
-        .location(session.getLocation())
+        .message(resolveSessionActiveMessage(session))
+        .shiftType(session.getShiftType())
+        .startsAt(toInstant(session.getStartsAt()))
+        .endsAt(toInstant(session.getEndsAt()))
         .build();
   }
 
   @Override
   @Transactional
+  public QrSessionKioskTokenResponse getCurrentKioskQrToken() {
+    LocalDateTime now = qrSessionLifecycleService.now();
+    QrSessionModel session =
+        qrSessionLifecycleService.ensureTodayQrSession(
+            now, resolveCurrentOfficer(), "Main Entrance");
+
+    if (session == null || !qrSessionLifecycleService.isScanAllowed(now, session)) {
+      return QrSessionKioskTokenResponse.builder()
+          .token(null)
+          .expiresIn(0)
+          .sessionId(null)
+          .status("inactive")
+          .message("No active QR session")
+          .build();
+    }
+
+    return QrSessionKioskTokenResponse.builder()
+        .token(
+            jwtService.generateQrSessionKioskToken(
+                session.getToken(), Duration.ofSeconds(KIOSK_QR_EXPIRES_IN_SECONDS)))
+        .expiresIn(KIOSK_QR_EXPIRES_IN_SECONDS)
+        .sessionId(session.getToken())
+        .status(session.getStatus())
+        .message(resolveSessionActiveMessage(session))
+        .shiftType(session.getShiftType())
+        .startsAt(toInstant(session.getStartsAt()))
+        .endsAt(toInstant(session.getEndsAt()))
+        .build();
+  }
+
+  @Override
+  @Transactional
+  public QrSessionDetailsResponse getCurrentQrSession() {
+    LocalDateTime now = qrSessionLifecycleService.now();
+    QrSessionModel session =
+        qrSessionLifecycleService.ensureTodayQrSession(
+            now, resolveCurrentOfficer(), "Main Entrance");
+
+    if (session == null || !qrSessionLifecycleService.isScanAllowed(now, session)) {
+      return QrSessionDetailsResponse.builder()
+          .status("inactive")
+          .active(false)
+          .message("No active QR session")
+          .sessionDate(now.toLocalDate())
+          .build();
+    }
+
+    return toDetailsResponse(session, resolveSessionActiveMessage(session), true);
+  }
+
+  @Override
+  @Transactional
+  public List<QrSessionDetailsResponse> getTodayQrSessions() {
+    LocalDateTime now = qrSessionLifecycleService.now();
+    qrSessionLifecycleService.closeExpiredSessions(now);
+
+    return qrSessionRepository.findAllBySessionDateOrderByStartsAtAsc(now.toLocalDate()).stream()
+        .map(
+            session ->
+                toDetailsResponse(
+                    session, resolveSessionStateMessage(session, now), isActive(session, now)))
+        .toList();
+  }
+
+  @Override
+  @Transactional
+  public QrSessionDetailsResponse getQrSession(String id) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
+    QrSessionModel session = getSessionByToken(id);
+    return toDetailsResponse(
+        session,
+        resolveSessionStateMessage(session, qrSessionLifecycleService.now()),
+        isActive(session, qrSessionLifecycleService.now()));
+  }
+
+  @Override
+  @Transactional
   public UpdateQrSessionResponse updateQrSession(String id, UpdateQrSessionRequest request) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
     QrSessionModel session = getSessionByToken(id);
     String action = request.getAction().trim().toLowerCase(Locale.ROOT);
-    LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+    LocalDateTime now = qrSessionLifecycleService.now();
 
     switch (action) {
       case "pause" -> session.setStatus("paused");
@@ -139,6 +214,13 @@ public class QrSessionServiceImpl implements QrSessionService {
       case "regenerate" -> {
         session.setToken(generateSessionToken());
         session.setStatus("active");
+        session.setSessionDate(now.toLocalDate());
+        session.setShiftType(session.getShiftType() != null ? session.getShiftType() : "manual");
+        session.setStartsAt(now);
+        session.setEndsAt(now.plusSeconds(resolveDurationSeconds(session)));
+        if (session.getSystemGenerated() == null) {
+          session.setSystemGenerated(true);
+        }
         session.setStartedAt(now);
         session.setStoppedAt(null);
         session.setValidUntil(now.plusSeconds(resolveDurationSeconds(session)));
@@ -159,8 +241,9 @@ public class QrSessionServiceImpl implements QrSessionService {
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public List<QrSessionCheckInResponse> getQrSessionCheckIns(String id) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
     getSessionByToken(id);
     return qrSessionCheckInRepository.findAllByQrSessionTokenWithOfficer(id).stream()
         .map(checkIn -> toCheckInResponse(checkIn, null))
@@ -171,8 +254,9 @@ public class QrSessionServiceImpl implements QrSessionService {
   @Transactional
   public QrSessionCheckInResponse createQrSessionCheckIn(
       String id, CreateQrSessionCheckInRequest request) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
     QrSessionModel session = getSessionByToken(id);
-    validateCheckInSession(session);
+    validateCheckInSession(session, qrSessionLifecycleService.now());
 
     OfficerModel officer =
         officerRepository
@@ -198,8 +282,9 @@ public class QrSessionServiceImpl implements QrSessionService {
   }
 
   @Override
-  @Transactional(readOnly = true)
+  @Transactional
   public QrSessionStatsResponse getQrSessionStats(String id) {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
     QrSessionModel session = getSessionByToken(id);
     SessionStats stats = buildSessionStats(session.getToken());
 
@@ -220,7 +305,7 @@ public class QrSessionServiceImpl implements QrSessionService {
   public EndQrSessionResponse endQrSession(String id) {
     QrSessionModel session = getSessionByToken(id);
     session.setStatus("stopped");
-    session.setStoppedAt(LocalDateTime.now(ZoneOffset.UTC));
+    session.setStoppedAt(qrSessionLifecycleService.now());
 
     QrSessionModel updatedSession = qrSessionRepository.save(session);
     logAction(updatedSession, "end");
@@ -270,7 +355,9 @@ public class QrSessionServiceImpl implements QrSessionService {
   }
 
   private Instant toInstant(LocalDateTime dateTime) {
-    return dateTime != null ? dateTime.toInstant(ZoneOffset.UTC) : null;
+    return dateTime != null
+        ? dateTime.atZone(qrSessionLifecycleService.resolveZoneId()).toInstant()
+        : null;
   }
 
   private int resolveDurationSeconds(QrSessionModel session) {
@@ -329,25 +416,26 @@ public class QrSessionServiceImpl implements QrSessionService {
     return "check-in".equals(action) ? "Check-in successful" : "Check-out successful";
   }
 
-  private void validateCheckInSession(QrSessionModel session) {
+  private void validateCheckInSession(QrSessionModel session, LocalDateTime now) {
     if (!"active".equalsIgnoreCase(session.getStatus())) {
-      throw new BadRequestException("QR session is not active");
+      throw new BadRequestException("No active QR session");
     }
 
-    if (session.getValidUntil() != null
-        && session.getValidUntil().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
-      throw new BadRequestException("QR session has expired");
+    if (!qrSessionLifecycleService.isScanAllowed(now, session)) {
+      if (session.getEndsAt() != null && now.isAfter(session.getEndsAt())) {
+        throw new BadRequestException("QR session expired");
+      }
+      throw new BadRequestException("No active QR session");
     }
   }
 
-  private void validateKioskSession(QrSessionModel session) {
+  private void validateKioskSession(QrSessionModel session, LocalDateTime now) {
     if (session.getStatus() == null || !"active".equalsIgnoreCase(session.getStatus())) {
-      throw new GoneException("QR session is inactive");
+      throw new GoneException("No active QR session");
     }
 
-    if (session.getValidUntil() != null
-        && !session.getValidUntil().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
-      throw new GoneException("QR session is expired");
+    if (!qrSessionLifecycleService.isScanAllowed(now, session)) {
+      throw new GoneException("QR session expired");
     }
   }
 
@@ -391,4 +479,52 @@ public class QrSessionServiceImpl implements QrSessionService {
 
   private record SessionStats(
       long totalScans, long checkedIn, long checkedOut, long late, Instant lastScanAt) {}
+
+  private QrSessionDetailsResponse toDetailsResponse(
+      QrSessionModel session, String message, boolean active) {
+    return QrSessionDetailsResponse.builder()
+        .id(session.getToken())
+        .status(session.getStatus())
+        .createdBy(session.getCreatedBy() != null ? session.getCreatedBy().getId() : null)
+        .createdAt(toCreatedAt(session))
+        .expiresAt(toInstant(session.getValidUntil()))
+        .qrToken("attendance://" + session.getToken())
+        .scanCount(qrSessionCheckInRepository.countByQrSessionToken(session.getToken()))
+        .sessionDate(session.getSessionDate())
+        .shiftType(session.getShiftType())
+        .startsAt(toInstant(session.getStartsAt()))
+        .endsAt(toInstant(session.getEndsAt()))
+        .systemGenerated(session.getSystemGenerated())
+        .message(message)
+        .active(active)
+        .location(session.getLocation())
+        .build();
+  }
+
+  private boolean isActive(QrSessionModel session, LocalDateTime now) {
+    return qrSessionLifecycleService.isScanAllowed(now, session);
+  }
+
+  private String resolveSessionActiveMessage(QrSessionModel session) {
+    if (session.getShiftType() == null) {
+      return "No active QR session";
+    }
+    return switch (session.getShiftType().toLowerCase(Locale.ROOT)) {
+      case "morning" -> "Morning session active";
+      case "afternoon" -> "Afternoon session active";
+      default -> "QR session active";
+    };
+  }
+
+  private String resolveSessionStateMessage(QrSessionModel session, LocalDateTime now) {
+    if (isActive(session, now)) {
+      return resolveSessionActiveMessage(session);
+    }
+
+    if (session.getEndsAt() != null && now.isAfter(session.getEndsAt())) {
+      return "QR session expired";
+    }
+
+    return "No active QR session";
+  }
 }

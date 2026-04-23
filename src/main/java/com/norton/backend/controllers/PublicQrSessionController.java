@@ -17,4 +17,9 @@ public class PublicQrSessionController {
   public ResponseEntity<QrSessionKioskTokenResponse> getSessionQr(@PathVariable String sessionId) {
     return ResponseEntity.ok(qrSessionService.getKioskQrToken(sessionId));
   }
+
+  @GetMapping("/api/v1/session/current/qr")
+  public ResponseEntity<QrSessionKioskTokenResponse> getCurrentSessionQr() {
+    return ResponseEntity.ok(qrSessionService.getCurrentKioskQrToken());
+  }
 }

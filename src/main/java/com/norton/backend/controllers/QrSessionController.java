@@ -39,6 +39,16 @@ public class QrSessionController {
         .body(qrSessionService.createQrSession(request));
   }
 
+  @GetMapping("/current")
+  public ResponseEntity<QrSessionDetailsResponse> getCurrentQrSession() {
+    return ResponseEntity.ok(qrSessionService.getCurrentQrSession());
+  }
+
+  @GetMapping("/today")
+  public ResponseEntity<List<QrSessionDetailsResponse>> getTodayQrSessions() {
+    return ResponseEntity.ok(qrSessionService.getTodayQrSessions());
+  }
+
   @GetMapping("/{id}")
   public ResponseEntity<QrSessionDetailsResponse> getQrSession(@PathVariable String id) {
     return ResponseEntity.ok(qrSessionService.getQrSession(id));

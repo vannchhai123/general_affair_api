@@ -20,6 +20,7 @@ import com.norton.backend.repositories.QrSessionCheckInRepository;
 import com.norton.backend.repositories.QrSessionRepository;
 import com.norton.backend.repositories.ShiftRepository;
 import com.norton.backend.security.JwtService;
+import com.norton.backend.services.qr.QrSessionLifecycleService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -29,7 +30,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -55,6 +55,7 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   private final AttendanceStatusRepository attendanceStatusRepository;
   private final ShiftRepository shiftRepository;
   private final JwtService jwtService;
+  private final QrSessionLifecycleService qrSessionLifecycleService;
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
@@ -197,15 +198,16 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   }
 
   private void validateSession(QrSessionModel session) {
+    LocalDateTime now = qrSessionLifecycleService.now();
+    qrSessionLifecycleService.closeExpiredSessions(now);
+
     if (session.getStatus() == null || !"active".equalsIgnoreCase(session.getStatus())) {
       throw new AttendanceScanException(
-          HttpStatus.GONE, "Attendance session is inactive", "SESSION_INACTIVE");
+          HttpStatus.GONE, "No active QR session", "SESSION_INACTIVE");
     }
 
-    if (session.getValidUntil() != null
-        && !session.getValidUntil().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
-      throw new AttendanceScanException(
-          HttpStatus.GONE, "Attendance session is inactive", "SESSION_INACTIVE");
+    if (!qrSessionLifecycleService.isScanAllowed(now, session)) {
+      throw new AttendanceScanException(HttpStatus.GONE, "QR session expired", "SESSION_EXPIRED");
     }
   }
 
