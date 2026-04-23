@@ -123,7 +123,7 @@ public class OfficerDataLoading implements CommandLineRunner {
         OfficerModel.builder()
             .uuid(UUID.randomUUID().toString())
             .officerCode("OFF-005")
-            .firstName("វ៉ាន់ៃឆ")
+            .firstName("វ៉ានឆៃ")
             .lastName("ឆាន")
             .gender(GenderEnum.MALE)
             .phone("098765432")

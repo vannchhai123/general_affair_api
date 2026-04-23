@@ -16,6 +16,27 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
   java.util.Optional<AttendanceModel> findByOfficerOfficerCodeAndDate(
       String officerCode, java.time.LocalDate date);
 
+  java.util.List<AttendanceModel> findAllByOfficerUserIdAndDateBetween(
+      Long userId, java.time.LocalDate fromDate, java.time.LocalDate toDate);
+
+  java.util.List<AttendanceModel> findAllByOfficerIdAndDateBetween(
+      Long officerId, java.time.LocalDate fromDate, java.time.LocalDate toDate);
+
+  java.util.Optional<AttendanceModel> findByOfficerIdAndDate(
+      Long officerId, java.time.LocalDate date);
+
+  @Query(
+      """
+      SELECT a
+      FROM Attendance a
+      JOIN FETCH a.officer o
+      LEFT JOIN FETCH a.status
+      WHERE o.user.id = :userId
+        AND a.date = :date
+      """)
+  java.util.Optional<AttendanceModel> findByOfficerUserIdAndDate(
+      Long userId, java.time.LocalDate date);
+
   @Query(
       """
       SELECT a
@@ -38,6 +59,7 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
         o.lastName,
         o.position.department.name,
         o.officerCode,
+        o.imageUrl,
         a.date,
         a.checkIn,
         a.checkOut,

@@ -6,6 +6,8 @@ import com.norton.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.norton.backend.dto.responses.PageResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceScanSuccessResponse;
+import com.norton.backend.dto.responses.attendances.AttendanceStatusResponse;
+import com.norton.backend.dto.responses.attendances.AttendanceSummaryResponse;
 import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import com.norton.backend.services.attendance.AttendanceScanService;
@@ -36,6 +38,18 @@ public class AttendanceController {
   public ResponseEntity<PageResponse<AttendanceResponse>> getAllAttendance(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
     return ResponseEntity.ok(attendanceService.getAllAttendance(page, size));
+  }
+
+  @GetMapping("/status")
+  public ResponseEntity<AttendanceStatusResponse> getMyAttendanceStatus(
+      @RequestParam(required = false) Long officerId) {
+    return ResponseEntity.ok(attendanceService.getMyAttendanceStatus(officerId));
+  }
+
+  @GetMapping("/summary")
+  public ResponseEntity<AttendanceSummaryResponse> getMyAttendanceSummary(
+      @RequestParam(required = false) Long officerId) {
+    return ResponseEntity.ok(attendanceService.getMyAttendanceSummary(officerId));
   }
 
   @PostMapping

@@ -17,6 +17,7 @@ public class AttendanceResponse {
   private String lastName;
   private String department;
   private String officerCode;
+  private String imageUrl;
 
   private LocalDate date;
   private LocalDateTime checkIn;
@@ -34,6 +35,7 @@ public class AttendanceResponse {
       String lastName,
       String department,
       String officerCode,
+      String imageUrl,
       LocalDate date,
       LocalDateTime checkIn,
       LocalDateTime checkOut,
@@ -47,6 +49,7 @@ public class AttendanceResponse {
         lastName,
         department,
         officerCode,
+        imageUrl,
         date,
         checkIn,
         checkOut,
@@ -63,6 +66,7 @@ public class AttendanceResponse {
       String lastName,
       String department,
       String officerCode,
+      String imageUrl,
       LocalDate date,
       LocalDateTime checkIn,
       LocalDateTime checkOut,
@@ -76,6 +80,7 @@ public class AttendanceResponse {
     this.lastName = lastName;
     this.department = department;
     this.officerCode = officerCode;
+    this.imageUrl = imageUrl;
     this.date = date;
     this.checkIn = checkIn;
     this.checkOut = checkOut;

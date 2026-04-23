@@ -50,10 +50,10 @@ public class QrSessionController {
     return ResponseEntity.ok(qrSessionService.updateQrSession(id, request));
   }
 
-  @GetMapping("/{id}/checkins")
+  @GetMapping("/{sessionId}/checkins")
   public ResponseEntity<List<QrSessionCheckInResponse>> getQrSessionCheckIns(
-      @PathVariable String id) {
-    return ResponseEntity.ok(qrSessionService.getQrSessionCheckIns(id));
+      @PathVariable String sessionId) {
+    return ResponseEntity.ok(qrSessionService.getQrSessionCheckIns(sessionId));
   }
 
   @PostMapping("/{id}/checkins")

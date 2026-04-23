@@ -40,6 +40,11 @@ public class AttendanceDataLoading implements CommandLineRunner {
             .findByOfficerCode("OFF-002")
             .orElseThrow(() -> new RuntimeException("Officer OFF-002 not found"));
 
+    OfficerModel officer5 =
+        officerRepository
+            .findByOfficerCode("OFF-005")
+            .orElseThrow(() -> new RuntimeException("Officer OFF-005 not found"));
+
     AttendanceStatusModel present =
         statusRepository
             .findByCode("PRESENT")
@@ -72,7 +77,18 @@ public class AttendanceDataLoading implements CommandLineRunner {
             .status(late)
             .build();
 
-    attendanceRepository.saveAll(List.of(a1, a2));
+    AttendanceModel a3 =
+        AttendanceModel.builder()
+            .officer(officer5)
+            .date(LocalDate.of(2026, 4, 14))
+            .checkIn(LocalDateTime.of(2026, 4, 14, 8, 10))
+            .checkOut(LocalDateTime.of(2026, 4, 14, 17, 5))
+            .totalWorkMin(475)
+            .totalLateMin(10)
+            .status(late)
+            .build();
+
+    attendanceRepository.saveAll(List.of(a1, a2, a3));
 
     System.out.println("✅ Attendance data loaded");
   }

@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -113,6 +114,17 @@ public class GlobalExceptionHandler {
     ErrorResponse response =
         ErrorResponse.of(HttpStatus.NOT_FOUND, "Endpoint not found", request.getRequestURI());
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(
+      MaxUploadSizeExceededException ex, HttpServletRequest request) {
+    ErrorResponse response =
+        ErrorResponse.of(
+            HttpStatus.PAYLOAD_TOO_LARGE,
+            "Uploaded file is too large. Maximum allowed size is 10MB.",
+            request.getRequestURI());
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
   }
 
   @ExceptionHandler(AuthenticationException.class)
