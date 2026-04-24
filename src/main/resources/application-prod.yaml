@@ -52,12 +52,13 @@ jwt:
 
 logging:
   level:
-    root: INFO
-    org.springframework.web: INFO
+    root: WARN
+    org.springframework: WARN
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
     com.norton.backend.security.RequestLoggingFilter: WARN
     com.norton.backend.security.RequestTimingFilter: WARN
+    com.norton.backend: INFO
 
 attendance:
   scan:
