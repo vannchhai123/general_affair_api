@@ -69,7 +69,9 @@ public class SecurityConfig {
                     .requestMatchers(
                         AuthController.BASE_URL + "/login",
                         AuthController.BASE_URL + "/refresh",
-                        AuthController.BASE_URL + "/forgot-password/verify-email")
+                        AuthController.BASE_URL + "/forgot-password/verify-email",
+                        AuthController.BASE_URL + "/forgot-password/verify-otp",
+                        AuthController.BASE_URL + "/forgot-password/reset")
                     .permitAll()
                     .requestMatchers("/uploads/**")
                     .permitAll()

@@ -1,7 +1,9 @@
 package com.norton.backend.services.auth;
 
 import com.norton.backend.dto.request.ChangePasswordRequest;
+import com.norton.backend.dto.request.ForgotPasswordResetRequest;
 import com.norton.backend.dto.request.ForgotPasswordVerifyEmailRequest;
+import com.norton.backend.dto.request.ForgotPasswordVerifyOtpRequest;
 import com.norton.backend.dto.request.LoginRequest;
 import com.norton.backend.dto.responses.AuthResponse;
 import com.norton.backend.dto.responses.UserDto;
@@ -145,6 +147,39 @@ public class AuthServiceImpl implements AuthService {
     return Map.of("message", FORGOT_PASSWORD_GENERIC_MESSAGE);
   }
 
+  @Override
+  @Transactional
+  public Map<String, String> forgotPasswordVerifyOtp(ForgotPasswordVerifyOtpRequest request) {
+    PasswordResetOtpModel otpRecord = getValidOtpRecord(request.getEmail(), request.getOtp());
+    if (otpRecord == null) {
+      throw new BadRequestException("Invalid or expired OTP");
+    }
+
+    return Map.of("message", "OTP verified successfully");
+  }
+
+  @Override
+  @Transactional
+  public Map<String, String> forgotPasswordReset(ForgotPasswordResetRequest request) {
+    if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+      throw new BadRequestException("New password and confirm password do not match");
+    }
+
+    PasswordResetOtpModel otpRecord = getValidOtpRecord(request.getEmail(), request.getOtp());
+    if (otpRecord == null) {
+      throw new BadRequestException("Invalid or expired OTP");
+    }
+
+    UserModel user = otpRecord.getUser();
+    user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+    userRepository.save(user);
+
+    otpRecord.setUsed(true);
+    passwordResetOtpRepository.save(otpRecord);
+
+    return Map.of("message", "Password reset successfully");
+  }
+
   private void createAndSendResetOtpSilently(UserModel user) {
     String otp = generateOtp();
 
@@ -188,5 +223,29 @@ public class AuthServiceImpl implements AuthService {
             + otpExpiryMinutes
             + " minutes.\nIf you did not request a password reset, please ignore this email.");
     mailSender.send(message);
+  }
+
+  private PasswordResetOtpModel getValidOtpRecord(String email, String otp) {
+    String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+    UserModel user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+    if (user == null) {
+      return null;
+    }
+
+    PasswordResetOtpModel otpRecord =
+        passwordResetOtpRepository.findTopByUserAndUsedFalseOrderByIdDesc(user).orElse(null);
+    if (otpRecord == null) {
+      return null;
+    }
+
+    if (otpRecord.getExpiresAt().isBefore(Instant.now())) {
+      return null;
+    }
+
+    if (!passwordEncoder.matches(otp, otpRecord.getOtpHash())) {
+      return null;
+    }
+
+    return otpRecord;
   }
 }

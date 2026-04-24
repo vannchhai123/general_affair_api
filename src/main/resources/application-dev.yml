@@ -4,6 +4,17 @@ server:
 spring:
   application:
     name: backend
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_APP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   servlet:
     multipart:
       max-file-size: 10MB
@@ -36,3 +47,8 @@ jwt:
 attendance:
   scan:
     timezone: Asia/Phnom_Penh
+
+app:
+  password-reset:
+    otp-expiry-minutes: 10
+    mail-from: ${MAIL_FROM:${MAIL_USERNAME:no-reply@general-affair.local}}

@@ -1,7 +1,9 @@
 package com.norton.backend.controllers.auth;
 
 import com.norton.backend.dto.request.ChangePasswordRequest;
+import com.norton.backend.dto.request.ForgotPasswordResetRequest;
 import com.norton.backend.dto.request.ForgotPasswordVerifyEmailRequest;
+import com.norton.backend.dto.request.ForgotPasswordVerifyOtpRequest;
 import com.norton.backend.dto.request.LoginRequest;
 import com.norton.backend.dto.request.RefreshRequest;
 import com.norton.backend.dto.responses.AuthResponse;
@@ -54,5 +56,17 @@ public class AuthController {
   public ResponseEntity<Map<String, String>> forgotPasswordVerifyEmail(
       @Valid @RequestBody ForgotPasswordVerifyEmailRequest request) {
     return ResponseEntity.ok(authService.forgotPasswordVerifyEmail(request));
+  }
+
+  @PostMapping("/forgot-password/verify-otp")
+  public ResponseEntity<Map<String, String>> forgotPasswordVerifyOtp(
+      @Valid @RequestBody ForgotPasswordVerifyOtpRequest request) {
+    return ResponseEntity.ok(authService.forgotPasswordVerifyOtp(request));
+  }
+
+  @PostMapping("/forgot-password/reset")
+  public ResponseEntity<Map<String, String>> forgotPasswordReset(
+      @Valid @RequestBody ForgotPasswordResetRequest request) {
+    return ResponseEntity.ok(authService.forgotPasswordReset(request));
   }
 }
