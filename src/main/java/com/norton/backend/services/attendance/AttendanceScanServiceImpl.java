@@ -46,6 +46,8 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   private static final String ACTION_CHECK_OUT = "CHECK_OUT";
   private static final String ACTION_ALREADY_COMPLETED = "ALREADY_COMPLETED";
   private static final String ACTION_INVALID_TIME = "INVALID_TIME";
+  private static final List<String> MORNING_SHIFT_NAMES = List.of("វេនព្រឹក", "Morning Shift");
+  private static final List<String> AFTERNOON_SHIFT_NAMES = List.of("វេនរសៀល", "Afternoon Shift");
 
   private final QrSessionRepository qrSessionRepository;
   private final QrSessionCheckInRepository qrSessionCheckInRepository;
@@ -212,24 +214,8 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   }
 
   private ShiftDecision resolveShift(LocalTime time) {
-    ShiftModel morningShift =
-        shiftRepository
-            .findByName("Morning Shift")
-            .orElseThrow(
-                () ->
-                    new AttendanceScanException(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Shift configuration missing: Morning Shift",
-                        "SHIFT_CONFIG_MISSING"));
-    ShiftModel afternoonShift =
-        shiftRepository
-            .findByName("Afternoon Shift")
-            .orElseThrow(
-                () ->
-                    new AttendanceScanException(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Shift configuration missing: Afternoon Shift",
-                        "SHIFT_CONFIG_MISSING"));
+    ShiftModel morningShift = resolveShiftByNames(MORNING_SHIFT_NAMES);
+    ShiftModel afternoonShift = resolveShiftByNames(AFTERNOON_SHIFT_NAMES);
 
     if (isWithinShift(time, morningShift)) {
       return new ShiftDecision(morningShift, "MORNING");
@@ -238,6 +224,20 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
       return new ShiftDecision(afternoonShift, "AFTERNOON");
     }
     return null;
+  }
+
+  private ShiftModel resolveShiftByNames(List<String> shiftNames) {
+    for (String shiftName : shiftNames) {
+      ShiftModel shift = shiftRepository.findByName(shiftName).orElse(null);
+      if (shift != null) {
+        return shift;
+      }
+    }
+
+    throw new AttendanceScanException(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        "Shift configuration missing. Expected one of: " + String.join(", ", shiftNames),
+        "SHIFT_CONFIG_MISSING");
   }
 
   private boolean isWithinShift(LocalTime time, ShiftModel shift) {

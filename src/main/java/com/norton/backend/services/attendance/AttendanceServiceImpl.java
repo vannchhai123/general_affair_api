@@ -53,6 +53,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
+  private static final List<String> MORNING_SHIFT_NAMES = List.of("វេនព្រឹក", "Morning Shift");
+  private static final List<String> AFTERNOON_SHIFT_NAMES = List.of("វេនរសៀល", "Afternoon Shift");
+
   private final AttendanceRepository attendanceRepository;
   private final AttendanceSessionRepository attendanceSessionRepository;
   private final OfficerRepository officerRepository;
@@ -383,8 +386,8 @@ public class AttendanceServiceImpl implements AttendanceService {
   }
 
   private ShiftDecision resolveCurrentShift(LocalTime currentTime) {
-    ShiftModel morningShift = shiftRepository.findByName("Morning Shift").orElse(null);
-    ShiftModel afternoonShift = shiftRepository.findByName("Afternoon Shift").orElse(null);
+    ShiftModel morningShift = resolveShiftByNames(MORNING_SHIFT_NAMES);
+    ShiftModel afternoonShift = resolveShiftByNames(AFTERNOON_SHIFT_NAMES);
 
     if (morningShift != null && isWithinShift(currentTime, morningShift)) {
       return new ShiftDecision(morningShift);
@@ -414,7 +417,17 @@ public class AttendanceServiceImpl implements AttendanceService {
       return relevantSession.getShift().getName();
     }
 
-    return "Morning Shift";
+    return "MORNING";
+  }
+
+  private ShiftModel resolveShiftByNames(List<String> shiftNames) {
+    for (String shiftName : shiftNames) {
+      ShiftModel shift = shiftRepository.findByName(shiftName).orElse(null);
+      if (shift != null) {
+        return shift;
+      }
+    }
+    return null;
   }
 
   private Duration safeDurationBetween(LocalDateTime start, LocalDateTime end) {
