@@ -49,3 +49,7 @@ logging:
 attendance:
   scan:
     timezone: ${ATTENDANCE_TIMEZONE:Asia/Phnom_Penh}
+
+app:
+  file:
+    base-url: https://general-affair-system-production-b20b.up.railway.app/uploads
