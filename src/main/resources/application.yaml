@@ -12,3 +12,8 @@ server:
 attendance:
   scan:
     timezone: Asia/Phnom_Penh
+
+app:
+  password-reset:
+    otp-expiry-minutes: 10
+    mail-from: no-reply@general-affair.local

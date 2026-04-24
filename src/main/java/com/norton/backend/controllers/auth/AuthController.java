@@ -1,5 +1,7 @@
 package com.norton.backend.controllers.auth;
 
+import com.norton.backend.dto.request.ChangePasswordRequest;
+import com.norton.backend.dto.request.ForgotPasswordVerifyEmailRequest;
 import com.norton.backend.dto.request.LoginRequest;
 import com.norton.backend.dto.request.RefreshRequest;
 import com.norton.backend.dto.responses.AuthResponse;
@@ -7,6 +9,7 @@ import com.norton.backend.dto.responses.UserDto;
 import com.norton.backend.dto.responses.officers.MeResponse;
 import com.norton.backend.services.auth.AuthService;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,5 +42,17 @@ public class AuthController {
   @GetMapping("/me")
   public ResponseEntity<MeResponse> me() {
     return ResponseEntity.ok(authService.getMyProfile());
+  }
+
+  @PostMapping("/change-password")
+  public ResponseEntity<Map<String, String>> changePassword(
+      @Valid @RequestBody ChangePasswordRequest request) {
+    return ResponseEntity.ok(authService.changePassword(request));
+  }
+
+  @PostMapping("/forgot-password/verify-email")
+  public ResponseEntity<Map<String, String>> forgotPasswordVerifyEmail(
+      @Valid @RequestBody ForgotPasswordVerifyEmailRequest request) {
+    return ResponseEntity.ok(authService.forgotPasswordVerifyEmail(request));
   }
 }

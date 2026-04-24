@@ -62,7 +62,14 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/favicon.ico", "/error", "/static/**", "/assets/**")
                     .permitAll()
-                    .requestMatchers(AuthController.BASE_URL + "/**")
+                    .requestMatchers(
+                        org.springframework.http.HttpMethod.POST,
+                        AuthController.BASE_URL + "/change-password")
+                    .hasRole("ADMIN")
+                    .requestMatchers(
+                        AuthController.BASE_URL + "/login",
+                        AuthController.BASE_URL + "/refresh",
+                        AuthController.BASE_URL + "/forgot-password/verify-email")
                     .permitAll()
                     .requestMatchers("/uploads/**")
                     .permitAll()

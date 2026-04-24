@@ -31,7 +31,7 @@ public class UserDataLoading implements CommandLineRunner {
     UserRoleModel officerRole = createRoleIfNotExists("ROLE_OFFICER", "Officer user");
 
     createUserIfNotExists(
-        "admin", "admin@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
+        "admin", "jubpigaming@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
 
     createUserIfNotExists(
         "user", "user@gmail.com", "John Doe", "user123", userRole, UserStatus.ACTIVE);
