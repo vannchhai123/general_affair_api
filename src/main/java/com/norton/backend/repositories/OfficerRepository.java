@@ -44,4 +44,10 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
     WHERE o.user.id = :userId
 """)
   Optional<OfficerModel> findByUserIdWithPosition(Long userId);
+
+  long countByPosition_Department_Id(Long departmentId);
+
+  long countByPosition_Id(Long positionId);
+
+  long countByPositionIsNotNull();
 }

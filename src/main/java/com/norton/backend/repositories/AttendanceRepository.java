@@ -11,6 +11,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AttendanceRepository extends JpaRepository<AttendanceModel, Long> {
 
+  @Query(
+      """
+      SELECT COUNT(a)
+      FROM Attendance a
+      LEFT JOIN a.status s
+      WHERE UPPER(COALESCE(s.code, '')) = UPPER(:statusCode)
+      """)
+  long countByStatusCodeIgnoreCase(String statusCode);
+
   boolean existsByOfficerIdAndDate(Long officerId, java.time.LocalDate date);
 
   java.util.Optional<AttendanceModel> findByOfficerOfficerCodeAndDate(

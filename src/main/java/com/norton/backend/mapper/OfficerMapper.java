@@ -21,6 +21,10 @@ public interface OfficerMapper {
   @Mapping(source = "user.username", target = "username")
   @Mapping(source = "position.name", target = "position")
   @Mapping(source = "position.department.name", target = "department")
+  @Mapping(
+      target = "sex",
+      expression =
+          "java(model.getGender() != null ? model.getGender().name().toLowerCase(java.util.Locale.ROOT) : null)")
   OfficerResponseDto toResponse(OfficerModel model);
 
   default OfficerStatsResponse toStatsResponse(

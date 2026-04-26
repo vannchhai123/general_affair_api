@@ -20,6 +20,11 @@ public class OfficerResponseDto {
   private String lastName;
 
   private String email;
+  private String sex;
+
+  @JsonProperty("image_url")
+  private String imageUrl;
+
   private String position;
   private String department;
   private String phone;

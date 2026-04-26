@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.UUID;
 import lombok.*;
 
 @Entity
@@ -17,10 +18,17 @@ import lombok.*;
 @Table(name = "position")
 public class PositionModel extends BaseIdModel {
 
+  @Column(name = "uuid", unique = true, length = 36)
+  private String uuid;
+
   @NotBlank(message = "Position name is required")
   @Size(max = 100, message = "Position name must not exceed 100 characters")
   @Column(nullable = false, length = 100)
   private String name;
+
+  @Size(max = 50, message = "Position code must not exceed 50 characters")
+  @Column(name = "code", length = 50, unique = true)
+  private String code;
 
   @NotNull(message = "Department is required")
   @ManyToOne
@@ -35,4 +43,11 @@ public class PositionModel extends BaseIdModel {
 
   @OneToMany(mappedBy = "position", cascade = CascadeType.ALL)
   private List<OfficerModel> officers;
+
+  @PrePersist
+  public void generateUuid() {
+    if (this.uuid == null) {
+      this.uuid = UUID.randomUUID().toString();
+    }
+  }
 }

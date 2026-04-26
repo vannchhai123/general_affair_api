@@ -51,24 +51,40 @@ public class OfficerDataLoading implements CommandLineRunner {
             .orElseThrow(() -> new RuntimeException("User not found"));
 
     DepartmentModel hr =
-        DepartmentModel.builder().name("Human Resources").status(DepartmentStatus.ACTIVE).build();
+        DepartmentModel.builder()
+            .name("Human Resources")
+            .code("HR")
+            .manager("Admin User")
+            .description("Human resources department")
+            .status(DepartmentStatus.ACTIVE)
+            .build();
 
     DepartmentModel it =
-        DepartmentModel.builder().name("IT Department").status(DepartmentStatus.ACTIVE).build();
+        DepartmentModel.builder()
+            .name("IT Department")
+            .code("IT")
+            .manager("Admin User")
+            .description("Information technology department")
+            .status(DepartmentStatus.ACTIVE)
+            .build();
 
     departmentRepository.saveAll(List.of(hr, it));
 
     PositionModel hrManager =
         PositionModel.builder()
             .name("HR Manager")
+            .code("HR-MANAGER")
             .department(hr)
+            .description("Manage HR operations")
             .status(PositionStatus.ACTIVE)
             .build();
 
     PositionModel developer =
         PositionModel.builder()
             .name("Software Developer")
+            .code("SW-DEV")
             .department(it)
+            .description("Develop software features")
             .status(PositionStatus.ACTIVE)
             .build();
 
