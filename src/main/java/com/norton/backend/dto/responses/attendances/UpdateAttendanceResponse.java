@@ -1,8 +1,8 @@
 package com.norton.backend.dto.responses.attendances;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,31 +10,17 @@ import lombok.Data;
 @Builder
 public class UpdateAttendanceResponse {
   private Long id;
-
-  @JsonProperty("officer_id")
   private Long officerId;
-
+  private String imageUrl;
   private LocalDate date;
-
-  @JsonProperty("total_work_minutes")
-  private Integer totalWorkMinutes;
-
-  @JsonProperty("total_late_minutes")
-  private Integer totalLateMinutes;
-
+  private LocalDateTime checkIn;
+  private LocalDateTime checkOut;
+  private Integer totalWorkMin;
+  private Integer totalLateMin;
   private String status;
-
-  @JsonProperty("first_name")
   private String firstName;
-
-  @JsonProperty("last_name")
   private String lastName;
-
   private String department;
-
-  @JsonProperty("approved_by")
-  private Long approvedBy;
-
-  @JsonProperty("approved_at")
-  private Instant approvedAt;
+  private String officerCode;
+  private List<AttendanceSessionResponse> sessions;
 }

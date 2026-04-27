@@ -71,7 +71,8 @@ public class SecurityConfig {
                         AuthController.BASE_URL + "/refresh",
                         AuthController.BASE_URL + "/forgot-password/verify-email",
                         AuthController.BASE_URL + "/forgot-password/verify-otp",
-                        AuthController.BASE_URL + "/forgot-password/reset")
+                        AuthController.BASE_URL + "/forgot-password/reset",
+                        AuthController.BASE_URL + "/forgot-password/reset-password")
                     .permitAll()
                     .requestMatchers("/uploads/**")
                     .permitAll()

@@ -30,6 +30,16 @@ public class AttendanceStatusDataLoading implements CommandLineRunner {
                 .description("Officer attended but arrived late")
                 .build(),
             AttendanceStatusModel.builder()
+                .code("ABSENT")
+                .name("Absent")
+                .description("Officer did not attend")
+                .build(),
+            AttendanceStatusModel.builder()
+                .code("HALF_DAY")
+                .name("Half-day")
+                .description("Officer attended for half day")
+                .build(),
+            AttendanceStatusModel.builder()
                 .code("APPROVED")
                 .name("Approved")
                 .description("Attendance record has been approved")

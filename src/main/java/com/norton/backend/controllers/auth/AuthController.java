@@ -64,7 +64,7 @@ public class AuthController {
     return ResponseEntity.ok(authService.forgotPasswordVerifyOtp(request));
   }
 
-  @PostMapping("/forgot-password/reset")
+  @PostMapping({"/forgot-password/reset", "/forgot-password/reset-password"})
   public ResponseEntity<Map<String, String>> forgotPasswordReset(
       @Valid @RequestBody ForgotPasswordResetRequest request) {
     return ResponseEntity.ok(authService.forgotPasswordReset(request));
