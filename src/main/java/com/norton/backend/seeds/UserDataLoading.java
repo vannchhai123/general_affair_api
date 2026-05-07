@@ -26,15 +26,29 @@ public class UserDataLoading implements CommandLineRunner {
   @Override
   public void run(String... args) {
 
+    UserRoleModel superAdminRole = createRoleIfNotExists("ROLE_SUPER_ADMIN", "Super Administrator");
     UserRoleModel adminRole = createRoleIfNotExists("ROLE_ADMIN", "System Administrator");
-    UserRoleModel userRole = createRoleIfNotExists("ROLE_USER", "Default User");
+    UserRoleModel managerRole = createRoleIfNotExists("ROLE_MANAGER", "Manager");
     UserRoleModel officerRole = createRoleIfNotExists("ROLE_OFFICER", "Officer user");
+
+    createUserIfNotExists(
+        "superadmin",
+        "superadmin@gmail.com",
+        "Super Admin",
+        "superadmin123",
+        superAdminRole,
+        UserStatus.ACTIVE);
 
     createUserIfNotExists(
         "admin", "jubpigaming@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
 
     createUserIfNotExists(
-        "user", "user@gmail.com", "John Doe", "user123", userRole, UserStatus.ACTIVE);
+        "manager",
+        "manager@gmail.com",
+        "Manager User",
+        "manager123",
+        managerRole,
+        UserStatus.ACTIVE);
 
     createUserIfNotExists(
         "Kelly", "Chhenkelly@gmail.com", "ឈិន ខិលី", "kelly@123", adminRole, UserStatus.ACTIVE);
@@ -48,7 +62,7 @@ public class UserDataLoading implements CommandLineRunner {
         UserStatus.ACTIVE);
 
     createUserIfNotExists(
-        "banned", "banned@gmail.com", "Banned User", "banned123", userRole, UserStatus.BANNED);
+        "banned", "banned@gmail.com", "Banned User", "banned123", officerRole, UserStatus.BANNED);
 
     System.out.println("✅ Seed data loaded successfully!");
   }

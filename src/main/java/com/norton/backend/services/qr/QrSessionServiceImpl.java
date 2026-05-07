@@ -22,6 +22,7 @@ import com.norton.backend.repositories.QrSessionCheckInRepository;
 import com.norton.backend.repositories.QrSessionLogRepository;
 import com.norton.backend.repositories.QrSessionRepository;
 import com.norton.backend.security.JwtService;
+import com.norton.backend.services.shift.ShiftResolutionService;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -48,6 +49,7 @@ public class QrSessionServiceImpl implements QrSessionService {
   private final QrSessionLogRepository qrSessionLogRepository;
   private final JwtService jwtService;
   private final QrSessionLifecycleService qrSessionLifecycleService;
+  private final ShiftResolutionService shiftResolutionService;
 
   @Override
   @Transactional
@@ -509,11 +511,16 @@ public class QrSessionServiceImpl implements QrSessionService {
     if (session.getShiftType() == null) {
       return "No active QR session";
     }
-    return switch (session.getShiftType().toLowerCase(Locale.ROOT)) {
-      case "morning" -> "Morning session active";
-      case "afternoon" -> "Afternoon session active";
-      default -> "QR session active";
-    };
+    return shiftResolutionService
+        .findShiftByType(session.getShiftType())
+        .map(shift -> shiftResolutionService.shiftLabel(shift) + " session active")
+        .orElseGet(
+            () ->
+                switch (session.getShiftType().toLowerCase(Locale.ROOT)) {
+                  case "morning" -> "Morning session active";
+                  case "afternoon" -> "Afternoon session active";
+                  default -> "QR session active";
+                });
   }
 
   private String resolveSessionStateMessage(QrSessionModel session, LocalDateTime now) {

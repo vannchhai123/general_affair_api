@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -29,6 +30,8 @@ public class ShiftController {
   private final ShiftService shiftService;
 
   @GetMapping
+  @PreAuthorize(
+      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_VIEW)")
   public ResponseEntity<PageResponse<ShiftResponseDto>> listShifts(
       @RequestParam(required = false) String search,
       @RequestParam(required = false) String status,
@@ -38,29 +41,39 @@ public class ShiftController {
   }
 
   @PostMapping
+  @PreAuthorize(
+      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_CREATE)")
   public ResponseEntity<ShiftResponseDto> createShift(
       @Valid @RequestBody ShiftUpsertRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(shiftService.createShift(request));
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize(
+      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_VIEW)")
   public ResponseEntity<ShiftResponseDto> getShiftById(@PathVariable Long id) {
     return ResponseEntity.ok(shiftService.getShiftById(id));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(
+      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_UPDATE)")
   public ResponseEntity<ShiftResponseDto> updateShift(
       @PathVariable Long id, @Valid @RequestBody ShiftUpsertRequest request) {
     return ResponseEntity.ok(shiftService.updateShift(id, request));
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(
+      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_UPDATE)")
   public ResponseEntity<ShiftResponseDto> patchStatus(
       @PathVariable Long id, @Valid @RequestBody ShiftStatusPatchRequest request) {
     return ResponseEntity.ok(shiftService.updateShiftStatus(id, request.getStatus()));
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize(
+      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_DELETE)")
   public ResponseEntity<Void> deleteShift(@PathVariable Long id) {
     shiftService.deleteShift(id);
     return ResponseEntity.noContent().build();

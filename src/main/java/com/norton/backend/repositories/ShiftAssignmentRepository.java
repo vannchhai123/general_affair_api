@@ -1,6 +1,7 @@
 package com.norton.backend.repositories;
 
 import com.norton.backend.enums.ShiftAssignmentScope;
+import com.norton.backend.enums.ShiftDayOfWeek;
 import com.norton.backend.models.ShiftAssignmentModel;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,6 +18,23 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
       ShiftAssignmentScope scope, Long scopeId);
 
   List<ShiftAssignmentModel> findAllByOrderByScopeAscScopeIdAscDayOfWeekAscIdAsc();
+
+  @Query(
+      """
+      select sa
+      from ShiftAssignmentModel sa
+      left join fetch sa.shift
+      where sa.scope in :scopes
+        and sa.scopeId in :scopeIds
+        and sa.dayOfWeek = :dayOfWeek
+        and sa.effectiveFrom <= :date
+        and (sa.effectiveTo is null or sa.effectiveTo >= :date)
+      """)
+  List<ShiftAssignmentModel> findEffectiveAssignments(
+      @Param("scopes") List<ShiftAssignmentScope> scopes,
+      @Param("scopeIds") List<Long> scopeIds,
+      @Param("dayOfWeek") ShiftDayOfWeek dayOfWeek,
+      @Param("date") LocalDate date);
 
   @Query(
       """

@@ -17,9 +17,9 @@ public class UserRoleDataLoading implements CommandLineRunner {
   @Override
   public void run(String... args) {
 
-    loadRole("ROLE_ADMIN", "System Administrator with full access");
-    loadRole("ROLE_MANAGER", "System Administrator with full access");
-    loadRole("ROLE_USER", "Default user role");
+    loadRole("ROLE_SUPER_ADMIN", "Super Administrator with full access");
+    loadRole("ROLE_ADMIN", "Administrator for daily operations");
+    loadRole("ROLE_MANAGER", "Manager role");
     loadRole("ROLE_OFFICER", "Officer role");
   }
 

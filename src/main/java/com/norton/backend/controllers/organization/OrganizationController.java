@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,10 +31,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrganizationController {
 
   public static final String BASE_URL = "/api/v1/organizations";
-  //  public static final String LEGACY_BASE_URL = "/api/v1/organizatioins";
   private final OrganizationService organizationService;
 
   @GetMapping("/department")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_VIEW)")
   public ResponseEntity<PageResponse<DepartmentResponseDto>> listDepartments(
       @RequestParam(required = false) String search,
       @RequestParam(required = false) String status,
@@ -44,6 +45,7 @@ public class OrganizationController {
   }
 
   @PostMapping("/department")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_CREATE)")
   public ResponseEntity<DepartmentResponseDto> createDepartment(
       @Valid @RequestBody DepartmentUpsertRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
@@ -51,23 +53,27 @@ public class OrganizationController {
   }
 
   @GetMapping("/department/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_VIEW)")
   public ResponseEntity<DepartmentResponseDto> getDepartment(@PathVariable Long id) {
     return ResponseEntity.ok(organizationService.getDepartmentById(id));
   }
 
   @PutMapping("/department/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_UPDATE)")
   public ResponseEntity<DepartmentResponseDto> updateDepartment(
       @PathVariable Long id, @Valid @RequestBody DepartmentUpsertRequest request) {
     return ResponseEntity.ok(organizationService.updateDepartment(id, request));
   }
 
   @DeleteMapping("/department/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_DELETE)")
   public ResponseEntity<Map<String, String>> deleteDepartment(@PathVariable Long id) {
     organizationService.deleteDepartment(id);
     return ResponseEntity.ok(Map.of("message", "Department deleted successfully"));
   }
 
   @GetMapping("/position")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_VIEW)")
   public ResponseEntity<PageResponse<PositionResponseDto>> listPositions(
       @RequestParam(required = false) String search,
       @RequestParam(required = false, name = "department_id") Long departmentId,
@@ -80,6 +86,7 @@ public class OrganizationController {
   }
 
   @PostMapping("/position")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_CREATE)")
   public ResponseEntity<PositionResponseDto> createPosition(
       @Valid @RequestBody PositionUpsertRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
@@ -87,23 +94,27 @@ public class OrganizationController {
   }
 
   @GetMapping("/position/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_VIEW)")
   public ResponseEntity<PositionResponseDto> getPosition(@PathVariable Long id) {
     return ResponseEntity.ok(organizationService.getPositionById(id));
   }
 
   @PutMapping("/position/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_UPDATE)")
   public ResponseEntity<PositionResponseDto> updatePosition(
       @PathVariable Long id, @Valid @RequestBody PositionUpsertRequest request) {
     return ResponseEntity.ok(organizationService.updatePosition(id, request));
   }
 
   @DeleteMapping("/position/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_DELETE)")
   public ResponseEntity<Map<String, String>> deletePosition(@PathVariable Long id) {
     organizationService.deletePosition(id);
     return ResponseEntity.ok(Map.of("message", "Position deleted successfully"));
   }
 
   @GetMapping("/organization/summary")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ORGANIZATION_VIEW)")
   public ResponseEntity<OrganizationSummaryResponse> getOrganizationSummary() {
     return ResponseEntity.ok(organizationService.getSummary());
   }

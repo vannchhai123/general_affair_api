@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -32,6 +33,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @Slf4j
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -65,7 +67,7 @@ public class SecurityConfig {
                     .requestMatchers(
                         org.springframework.http.HttpMethod.POST,
                         AuthController.BASE_URL + "/change-password")
-                    .hasRole("ADMIN")
+                    .hasAnyRole("SUPER_ADMIN", "ADMIN", "MANAGER", "OFFICER")
                     .requestMatchers(
                         AuthController.BASE_URL + "/login",
                         AuthController.BASE_URL + "/refresh",
@@ -77,10 +79,6 @@ public class SecurityConfig {
                     .requestMatchers("/uploads/**")
                     .permitAll()
                     .requestMatchers("/api/v1/session/*/qr")
-                    .permitAll()
-                    .requestMatchers("/api/v1/attendance/scan")
-                    .permitAll()
-                    .requestMatchers("/api/v1/officer/*/upload-image")
                     .permitAll()
                     .requestMatchers("/")
                     .permitAll()

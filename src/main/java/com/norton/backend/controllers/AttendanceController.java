@@ -23,6 +23,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +44,7 @@ public class AttendanceController {
   private final AttendanceScanService attendanceScanService;
 
   @GetMapping
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<PageResponse<AttendanceResponse>> getAllAttendance(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
@@ -56,18 +58,21 @@ public class AttendanceController {
   }
 
   @GetMapping("/status")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<AttendanceStatusResponse> getMyAttendanceStatus(
       @RequestParam(required = false) Long officerId) {
     return ResponseEntity.ok(attendanceService.getMyAttendanceStatus(officerId));
   }
 
   @GetMapping("/summary")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<AttendanceSummaryResponse> getMyAttendanceSummary(
       @RequestParam(required = false) Long officerId) {
     return ResponseEntity.ok(attendanceService.getMyAttendanceSummary(officerId));
   }
 
   @PostMapping
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_CREATE)")
   public ResponseEntity<CreateAttendanceResponse> createAttendance(
       @Valid @RequestBody CreateAttendanceRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
@@ -75,12 +80,14 @@ public class AttendanceController {
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_UPDATE)")
   public ResponseEntity<UpdateAttendanceResponse> updateAttendanceStatus(
       @PathVariable Long id, @Valid @RequestBody UpdateAttendanceStatusRequest request) {
     return ResponseEntity.ok(attendanceService.updateAttendanceStatus(id, request));
   }
 
   @GetMapping("/export")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_EXPORT)")
   public ResponseEntity<byte[]> exportAttendance(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) String department,
@@ -103,12 +110,14 @@ public class AttendanceController {
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_IMPORT)")
   public ResponseEntity<AttendanceImportResponse> importAttendance(
       @RequestParam("file") MultipartFile file) {
     return ResponseEntity.ok(attendanceService.importAttendance(file));
   }
 
   @PostMapping("/scan")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_SCAN)")
   public ResponseEntity<AttendanceScanSuccessResponse> submitAttendanceScan(
       @Valid @RequestBody AttendanceScanRequest request) {
     return ResponseEntity.ok(attendanceScanService.submitScan(request));

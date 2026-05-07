@@ -117,10 +117,6 @@ public class AuthServiceImpl implements AuthService {
             .findByUsername(SecurityContextHolder.getContext().getAuthentication().getName())
             .orElseThrow(() -> new ResourceNotFoundException("User", "username", "current user"));
 
-    if (!"ROLE_ADMIN".equals(currentUser.getRole().getRoleName())) {
-      throw new BadRequestException("Only admin users can change password");
-    }
-
     if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPasswordHash())) {
       throw new BadRequestException("Current password is incorrect");
     }

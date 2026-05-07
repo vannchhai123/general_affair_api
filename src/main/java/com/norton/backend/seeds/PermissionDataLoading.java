@@ -54,9 +54,48 @@ public class PermissionDataLoading implements CommandLineRunner {
         createPermission(
             "OFFICER_VIEW_PERMISSION", "View officer permissions", "OfficerPermission");
 
-    createOrUpdateRole(
-        "ROLE_ADMIN",
-        "System Administrator",
+    PermissionModel attendanceView =
+        createPermission("ATTENDANCE_VIEW", "View attendance", "Attendance");
+    PermissionModel attendanceCreate =
+        createPermission("ATTENDANCE_CREATE", "Create attendance", "Attendance");
+    PermissionModel attendanceUpdate =
+        createPermission("ATTENDANCE_UPDATE", "Update attendance", "Attendance");
+    PermissionModel attendanceExport =
+        createPermission("ATTENDANCE_EXPORT", "Export attendance", "Attendance");
+    PermissionModel attendanceImport =
+        createPermission("ATTENDANCE_IMPORT", "Import attendance", "Attendance");
+    PermissionModel attendanceScan =
+        createPermission("ATTENDANCE_SCAN", "Submit attendance scan", "Attendance");
+
+    PermissionModel shiftView = createPermission("SHIFT_VIEW", "View shifts", "Shift");
+    PermissionModel shiftCreate = createPermission("SHIFT_CREATE", "Create shifts", "Shift");
+    PermissionModel shiftUpdate = createPermission("SHIFT_UPDATE", "Update shifts", "Shift");
+    PermissionModel shiftDelete = createPermission("SHIFT_DELETE", "Delete shifts", "Shift");
+    PermissionModel shiftAssign =
+        createPermission("SHIFT_ASSIGN", "Assign shift templates", "ShiftAssignment");
+
+    PermissionModel organizationView =
+        createPermission("ORGANIZATION_VIEW", "View departments and positions", "Organization");
+    PermissionModel organizationCreate =
+        createPermission("ORGANIZATION_CREATE", "Create departments and positions", "Organization");
+    PermissionModel organizationUpdate =
+        createPermission("ORGANIZATION_UPDATE", "Update departments and positions", "Organization");
+    PermissionModel organizationDelete =
+        createPermission("ORGANIZATION_DELETE", "Delete departments and positions", "Organization");
+
+    PermissionModel qrView = createPermission("QR_SESSION_VIEW", "View QR sessions", "QrSession");
+    PermissionModel qrCreate =
+        createPermission("QR_SESSION_CREATE", "Create QR sessions", "QrSession");
+    PermissionModel qrUpdate =
+        createPermission("QR_SESSION_UPDATE", "Update QR sessions", "QrSession");
+    PermissionModel qrEnd = createPermission("QR_SESSION_END", "End QR sessions", "QrSession");
+    PermissionModel qrCheckin =
+        createPermission("QR_SESSION_CHECKIN", "Create QR check-ins", "QrSession");
+
+    PermissionModel dashboardView =
+        createPermission("DASHBOARD_VIEW", "View dashboard", "Dashboard");
+
+    Set<PermissionModel> superAdminPermissions =
         Set.of(
             permissionView,
             permissionCreate,
@@ -71,14 +110,76 @@ public class PermissionDataLoading implements CommandLineRunner {
             officerDelete,
             officerAssignPermission,
             officerRemovePermission,
-            officerViewPermission));
+            officerViewPermission,
+            attendanceView,
+            attendanceCreate,
+            attendanceUpdate,
+            attendanceExport,
+            attendanceImport,
+            attendanceScan,
+            shiftView,
+            shiftCreate,
+            shiftUpdate,
+            shiftDelete,
+            shiftAssign,
+            organizationView,
+            organizationCreate,
+            organizationUpdate,
+            organizationDelete,
+            qrView,
+            qrCreate,
+            qrUpdate,
+            qrEnd,
+            qrCheckin,
+            dashboardView);
+
+    createOrUpdateRole(
+        "ROLE_SUPER_ADMIN", "Super Administrator with full system control", superAdminPermissions);
+
+    createOrUpdateRole(
+        "ROLE_ADMIN",
+        "Administrator for daily operations",
+        Set.of(
+            officerView,
+            officerCreate,
+            officerUpdate,
+            officerDelete,
+            officerViewPermission,
+            attendanceView,
+            attendanceCreate,
+            attendanceUpdate,
+            attendanceExport,
+            attendanceImport,
+            attendanceScan,
+            organizationView,
+            organizationCreate,
+            organizationUpdate,
+            organizationDelete,
+            qrView,
+            qrCreate,
+            qrUpdate,
+            qrEnd,
+            qrCheckin,
+            dashboardView));
 
     createOrUpdateRole(
         "ROLE_MANAGER",
-        "Manager Role",
-        Set.of(officerView, officerCreate, officerUpdate, officerViewPermission));
+        "Manager with approval and reporting access",
+        Set.of(
+            officerView,
+            attendanceView,
+            attendanceUpdate,
+            attendanceExport,
+            attendanceScan,
+            organizationView,
+            qrView,
+            qrCheckin,
+            dashboardView));
 
-    createOrUpdateRole("ROLE_OFFICER", "Officer Role", Set.of(officerView, officerViewPermission));
+    createOrUpdateRole(
+        "ROLE_OFFICER",
+        "Officer with self-service access",
+        Set.of(attendanceView, attendanceScan, qrView, qrCheckin, dashboardView));
   }
 
   private PermissionModel createPermission(String name, String description, String category) {

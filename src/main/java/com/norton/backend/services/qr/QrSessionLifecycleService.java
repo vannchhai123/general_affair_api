@@ -3,12 +3,11 @@ package com.norton.backend.services.qr;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.QrSessionModel;
 import com.norton.backend.repositories.QrSessionRepository;
-import java.time.LocalDate;
+import com.norton.backend.services.shift.ShiftResolutionService;
+import com.norton.backend.services.shift.ShiftResolutionService.ShiftWindow;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,12 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class QrSessionLifecycleService {
-  private static final LocalTime MORNING_START = LocalTime.of(6, 0);
-  private static final LocalTime MORNING_END = LocalTime.of(12, 30);
-  private static final LocalTime AFTERNOON_START = LocalTime.of(13, 0);
-  private static final LocalTime AFTERNOON_END = LocalTime.of(17, 30);
-
   private final QrSessionRepository qrSessionRepository;
+  private final ShiftResolutionService shiftResolutionService;
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String sessionTimezone;
@@ -37,19 +32,7 @@ public class QrSessionLifecycleService {
   }
 
   public ShiftWindow getCurrentShiftWindow(LocalDateTime now) {
-    LocalTime time = now.toLocalTime();
-
-    if (!time.isBefore(MORNING_START) && !time.isAfter(MORNING_END)) {
-      return new ShiftWindow(
-          "morning", "Morning Shift", now.toLocalDate(), MORNING_START, MORNING_END);
-    }
-
-    if (!time.isBefore(AFTERNOON_START) && !time.isAfter(AFTERNOON_END)) {
-      return new ShiftWindow(
-          "afternoon", "Afternoon Shift", now.toLocalDate(), AFTERNOON_START, AFTERNOON_END);
-    }
-
-    return null;
+    return shiftResolutionService.resolveActiveShift(now).orElse(null);
   }
 
   @Transactional
@@ -81,7 +64,8 @@ public class QrSessionLifecycleService {
 
     QrSessionModel session =
         qrSessionRepository
-            .findTopBySessionDateAndShiftTypeOrderByIdDesc(window.date(), window.shiftType())
+            .findTopBySessionDateAndShiftTypeOrderByIdDesc(
+                window.shiftDate(), shiftResolutionService.shiftType(window.shift()))
             .orElse(null);
 
     if (session == null) {
@@ -90,16 +74,18 @@ public class QrSessionLifecycleService {
               .token(generateSessionToken())
               .status("active")
               .location(location)
-              .validUntil(window.endsAt())
+              .validUntil(window.checkOutClosesAt())
               .qrRefreshInterval(
-                  (int) java.time.Duration.between(window.startsAt(), window.endsAt()).getSeconds())
+                  (int)
+                      java.time.Duration.between(window.checkInOpensAt(), window.checkOutClosesAt())
+                          .getSeconds())
               .createdBy(createdBy)
-              .sessionDate(window.date())
-              .shiftType(window.shiftType())
-              .startsAt(window.startsAt())
-              .endsAt(window.endsAt())
+              .sessionDate(window.shiftDate())
+              .shiftType(shiftResolutionService.shiftType(window.shift()))
+              .startsAt(window.checkInOpensAt())
+              .endsAt(window.checkOutClosesAt())
               .systemGenerated(true)
-              .startedAt(window.startsAt())
+              .startedAt(window.checkInOpensAt())
               .build();
       deactivateOtherActiveSessions(session, now);
       return qrSessionRepository.save(session);
@@ -109,12 +95,12 @@ public class QrSessionLifecycleService {
       session.setStatus("active");
       session.setStoppedAt(null);
     }
-    session.setSessionDate(window.date());
-    session.setShiftType(window.shiftType());
-    session.setStartsAt(window.startsAt());
-    session.setEndsAt(window.endsAt());
-    session.setStartedAt(window.startsAt());
-    session.setValidUntil(window.endsAt());
+    session.setSessionDate(window.shiftDate());
+    session.setShiftType(shiftResolutionService.shiftType(window.shift()));
+    session.setStartsAt(window.checkInOpensAt());
+    session.setEndsAt(window.checkOutClosesAt());
+    session.setStartedAt(window.checkInOpensAt());
+    session.setValidUntil(window.checkOutClosesAt());
     if (session.getSystemGenerated() == null) {
       session.setSystemGenerated(true);
     }
@@ -151,11 +137,7 @@ public class QrSessionLifecycleService {
     if (window == null) {
       return "No active QR session";
     }
-    return switch (window.shiftType().toLowerCase(Locale.ROOT)) {
-      case "morning" -> "Morning session active";
-      case "afternoon" -> "Afternoon session active";
-      default -> "No active QR session";
-    };
+    return shiftResolutionService.shiftLabel(window.shift()) + " session active";
   }
 
   private void deactivateOtherActiveSessions(QrSessionModel keepSession, LocalDateTime now) {
@@ -175,16 +157,5 @@ public class QrSessionLifecycleService {
 
   private String generateSessionToken() {
     return "sess_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-  }
-
-  public record ShiftWindow(
-      String shiftType, String shiftLabel, LocalDate date, LocalTime startTime, LocalTime endTime) {
-    public LocalDateTime startsAt() {
-      return LocalDateTime.of(date, startTime);
-    }
-
-    public LocalDateTime endsAt() {
-      return LocalDateTime.of(date, endTime);
-    }
   }
 }

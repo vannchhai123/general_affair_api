@@ -9,6 +9,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +27,7 @@ public class OfficerImageController {
   private final FileStorageService fileStorageService;
 
   @GetMapping("/{id}/image")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
   public ResponseEntity<Map<String, String>> getOfficerImage(@PathVariable Long id) {
     OfficerModel officer =
         officerRepository
@@ -42,6 +44,7 @@ public class OfficerImageController {
   }
 
   @PostMapping(value = "/{id}/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_UPDATE)")
   public ResponseEntity<Map<String, String>> uploadImage(
       @PathVariable Long id, @RequestParam("file") MultipartFile file) {
 

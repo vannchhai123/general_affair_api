@@ -18,9 +18,10 @@ import com.norton.backend.repositories.AttendanceStatusRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.QrSessionCheckInRepository;
 import com.norton.backend.repositories.QrSessionRepository;
-import com.norton.backend.repositories.ShiftRepository;
 import com.norton.backend.security.JwtService;
 import com.norton.backend.services.qr.QrSessionLifecycleService;
+import com.norton.backend.services.shift.ShiftResolutionService;
+import com.norton.backend.services.shift.ShiftResolutionService.ShiftWindow;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -32,6 +33,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,8 +48,6 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   private static final String ACTION_CHECK_OUT = "CHECK_OUT";
   private static final String ACTION_ALREADY_COMPLETED = "ALREADY_COMPLETED";
   private static final String ACTION_INVALID_TIME = "INVALID_TIME";
-  private static final List<String> MORNING_SHIFT_NAMES = List.of("វេនព្រឹក", "Morning Shift");
-  private static final List<String> AFTERNOON_SHIFT_NAMES = List.of("វេនរសៀល", "Afternoon Shift");
 
   private final QrSessionRepository qrSessionRepository;
   private final QrSessionCheckInRepository qrSessionCheckInRepository;
@@ -55,9 +55,9 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   private final AttendanceRepository attendanceRepository;
   private final AttendanceSessionRepository attendanceSessionRepository;
   private final AttendanceStatusRepository attendanceStatusRepository;
-  private final ShiftRepository shiftRepository;
   private final JwtService jwtService;
   private final QrSessionLifecycleService qrSessionLifecycleService;
+  private final ShiftResolutionService shiftResolutionService;
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
@@ -92,8 +92,9 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
     ZoneId scanZoneId = resolveScanZoneId();
     Instant currentTimestamp = Instant.now();
     LocalDateTime currentDateTime = LocalDateTime.ofInstant(currentTimestamp, scanZoneId);
-    ShiftDecision shiftDecision = resolveShift(currentDateTime.toLocalTime());
-    if (shiftDecision == null) {
+    Optional<ShiftWindow> shiftWindow =
+        shiftResolutionService.resolveOfficerShift(officer, currentDateTime);
+    if (shiftWindow.isEmpty()) {
       saveScanAudit(
           session,
           officer,
@@ -112,18 +113,39 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
           null);
     }
 
-    AttendanceModel attendance = getOrCreateAttendance(officer, currentDateTime.toLocalDate());
+    ShiftWindow window = shiftWindow.get();
+    ShiftModel shift = window.shift();
+    String shiftLabel = shiftResolutionService.shiftLabel(shift);
+    AttendanceModel attendance = getOrCreateAttendance(officer, window.shiftDate());
     AttendanceSessionModel existingSession =
         attendanceSessionRepository
-            .findByAttendanceIdAndShiftId(attendance.getId(), shiftDecision.shift().getId())
+            .findByAttendanceIdAndShiftId(attendance.getId(), shift.getId())
             .orElse(null);
 
     String action;
     if (existingSession == null) {
+      if (!shiftResolutionService.isCheckInAllowed(currentDateTime, window)) {
+        saveScanAudit(
+            session,
+            officer,
+            request.getDeviceId(),
+            currentDateTime,
+            ACTION_INVALID_TIME,
+            "invalid-time");
+        return buildResponse(
+            false,
+            "Check-in window closed for this shift",
+            attendance,
+            session,
+            officer,
+            currentTimestamp,
+            ACTION_INVALID_TIME,
+            shiftLabel);
+      }
       action = ACTION_CHECK_IN;
-      createShiftSession(attendance, shiftDecision.shift(), officer, currentDateTime.toLocalTime());
+      createShiftSession(attendance, shift, officer, currentDateTime);
     } else if (existingSession.getCheckOut() == null) {
-      if (!currentDateTime.toLocalTime().isAfter(existingSession.getCheckIn())) {
+      if (!currentDateTime.isAfter(sessionCheckInDateTime(attendance, existingSession))) {
         saveScanAudit(
             session,
             officer,
@@ -139,7 +161,7 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
             officer,
             currentTimestamp,
             ACTION_INVALID_TIME,
-            shiftDecision.label());
+            shiftLabel);
       }
       action = ACTION_CHECK_OUT;
       existingSession.setCheckOut(currentDateTime.toLocalTime());
@@ -167,14 +189,7 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
         };
 
     return buildResponse(
-        true,
-        message,
-        updatedAttendance,
-        session,
-        officer,
-        currentTimestamp,
-        action,
-        shiftDecision.label());
+        true, message, updatedAttendance, session, officer, currentTimestamp, action, shiftLabel);
   }
 
   private Claims validateQrToken(String token) {
@@ -213,40 +228,6 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
     }
   }
 
-  private ShiftDecision resolveShift(LocalTime time) {
-    ShiftModel morningShift = resolveShiftByNames(MORNING_SHIFT_NAMES);
-    ShiftModel afternoonShift = resolveShiftByNames(AFTERNOON_SHIFT_NAMES);
-
-    if (isWithinShift(time, morningShift)) {
-      return new ShiftDecision(morningShift, "MORNING");
-    }
-    if (isWithinShift(time, afternoonShift)) {
-      return new ShiftDecision(afternoonShift, "AFTERNOON");
-    }
-    return null;
-  }
-
-  private ShiftModel resolveShiftByNames(List<String> shiftNames) {
-    for (String shiftName : shiftNames) {
-      ShiftModel shift = shiftRepository.findByName(shiftName).orElse(null);
-      if (shift != null) {
-        return shift;
-      }
-    }
-
-    throw new AttendanceScanException(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        "Shift configuration missing. Expected one of: " + String.join(", ", shiftNames),
-        "SHIFT_CONFIG_MISSING");
-  }
-
-  private boolean isWithinShift(LocalTime time, ShiftModel shift) {
-    return shift.getStartTime() != null
-        && shift.getEndTime() != null
-        && !time.isBefore(shift.getStartTime())
-        && !time.isAfter(shift.getEndTime());
-  }
-
   private AttendanceModel getOrCreateAttendance(OfficerModel officer, LocalDate date) {
     return attendanceRepository
         .findByOfficerOfficerCodeAndDate(officer.getOfficerCode(), date)
@@ -264,16 +245,21 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
   }
 
   private void createShiftSession(
-      AttendanceModel attendance, ShiftModel shift, OfficerModel officer, LocalTime checkInTime) {
+      AttendanceModel attendance,
+      ShiftModel shift,
+      OfficerModel officer,
+      LocalDateTime checkInDateTime) {
     String status =
-        calculateLateMinutes(checkInTime, shift.getStartTime()) > 0 ? "LATE" : "PRESENT";
+        shiftResolutionService.calculateLateMinutes(checkInDateTime, shift) > 0
+            ? "LATE"
+            : "PRESENT";
 
     attendanceSessionRepository.save(
         AttendanceSessionModel.builder()
             .uuid(UUID.randomUUID().toString())
             .attendance(attendance)
             .shift(shift)
-            .checkIn(checkInTime)
+            .checkIn(checkInDateTime.toLocalTime())
             .checkOut(null)
             .status(status)
             .createdBy(officer)
@@ -297,22 +283,49 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
             .filter(java.util.Objects::nonNull)
             .max(Comparator.naturalOrder())
             .orElse(null);
+    LocalDateTime earliestCheckInDateTime =
+        sessions.stream()
+            .filter(s -> s.getCheckIn() != null)
+            .map(s -> sessionCheckInDateTime(attendance, s))
+            .min(Comparator.naturalOrder())
+            .orElse(null);
+    LocalDateTime latestCheckOutDateTime =
+        sessions.stream()
+            .filter(s -> s.getCheckOut() != null)
+            .map(s -> sessionCheckOutDateTime(attendance, s))
+            .max(Comparator.naturalOrder())
+            .orElse(null);
 
     int totalWorkMinutes =
         sessions.stream()
             .filter(s -> s.getCheckIn() != null && s.getCheckOut() != null)
-            .filter(s -> s.getCheckOut().isAfter(s.getCheckIn()))
-            .mapToInt(s -> (int) Duration.between(s.getCheckIn(), s.getCheckOut()).toMinutes())
+            .mapToInt(
+                s ->
+                    (int)
+                        Duration.between(
+                                sessionCheckInDateTime(attendance, s),
+                                sessionCheckOutDateTime(attendance, s))
+                            .toMinutes())
+            .filter(minutes -> minutes > 0)
             .sum();
 
     int totalLateMinutes =
         sessions.stream()
             .filter(s -> s.getCheckIn() != null && s.getShift() != null)
-            .mapToInt(s -> calculateLateMinutes(s.getCheckIn(), s.getShift().getStartTime()))
+            .mapToInt(
+                s ->
+                    shiftResolutionService.calculateLateMinutes(
+                        sessionCheckInDateTime(attendance, s), s.getShift()))
             .sum();
 
-    attendance.setCheckIn(earliestCheckIn != null ? LocalDateTime.of(date, earliestCheckIn) : null);
-    attendance.setCheckOut(latestCheckOut != null ? LocalDateTime.of(date, latestCheckOut) : null);
+    attendance.setCheckIn(
+        earliestCheckInDateTime != null
+            ? earliestCheckInDateTime
+            : earliestCheckIn != null ? LocalDateTime.of(date, earliestCheckIn) : null);
+    attendance.setCheckOut(
+        latestCheckOutDateTime != null
+            ? latestCheckOutDateTime
+            : latestCheckOut != null ? LocalDateTime.of(date, latestCheckOut) : null);
     attendance.setTotalWorkMin(totalWorkMinutes);
     attendance.setTotalLateMin(totalLateMinutes);
     attendance.setStatus(resolveAttendanceStatus(totalLateMinutes > 0));
@@ -390,11 +403,22 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
                     "ATTENDANCE_STATUS_MISSING"));
   }
 
-  private int calculateLateMinutes(LocalTime checkInTime, LocalTime shiftStartTime) {
-    if (shiftStartTime == null || !checkInTime.isAfter(shiftStartTime)) {
-      return 0;
+  private LocalDateTime sessionCheckInDateTime(
+      AttendanceModel attendance, AttendanceSessionModel session) {
+    return LocalDateTime.of(attendance.getDate(), session.getCheckIn());
+  }
+
+  private LocalDateTime sessionCheckOutDateTime(
+      AttendanceModel attendance, AttendanceSessionModel session) {
+    LocalDate date = attendance.getDate();
+    if (session.getShift() != null
+        && Boolean.TRUE.equals(session.getShift().getCrossMidnight())
+        && session.getCheckOut() != null
+        && session.getCheckIn() != null
+        && !session.getCheckOut().isAfter(session.getCheckIn())) {
+      date = date.plusDays(1);
     }
-    return (int) Duration.between(shiftStartTime, checkInTime).toMinutes();
+    return LocalDateTime.of(date, session.getCheckOut());
   }
 
   private ZoneId resolveScanZoneId() {
@@ -407,6 +431,4 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
           "INVALID_SCAN_TIMEZONE");
     }
   }
-
-  private record ShiftDecision(ShiftModel shift, String label) {}
 }

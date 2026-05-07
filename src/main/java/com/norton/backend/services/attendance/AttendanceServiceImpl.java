@@ -28,7 +28,8 @@ import com.norton.backend.repositories.AttendanceRepository;
 import com.norton.backend.repositories.AttendanceSessionRepository;
 import com.norton.backend.repositories.AttendanceStatusRepository;
 import com.norton.backend.repositories.OfficerRepository;
-import com.norton.backend.repositories.ShiftRepository;
+import com.norton.backend.services.shift.ShiftResolutionService;
+import com.norton.backend.services.shift.ShiftResolutionService.ShiftWindow;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -86,7 +88,7 @@ public class AttendanceServiceImpl implements AttendanceService {
   private final AttendanceSessionRepository attendanceSessionRepository;
   private final OfficerRepository officerRepository;
   private final AttendanceStatusRepository attendanceStatusRepository;
-  private final ShiftRepository shiftRepository;
+  private final ShiftResolutionService shiftResolutionService;
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
@@ -128,13 +130,20 @@ public class AttendanceServiceImpl implements AttendanceService {
   public AttendanceStatusResponse getMyAttendanceStatus(Long officerId) {
     Long targetOfficerId = resolveTargetOfficerId(officerId);
     ZoneId zoneId = resolveScanZoneId();
-    LocalDate currentDate = LocalDate.now(zoneId);
-    LocalTime currentTime = LocalTime.now(zoneId);
+    LocalDateTime currentDateTime = LocalDateTime.now(zoneId);
+    LocalDate currentDate = currentDateTime.toLocalDate();
 
+    OfficerModel targetOfficer =
+        officerRepository
+            .findByIdWithPosition(targetOfficerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", targetOfficerId));
+    ShiftDecision currentShift = resolveCurrentShift(targetOfficer, currentDateTime);
+    LocalDate attendanceDate =
+        currentShift != null && currentShift.shiftDate() != null
+            ? currentShift.shiftDate()
+            : currentDate;
     AttendanceModel attendance =
-        attendanceRepository.findByOfficerIdAndDate(targetOfficerId, currentDate).orElse(null);
-
-    ShiftDecision currentShift = resolveCurrentShift(currentTime);
+        attendanceRepository.findByOfficerIdAndDate(targetOfficerId, attendanceDate).orElse(null);
     AttendanceSessionModel relevantSession = resolveRelevantSession(attendance, currentShift);
 
     boolean checkedIn = relevantSession != null && relevantSession.getCheckIn() != null;
@@ -653,26 +662,12 @@ public class AttendanceServiceImpl implements AttendanceService {
                     .orElse(null));
   }
 
-  private ShiftDecision resolveCurrentShift(LocalTime currentTime) {
-    ShiftModel morningShift = resolveShiftByNames(MORNING_SHIFT_NAMES);
-    ShiftModel afternoonShift = resolveShiftByNames(AFTERNOON_SHIFT_NAMES);
-
-    if (morningShift != null && isWithinShift(currentTime, morningShift)) {
-      return new ShiftDecision(morningShift);
-    }
-
-    if (afternoonShift != null && isWithinShift(currentTime, afternoonShift)) {
-      return new ShiftDecision(afternoonShift);
-    }
-
-    return null;
-  }
-
-  private boolean isWithinShift(LocalTime time, ShiftModel shift) {
-    return shift.getStartTime() != null
-        && shift.getEndTime() != null
-        && !time.isBefore(shift.getStartTime())
-        && !time.isAfter(shift.getEndTime());
+  private ShiftDecision resolveCurrentShift(OfficerModel officer, LocalDateTime currentDateTime) {
+    Optional<ShiftWindow> shiftWindow =
+        shiftResolutionService.resolveOfficerShift(officer, currentDateTime);
+    return shiftWindow
+        .map(window -> new ShiftDecision(window.shift(), window.shiftDate()))
+        .orElse(null);
   }
 
   private String resolveShiftLabel(
@@ -685,16 +680,6 @@ public class AttendanceServiceImpl implements AttendanceService {
       return relevantSession.getShift().getName();
     }
 
-    return "MORNING";
-  }
-
-  private ShiftModel resolveShiftByNames(List<String> shiftNames) {
-    for (String shiftName : shiftNames) {
-      ShiftModel shift = shiftRepository.findByName(shiftName).orElse(null);
-      if (shift != null) {
-        return shift;
-      }
-    }
     return null;
   }
 
@@ -910,7 +895,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     return value == null ? "" : value;
   }
 
-  private record ShiftDecision(ShiftModel shift) {}
+  private record ShiftDecision(ShiftModel shift, LocalDate shiftDate) {}
 
   private record DateRange(LocalDate start, LocalDate end) {}
 }
