@@ -51,10 +51,12 @@ public class AttendanceController {
       @RequestParam(required = false) String search,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) String department,
+      @RequestParam(required = false) String office,
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String viewMode) {
     return ResponseEntity.ok(
-        attendanceService.getAllAttendance(page, size, search, date, department, status, viewMode));
+        attendanceService.getAllAttendance(
+            page, size, search, date, preferOffice(office, department), status, viewMode));
   }
 
   @GetMapping("/status")
@@ -91,6 +93,7 @@ public class AttendanceController {
   public ResponseEntity<byte[]> exportAttendance(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @RequestParam(required = false) String department,
+      @RequestParam(required = false) String office,
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String search,
       @RequestParam(defaultValue = "xlsx") String format,
@@ -100,7 +103,8 @@ public class AttendanceController {
     }
 
     AttendanceExportResponse file =
-        attendanceService.exportAttendance(date, department, status, search, viewMode);
+        attendanceService.exportAttendance(
+            date, preferOffice(office, department), status, search, viewMode);
 
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType(file.getContentType()))
@@ -121,5 +125,9 @@ public class AttendanceController {
   public ResponseEntity<AttendanceScanSuccessResponse> submitAttendanceScan(
       @Valid @RequestBody AttendanceScanRequest request) {
     return ResponseEntity.ok(attendanceScanService.submitScan(request));
+  }
+
+  private String preferOffice(String office, String department) {
+    return office != null && !office.isBlank() ? office : department;
   }
 }

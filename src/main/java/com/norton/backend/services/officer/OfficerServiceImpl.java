@@ -26,6 +26,7 @@ import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.PositionRepository;
 import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.repositories.UserRoleRepository;
+import com.norton.backend.services.security.OfficeAccessService;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -49,6 +50,7 @@ public class OfficerServiceImpl implements OfficerService {
   private final UserRepository userRepository;
   private final UserRoleRepository userRoleRepository;
   private final PasswordEncoder passwordEncoder;
+  private final OfficeAccessService officeAccessService;
 
   @Override
   public MeResponse getMyProfile() {
@@ -84,6 +86,7 @@ public class OfficerServiceImpl implements OfficerService {
                             .name(request.getDepartment().trim())
                             .status(DepartmentStatus.ACTIVE)
                             .build()));
+    officeAccessService.assertCanAccessOffice(department.getId());
 
     PositionModel position =
         positionRepository
@@ -155,6 +158,7 @@ public class OfficerServiceImpl implements OfficerService {
         officerRepository
             .findByIdWithPosition(id)
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", id));
+    officeAccessService.assertCanAccessOfficer(officer);
 
     if (officerRepository.existsByOfficerCodeAndIdNot(request.getOfficerCode(), id)) {
       throw new ConflictException("Officer code already exists: " + request.getOfficerCode());
@@ -179,6 +183,7 @@ public class OfficerServiceImpl implements OfficerService {
                             .name(request.getDepartment().trim())
                             .status(DepartmentStatus.ACTIVE)
                             .build()));
+    officeAccessService.assertCanAccessOffice(department.getId());
 
     PositionModel position =
         positionRepository
@@ -230,7 +235,11 @@ public class OfficerServiceImpl implements OfficerService {
   @Override
   public PageResponse<OfficerResponseDto> getAllOfficers(Pageable pageable) {
 
-    Page<OfficerModel> officer = officerRepository.findAll(pageable);
+    Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
+    Page<OfficerModel> officer =
+        officeId == null
+            ? officerRepository.findAll(pageable)
+            : officerRepository.findByPosition_Department_Id(officeId, pageable);
     List<OfficerResponseDto> content =
         officer.getContent().stream().map(officerMapper::toResponse).toList();
 
@@ -246,11 +255,27 @@ public class OfficerServiceImpl implements OfficerService {
 
   @Override
   public OfficerStatsResponse getOfficerStats() {
-    long total = officerRepository.count();
+    Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
+    long total =
+        officeId == null
+            ? officerRepository.count()
+            : officerRepository.countByPosition_Department_Id(officeId);
 
-    long active = officerRepository.countByStatus(OfficerStatus.ACTIVE);
-    long inactive = officerRepository.countByStatus(OfficerStatus.INACTIVE);
-    long onLeave = officerRepository.countByStatus(OfficerStatus.ON_LEAVE);
+    long active =
+        officeId == null
+            ? officerRepository.countByStatus(OfficerStatus.ACTIVE)
+            : officerRepository.countByStatusAndPosition_Department_Id(
+                OfficerStatus.ACTIVE, officeId);
+    long inactive =
+        officeId == null
+            ? officerRepository.countByStatus(OfficerStatus.INACTIVE)
+            : officerRepository.countByStatusAndPosition_Department_Id(
+                OfficerStatus.INACTIVE, officeId);
+    long onLeave =
+        officeId == null
+            ? officerRepository.countByStatus(OfficerStatus.ON_LEAVE)
+            : officerRepository.countByStatusAndPosition_Department_Id(
+                OfficerStatus.ON_LEAVE, officeId);
 
     return officerMapper.toStatsResponse(total, active, inactive, onLeave);
   }

@@ -1,5 +1,6 @@
 package com.norton.backend.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -33,6 +34,7 @@ public class CreateOfficerRequest {
   private String position;
 
   @NotBlank(message = "department is required")
+  @JsonAlias("office")
   private String department;
 
   @NotBlank(message = "phone is required")

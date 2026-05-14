@@ -12,6 +12,9 @@ public class DepartmentResponseDto {
   private String name;
   private String code;
   private String manager;
+  private Long adminId;
+  private String adminName;
+  private String adminUsername;
 
   @JsonProperty("officer_count")
   private long officerCount;

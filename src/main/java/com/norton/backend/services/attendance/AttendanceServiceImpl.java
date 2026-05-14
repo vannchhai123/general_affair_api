@@ -28,6 +28,7 @@ import com.norton.backend.repositories.AttendanceRepository;
 import com.norton.backend.repositories.AttendanceSessionRepository;
 import com.norton.backend.repositories.AttendanceStatusRepository;
 import com.norton.backend.repositories.OfficerRepository;
+import com.norton.backend.services.security.OfficeAccessService;
 import com.norton.backend.services.shift.ShiftResolutionService;
 import com.norton.backend.services.shift.ShiftResolutionService.ShiftWindow;
 import java.io.ByteArrayOutputStream;
@@ -89,6 +90,7 @@ public class AttendanceServiceImpl implements AttendanceService {
   private final OfficerRepository officerRepository;
   private final AttendanceStatusRepository attendanceStatusRepository;
   private final ShiftResolutionService shiftResolutionService;
+  private final OfficeAccessService officeAccessService;
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
@@ -110,6 +112,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             pageable,
             defaultStartDate(dateRange.start()),
             defaultEndDate(dateRange.end()),
+            officeAccessService.currentOfficeScopeIdOrNull(),
             toSearchPattern(search),
             toLowerTrimmed(department),
             toLowerTrimmed(status));
@@ -137,6 +140,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         officerRepository
             .findByIdWithPosition(targetOfficerId)
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", targetOfficerId));
+    officeAccessService.assertCanAccessOfficer(targetOfficer);
     ShiftDecision currentShift = resolveCurrentShift(targetOfficer, currentDateTime);
     LocalDate attendanceDate =
         currentShift != null && currentShift.shiftDate() != null
@@ -199,6 +203,11 @@ public class AttendanceServiceImpl implements AttendanceService {
     List<AttendanceModel> monthlyAttendances =
         attendanceRepository.findAllByOfficerIdAndDateBetween(
             targetOfficerId, startOfMonth, endOfMonth);
+    OfficerModel targetOfficer =
+        officerRepository
+            .findByIdWithPosition(targetOfficerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", targetOfficerId));
+    officeAccessService.assertCanAccessOfficer(targetOfficer);
 
     int lateCount =
         (int)
@@ -250,6 +259,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             .findByIdWithPosition(request.getOfficerId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Officer", "id", request.getOfficerId()));
+    officeAccessService.assertCanAccessOfficer(officer);
 
     AttendanceStatusModel status = resolveStatus(request.getStatus());
     AttendanceModel attendance =
@@ -282,6 +292,8 @@ public class AttendanceServiceImpl implements AttendanceService {
             .findByIdWithPosition(request.getOfficerId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Officer", "id", request.getOfficerId()));
+    officeAccessService.assertCanAccessOfficer(attendance.getOfficer());
+    officeAccessService.assertCanAccessOfficer(officer);
 
     attendanceRepository
         .findByOfficerIdAndDate(request.getOfficerId(), request.getDate())
@@ -315,6 +327,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendanceRepository.findAllAttendanceFilteredForExport(
             defaultStartDate(dateRange.start()),
             defaultEndDate(dateRange.end()),
+            officeAccessService.currentOfficeScopeIdOrNull(),
             toSearchPattern(search),
             toLowerTrimmed(department),
             toLowerTrimmed(status));
@@ -375,6 +388,8 @@ public class AttendanceServiceImpl implements AttendanceService {
                   .findByOfficerCode(officerCode)
                   .orElseThrow(
                       () -> new BadRequestException("Unknown officerCode: " + officerCode));
+          officer = officerRepository.findByIdWithPosition(officer.getId()).orElse(officer);
+          officeAccessService.assertCanAccessOfficer(officer);
 
           AttendanceStatusModel status = resolveStatus(statusValue);
           AttendanceModel attendance =

@@ -30,4 +30,9 @@ public class OfficerResponseDto {
   private String phone;
   private String status;
   private String username;
+
+  @JsonProperty("office")
+  public String getOffice() {
+    return department;
+  }
 }

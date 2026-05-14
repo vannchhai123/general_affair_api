@@ -104,10 +104,11 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     FROM Attendance a
     JOIN a.officer o
     LEFT JOIN a.status s
-    WHERE a.date >= :dateStart
-      AND a.date <= :dateEnd
-      AND (:department = '' OR LOWER(o.position.department.name) = :department)
-      AND (:status = '' OR LOWER(s.name) = :status)
+      WHERE a.date >= :dateStart
+        AND a.date <= :dateEnd
+        AND (:officeId IS NULL OR o.position.department.id = :officeId)
+        AND (:department = '' OR LOWER(o.position.department.name) = :department)
+        AND (:status = '' OR LOWER(s.name) = :status)
       AND (
         LOWER(o.officerCode) LIKE :searchPattern
         OR LOWER(o.firstName) LIKE :searchPattern
@@ -120,6 +121,7 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
       Pageable pageable,
       LocalDate dateStart,
       LocalDate dateEnd,
+      Long officeId,
       String searchPattern,
       String department,
       String status);
@@ -144,10 +146,11 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     FROM Attendance a
     JOIN a.officer o
     LEFT JOIN a.status s
-    WHERE a.date >= :dateStart
-      AND a.date <= :dateEnd
-      AND (:department = '' OR LOWER(o.position.department.name) = :department)
-      AND (:status = '' OR LOWER(s.name) = :status)
+      WHERE a.date >= :dateStart
+        AND a.date <= :dateEnd
+        AND (:officeId IS NULL OR o.position.department.id = :officeId)
+        AND (:department = '' OR LOWER(o.position.department.name) = :department)
+        AND (:status = '' OR LOWER(s.name) = :status)
       AND (
         LOWER(o.officerCode) LIKE :searchPattern
         OR LOWER(o.firstName) LIKE :searchPattern
@@ -159,6 +162,7 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
   List<AttendanceResponse> findAllAttendanceFilteredForExport(
       LocalDate dateStart,
       LocalDate dateEnd,
+      Long officeId,
       String searchPattern,
       String department,
       String status);

@@ -1,5 +1,6 @@
 package com.norton.backend.dto.responses.attendances;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -88,6 +89,11 @@ public class AttendanceResponse {
     this.totalLateMin = totalLateMin;
     this.status = status;
     this.sessions = sessions;
+  }
+
+  @JsonProperty("office")
+  public String getOffice() {
+    return department;
   }
 
   private List<AttendanceSessionResponse> sessions;

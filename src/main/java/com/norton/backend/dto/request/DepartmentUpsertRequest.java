@@ -17,6 +17,8 @@ public class DepartmentUpsertRequest {
   @Size(max = 255, message = "manager must not exceed 255 characters")
   private String manager;
 
+  private Long adminId;
+
   @NotBlank(message = "status is required")
   private String status;
 

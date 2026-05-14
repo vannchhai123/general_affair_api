@@ -1,5 +1,6 @@
 package com.norton.backend.seeds;
 
+import com.norton.backend.enums.ShiftStatus;
 import com.norton.backend.models.AttendanceModel;
 import com.norton.backend.models.AttendanceSessionModel;
 import com.norton.backend.models.ShiftModel;
@@ -153,6 +154,7 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
             .orElseGet(() -> ShiftModel.builder().name("Morning Shift").code("MORNING").build());
     morningShift.setStartTime(LocalTime.of(6, 0));
     morningShift.setEndTime(LocalTime.of(12, 30));
+    morningShift.setStatus(ShiftStatus.ACTIVE);
     morningShift.setIsActive(true);
 
     ShiftModel afternoonShift =
@@ -162,6 +164,7 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
                 () -> ShiftModel.builder().name("Afternoon Shift").code("AFTERNOON").build());
     afternoonShift.setStartTime(LocalTime.of(13, 0));
     afternoonShift.setEndTime(LocalTime.of(18, 0));
+    afternoonShift.setStatus(ShiftStatus.ACTIVE);
     afternoonShift.setIsActive(true);
 
     return shiftRepository.saveAll(List.of(morningShift, afternoonShift));

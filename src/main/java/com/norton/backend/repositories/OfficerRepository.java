@@ -3,6 +3,9 @@ package com.norton.backend.repositories;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.models.OfficerModel;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -11,6 +14,8 @@ import org.springframework.stereotype.Repository;
 public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
 
   long countByStatus(OfficerStatus status);
+
+  long countByStatusAndPosition_Department_Id(OfficerStatus status, Long departmentId);
 
   boolean existsByOfficerCode(String officerCode);
 
@@ -24,6 +29,13 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
 
   @Query("SELECT COUNT(o) FROM OfficerModel o")
   long countAll();
+
+  @Override
+  @EntityGraph(attributePaths = {"user", "position", "position.department"})
+  Page<OfficerModel> findAll(Pageable pageable);
+
+  @EntityGraph(attributePaths = {"user", "position", "position.department"})
+  Page<OfficerModel> findByPosition_Department_Id(Long departmentId, Pageable pageable);
 
   @Query(
       """

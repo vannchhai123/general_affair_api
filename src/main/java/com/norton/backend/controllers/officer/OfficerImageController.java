@@ -5,6 +5,7 @@ import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.services.file.FileStorageService;
+import com.norton.backend.services.security.OfficeAccessService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -25,14 +26,16 @@ public class OfficerImageController {
 
   private final OfficerRepository officerRepository;
   private final FileStorageService fileStorageService;
+  private final OfficeAccessService officeAccessService;
 
   @GetMapping("/{id}/image")
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
   public ResponseEntity<Map<String, String>> getOfficerImage(@PathVariable Long id) {
     OfficerModel officer =
         officerRepository
-            .findById(id)
+            .findByIdWithPosition(id)
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", id));
+    officeAccessService.assertCanAccessOfficer(officer);
 
     if (officer.getImageUrl() == null || officer.getImageUrl().isBlank()) {
       throw new BadRequestException("Officer image not found");
@@ -50,8 +53,9 @@ public class OfficerImageController {
 
     OfficerModel officer =
         officerRepository
-            .findById(id)
+            .findByIdWithPosition(id)
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", id));
+    officeAccessService.assertCanAccessOfficer(officer);
 
     String imageUrl = fileStorageService.storeImage(file);
     officer.setImageUrl(imageUrl);

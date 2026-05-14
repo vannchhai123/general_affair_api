@@ -33,6 +33,10 @@ public class DepartmentModel extends BaseIdModel {
   @Column(name = "manager", length = 255)
   private String manager;
 
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "admin_user_id", unique = true)
+  private UserModel admin;
+
   @Size(max = 500, message = "Description must not exceed 500 characters")
   private String description;
 
