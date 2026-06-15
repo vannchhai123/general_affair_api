@@ -1,10 +1,8 @@
 package com.norton.backend.services.security;
 
 import com.norton.backend.exceptions.UnauthorizedException;
-import com.norton.backend.models.DepartmentModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.UserModel;
-import com.norton.backend.repositories.DepartmentRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -16,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OfficeAccessService {
 
-  private final DepartmentRepository departmentRepository;
   private final OfficerRepository officerRepository;
 
   public UserModel currentUser() {
@@ -43,14 +40,9 @@ public class OfficeAccessService {
     }
 
     UserModel currentUser = currentUser();
-    return departmentRepository
-        .findByAdmin_Id(currentUser.getId())
-        .map(DepartmentModel::getId)
-        .or(
-            () ->
-                officerRepository
-                    .findByUserIdWithPosition(currentUser.getId())
-                    .map(OfficeAccessService::officeIdOf))
+    return officerRepository
+        .findByUserIdWithPosition(currentUser.getId())
+        .map(OfficeAccessService::officeIdOf)
         .orElseThrow(() -> new UnauthorizedException("Admin is not assigned to an office"));
   }
 
@@ -79,9 +71,13 @@ public class OfficeAccessService {
   }
 
   private static Long officeIdOf(OfficerModel officer) {
-    if (officer == null
-        || officer.getPosition() == null
-        || officer.getPosition().getDepartment() == null) {
+    if (officer == null) {
+      return null;
+    }
+    if (officer.getOffice() != null) {
+      return officer.getOffice().getId();
+    }
+    if (officer.getPosition() == null || officer.getPosition().getDepartment() == null) {
       return null;
     }
     return officer.getPosition().getDepartment().getId();

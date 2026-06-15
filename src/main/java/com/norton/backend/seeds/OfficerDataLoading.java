@@ -6,19 +6,34 @@ import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.enums.PositionStatus;
 import com.norton.backend.enums.UserStatus;
 import com.norton.backend.models.DepartmentModel;
+import com.norton.backend.models.EducationLevelModel;
+import com.norton.backend.models.GeoCommuneModel;
+import com.norton.backend.models.GeoDistrictModel;
+import com.norton.backend.models.GeoProvinceModel;
+import com.norton.backend.models.GeoVillageModel;
+import com.norton.backend.models.OfficerAddressModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.PositionModel;
 import com.norton.backend.models.UserModel;
 import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.DepartmentRepository;
+import com.norton.backend.repositories.EducationLevelRepository;
+import com.norton.backend.repositories.GeoCommuneRepository;
+import com.norton.backend.repositories.GeoDistrictRepository;
+import com.norton.backend.repositories.GeoProvinceRepository;
+import com.norton.backend.repositories.GeoVillageRepository;
+import com.norton.backend.repositories.OfficerAddressRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.PositionRepository;
 import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.repositories.UserRoleRepository;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -34,6 +49,12 @@ import org.springframework.stereotype.Component;
 public class OfficerDataLoading implements CommandLineRunner {
 
   private final DepartmentRepository departmentRepository;
+  private final EducationLevelRepository educationLevelRepository;
+  private final GeoProvinceRepository geoProvinceRepository;
+  private final GeoDistrictRepository geoDistrictRepository;
+  private final GeoCommuneRepository geoCommuneRepository;
+  private final GeoVillageRepository geoVillageRepository;
+  private final OfficerAddressRepository officerAddressRepository;
   private final PositionRepository positionRepository;
   private final OfficerRepository officerRepository;
   private final UserRepository userRepository;
@@ -44,26 +65,41 @@ public class OfficerDataLoading implements CommandLineRunner {
   public void run(String... args) {
     Map<String, DepartmentModel> departmentsByCode = loadOrCreateDepartments();
     Map<String, PositionModel> positionsByCode = loadOrCreatePositions(departmentsByCode);
+    Map<String, EducationLevelModel> educationLevelsByName = loadOrCreateEducationLevels();
+    GeoSeedContext geoSeedContext = loadOrCreateGeographies();
     UserRoleModel officerRole = loadOfficerRole();
 
     List<OfficerSeed> officers = buildOfficerSeeds();
     for (OfficerSeed seed : officers) {
-      if (officerRepository.findByOfficerCode(seed.officerCode()).isPresent()) {
-        continue;
+      PositionModel position = positionsByCode.get(seed.seededPositionCode().toUpperCase());
+      if (position == null) {
+        throw new RuntimeException("Position code not found: " + seed.seededPositionCode());
       }
 
-      PositionModel position = positionsByCode.get(seed.positionCode().toUpperCase());
-      if (position == null) {
-        throw new RuntimeException("Position code not found: " + seed.positionCode());
+      EducationLevelModel educationLevel = educationLevelsByName.get(seed.educationLevelName());
+      if (educationLevel == null) {
+        throw new RuntimeException("Education level not found: " + seed.educationLevelName());
+      }
+
+      OfficerModel existingOfficer =
+          officerRepository.findByOfficerCode(seed.officerCode()).orElse(null);
+      if (existingOfficer != null) {
+        patchOfficer(existingOfficer, seed, position, educationLevel);
+        officerRepository.save(existingOfficer);
+        seedAddressesIfMissing(existingOfficer, seed, geoSeedContext);
+        continue;
       }
 
       UserModel user = loadOrCreateUser(seed, officerRole);
       if (user.getOfficer() != null) {
         user = createDedicatedUser(seed, officerRole);
       }
-      OfficerModel officer = buildOfficer(seed, position, user);
-      officerRepository.save(officer);
+      OfficerModel officer = buildOfficer(seed, position, educationLevel, user);
+      officer = officerRepository.save(officer);
+      seedAddressesIfMissing(officer, seed, geoSeedContext);
     }
+
+    removeStaleOrganizationSeeds();
 
     System.out.println("Officer Khmer seed data inserted/updated successfully.");
   }
@@ -71,9 +107,10 @@ public class OfficerDataLoading implements CommandLineRunner {
   private Map<String, DepartmentModel> loadOrCreateDepartments() {
     Map<String, DepartmentModel> departmentsByCode = new HashMap<>();
     for (DepartmentModel department : departmentRepository.findAll()) {
-      if (department.getCode() != null) {
-        departmentsByCode.put(department.getCode().toUpperCase(), department);
-      }
+      buildDepartmentSeeds().stream()
+          .filter(seed -> seed.name().equals(department.getName()))
+          .findFirst()
+          .ifPresent(seed -> departmentsByCode.put(seed.code().toUpperCase(), department));
     }
 
     for (DepartmentSeed seed : buildDepartmentSeeds()) {
@@ -85,8 +122,6 @@ public class OfficerDataLoading implements CommandLineRunner {
       DepartmentModel department =
           DepartmentModel.builder()
               .name(seed.name())
-              .code(seed.code())
-              .manager(seed.manager())
               .description(seed.description())
               .status(DepartmentStatus.ACTIVE)
               .build();
@@ -130,6 +165,146 @@ public class OfficerDataLoading implements CommandLineRunner {
     return positionsByCode;
   }
 
+  private Map<String, EducationLevelModel> loadOrCreateEducationLevels() {
+    Map<String, EducationLevelModel> educationLevelsByName = new HashMap<>();
+    for (EducationLevelModel educationLevel : educationLevelRepository.findAll()) {
+      educationLevelsByName.put(educationLevel.getName(), educationLevel);
+    }
+
+    for (EducationLevelSeed seed : buildEducationLevelSeeds()) {
+      if (educationLevelsByName.containsKey(seed.name())) {
+        continue;
+      }
+
+      EducationLevelModel educationLevel =
+          EducationLevelModel.builder().name(seed.name()).description(seed.description()).build();
+      educationLevel = educationLevelRepository.save(educationLevel);
+      educationLevelsByName.put(seed.name(), educationLevel);
+    }
+    return educationLevelsByName;
+  }
+
+  private GeoSeedContext loadOrCreateGeographies() {
+    Map<String, GeoProvinceModel> provincesByCode = loadOrCreateProvinces();
+    Map<String, GeoDistrictModel> districtsByCode = loadOrCreateDistricts(provincesByCode);
+    Map<String, GeoCommuneModel> communesByCode = loadOrCreateCommunes(districtsByCode);
+    Map<String, GeoVillageModel> villagesByCode = loadOrCreateVillages(communesByCode);
+    return new GeoSeedContext(provincesByCode, districtsByCode, communesByCode, villagesByCode);
+  }
+
+  private Map<String, GeoProvinceModel> loadOrCreateProvinces() {
+    Map<String, GeoProvinceModel> provincesByCode = new HashMap<>();
+    for (GeoProvinceModel province : geoProvinceRepository.findAll()) {
+      provincesByCode.put(province.getCode(), province);
+    }
+    for (GeoProvinceSeed seed : buildProvinceSeeds()) {
+      GeoProvinceModel province =
+          provincesByCode.computeIfAbsent(
+              seed.code(),
+              code ->
+                  geoProvinceRepository.save(
+                      GeoProvinceModel.builder()
+                          .code(code)
+                          .nameEn(seed.nameEn())
+                          .nameKh(seed.nameKh())
+                          .build()));
+      province.setNameEn(seed.nameEn());
+      province.setNameKh(seed.nameKh());
+      geoProvinceRepository.save(province);
+    }
+    return provincesByCode;
+  }
+
+  private Map<String, GeoDistrictModel> loadOrCreateDistricts(
+      Map<String, GeoProvinceModel> provincesByCode) {
+    Map<String, GeoDistrictModel> districtsByCode = new HashMap<>();
+    for (GeoDistrictModel district : geoDistrictRepository.findAll()) {
+      districtsByCode.put(district.getCode(), district);
+    }
+    for (GeoDistrictSeed seed : buildDistrictSeeds()) {
+      GeoProvinceModel province = provincesByCode.get(seed.provinceCode());
+      if (province == null) {
+        throw new RuntimeException("Province code not found: " + seed.provinceCode());
+      }
+      GeoDistrictModel district =
+          districtsByCode.computeIfAbsent(
+              seed.code(),
+              code ->
+                  geoDistrictRepository.save(
+                      GeoDistrictModel.builder()
+                          .province(province)
+                          .code(code)
+                          .nameEn(seed.nameEn())
+                          .nameKh(seed.nameKh())
+                          .build()));
+      district.setProvince(province);
+      district.setNameEn(seed.nameEn());
+      district.setNameKh(seed.nameKh());
+      geoDistrictRepository.save(district);
+    }
+    return districtsByCode;
+  }
+
+  private Map<String, GeoCommuneModel> loadOrCreateCommunes(
+      Map<String, GeoDistrictModel> districtsByCode) {
+    Map<String, GeoCommuneModel> communesByCode = new HashMap<>();
+    for (GeoCommuneModel commune : geoCommuneRepository.findAll()) {
+      communesByCode.put(commune.getCode(), commune);
+    }
+    for (GeoCommuneSeed seed : buildCommuneSeeds()) {
+      GeoDistrictModel district = districtsByCode.get(seed.districtCode());
+      if (district == null) {
+        throw new RuntimeException("District code not found: " + seed.districtCode());
+      }
+      GeoCommuneModel commune =
+          communesByCode.computeIfAbsent(
+              seed.code(),
+              code ->
+                  geoCommuneRepository.save(
+                      GeoCommuneModel.builder()
+                          .district(district)
+                          .code(code)
+                          .nameEn(seed.nameEn())
+                          .nameKh(seed.nameKh())
+                          .build()));
+      commune.setDistrict(district);
+      commune.setNameEn(seed.nameEn());
+      commune.setNameKh(seed.nameKh());
+      geoCommuneRepository.save(commune);
+    }
+    return communesByCode;
+  }
+
+  private Map<String, GeoVillageModel> loadOrCreateVillages(
+      Map<String, GeoCommuneModel> communesByCode) {
+    Map<String, GeoVillageModel> villagesByCode = new HashMap<>();
+    for (GeoVillageModel village : geoVillageRepository.findAll()) {
+      villagesByCode.put(village.getCode(), village);
+    }
+    for (GeoVillageSeed seed : buildVillageSeeds()) {
+      GeoCommuneModel commune = communesByCode.get(seed.communeCode());
+      if (commune == null) {
+        throw new RuntimeException("Commune code not found: " + seed.communeCode());
+      }
+      GeoVillageModel village =
+          villagesByCode.computeIfAbsent(
+              seed.code(),
+              code ->
+                  geoVillageRepository.save(
+                      GeoVillageModel.builder()
+                          .commune(commune)
+                          .code(code)
+                          .nameEn(seed.nameEn())
+                          .nameKh(seed.nameKh())
+                          .build()));
+      village.setCommune(commune);
+      village.setNameEn(seed.nameEn());
+      village.setNameKh(seed.nameKh());
+      geoVillageRepository.save(village);
+    }
+    return villagesByCode;
+  }
+
   private UserRoleModel loadOfficerRole() {
     return userRoleRepository
         .findByRoleName("ROLE_OFFICER")
@@ -146,7 +321,7 @@ public class OfficerDataLoading implements CommandLineRunner {
                         .uuid(UUID.randomUUID())
                         .username(seed.username())
                         .email(seed.userEmail())
-                        .fullName(seed.firstName() + " " + seed.lastName())
+                        .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
                         .passwordHash(passwordEncoder.encode("officer123"))
                         .role(officerRole)
                         .userStatus(UserStatus.ACTIVE)
@@ -168,73 +343,292 @@ public class OfficerDataLoading implements CommandLineRunner {
             .uuid(UUID.randomUUID())
             .username(username)
             .email(email)
-            .fullName(seed.firstName() + " " + seed.lastName())
+            .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
             .passwordHash(passwordEncoder.encode("officer123"))
             .role(officerRole)
             .userStatus(UserStatus.ACTIVE)
             .build());
   }
 
-  private OfficerModel buildOfficer(OfficerSeed seed, PositionModel position, UserModel user) {
+  private OfficerModel buildOfficer(
+      OfficerSeed seed,
+      PositionModel position,
+      EducationLevelModel educationLevel,
+      UserModel user) {
     return OfficerModel.builder()
         .uuid(UUID.randomUUID().toString())
         .officerCode(seed.officerCode())
-        .firstName(seed.firstName())
-        .lastName(seed.lastName())
+        .firstNameEn(seed.firstNameEn())
+        .lastNameEn(seed.lastNameEn())
+        .firstNameKh(seed.firstNameKh())
+        .lastNameKh(seed.lastNameKh())
         .gender(seed.gender())
+        .dateOfBirth(seed.dateOfBirth())
+        .nationalId(seed.nationalId())
+        .nationality(seed.nationality())
+        .ethnicity(seed.ethnicity())
         .phone(seed.phone())
         .email(seed.officerEmail())
+        .office(position.getDepartment())
         .position(position)
+        .educationLevel(educationLevel)
+        .hireDate(seed.hireDate())
+        .contractType(seed.contractType())
         .status(OfficerStatus.ACTIVE)
         .user(user)
         .build();
   }
 
+  private void patchOfficer(
+      OfficerModel officer,
+      OfficerSeed seed,
+      PositionModel position,
+      EducationLevelModel educationLevel) {
+    officer.setFirstNameEn(seed.firstNameEn());
+    officer.setLastNameEn(seed.lastNameEn());
+    officer.setFirstNameKh(seed.firstNameKh());
+    officer.setLastNameKh(seed.lastNameKh());
+    officer.setGender(seed.gender());
+    officer.setDateOfBirth(seed.dateOfBirth());
+    officer.setNationalId(seed.nationalId());
+    officer.setNationality(seed.nationality());
+    officer.setEthnicity(seed.ethnicity());
+    officer.setPhone(seed.phone());
+    officer.setEmail(seed.officerEmail());
+    officer.setOffice(position.getDepartment());
+    officer.setPosition(position);
+    officer.setEducationLevel(educationLevel);
+    officer.setHireDate(seed.hireDate());
+    officer.setContractType(seed.contractType());
+    officer.setStatus(OfficerStatus.ACTIVE);
+
+    if (officer.getUser() != null) {
+      officer.getUser().setFullName(seed.firstNameEn() + " " + seed.lastNameEn());
+      officer.getUser().setEmail(seed.userEmail());
+      userRepository.save(officer.getUser());
+    }
+  }
+
+  private void seedAddressesIfMissing(
+      OfficerModel officer, OfficerSeed seed, GeoSeedContext geoSeedContext) {
+    if (!officerAddressRepository.findByOfficer_Id(officer.getId()).isEmpty()) {
+      return;
+    }
+
+    for (AddressSeed addressSeed : buildAddressSeeds(seed)) {
+      officerAddressRepository.save(
+          OfficerAddressModel.builder()
+              .officer(officer)
+              .addressType(addressSeed.addressType())
+              .province(resolveProvince(geoSeedContext, addressSeed.provinceCode()))
+              .district(resolveDistrict(geoSeedContext, addressSeed.districtCode()))
+              .commune(resolveCommune(geoSeedContext, addressSeed.communeCode()))
+              .village(resolveVillage(geoSeedContext, addressSeed.villageCode()))
+              .streetAndHomeNumber(addressSeed.streetAndHomeNumber())
+              .primary(addressSeed.primary())
+              .build());
+    }
+  }
+
+  private List<EducationLevelSeed> buildEducationLevelSeeds() {
+    return List.of(
+        new EducationLevelSeed("មធ្យមសិក្សាទុតិយភូមិ", "បានបញ្ចប់ការអប់រំមធ្យមសិក្សាទុតិយភូមិ"),
+        new EducationLevelSeed("បរិញ្ញាបត្ររង", "បានបញ្ចប់ការអប់រំកម្រិតបរិញ្ញាបត្ររង"),
+        new EducationLevelSeed("បរិញ្ញាបត្រ", "បានបញ្ចប់ការអប់រំកម្រិតបរិញ្ញាបត្រ"),
+        new EducationLevelSeed("អនុបណ្ឌិត", "បានបញ្ចប់ការអប់រំកម្រិតអនុបណ្ឌិត"),
+        new EducationLevelSeed("បណ្ឌិត", "បានបញ្ចប់ការអប់រំកម្រិតបណ្ឌិត"));
+  }
+
+  private GeoProvinceModel resolveProvince(GeoSeedContext context, String code) {
+    GeoProvinceModel province = context.provincesByCode().get(code);
+    if (province == null) {
+      throw new RuntimeException("Province code not found: " + code);
+    }
+    return province;
+  }
+
+  private GeoDistrictModel resolveDistrict(GeoSeedContext context, String code) {
+    GeoDistrictModel district = context.districtsByCode().get(code);
+    if (district == null) {
+      throw new RuntimeException("District code not found: " + code);
+    }
+    return district;
+  }
+
+  private GeoCommuneModel resolveCommune(GeoSeedContext context, String code) {
+    GeoCommuneModel commune = context.communesByCode().get(code);
+    if (commune == null) {
+      throw new RuntimeException("Commune code not found: " + code);
+    }
+    return commune;
+  }
+
+  private GeoVillageModel resolveVillage(GeoSeedContext context, String code) {
+    if (code == null || code.isBlank()) {
+      return null;
+    }
+    GeoVillageModel village = context.villagesByCode().get(code);
+    if (village == null) {
+      throw new RuntimeException("Village code not found: " + code);
+    }
+    return village;
+  }
+
+  private List<AddressSeed> buildAddressSeeds(OfficerSeed seed) {
+    int number = seed.seedNumber();
+    String homeNumber = "#" + (100 + number) + ", Street " + (200 + number);
+
+    return List.of(
+        new AddressSeed(
+            "current", "12", "1205", "120501", "12050101", homeNumber + ", Phnom Penh", true),
+        new AddressSeed(
+            "permanent",
+            "03",
+            "0302",
+            "030201",
+            "03020101",
+            "Family home " + number + ", Kampong Cham",
+            false),
+        new AddressSeed(
+            "birthplace",
+            "05",
+            "0503",
+            "050301",
+            "05030101",
+            "Birth village record " + number,
+            false));
+  }
+
+  private List<GeoProvinceSeed> buildProvinceSeeds() {
+    return List.of(
+        new GeoProvinceSeed("12", "Phnom Penh", "ភ្នំពេញ"),
+        new GeoProvinceSeed("03", "Kampong Cham", "កំពង់ចាម"),
+        new GeoProvinceSeed("05", "Kampong Speu", "កំពង់ស្ពឺ"));
+  }
+
+  private List<GeoDistrictSeed> buildDistrictSeeds() {
+    return List.of(
+        new GeoDistrictSeed("1205", "12", "Chamkar Mon", "ចំការមន"),
+        new GeoDistrictSeed("0302", "03", "Kampong Siem", "កំពង់សៀម"),
+        new GeoDistrictSeed("0503", "05", "Samraong Tong", "សំរោងទង"));
+  }
+
+  private List<GeoCommuneSeed> buildCommuneSeeds() {
+    return List.of(
+        new GeoCommuneSeed("120501", "1205", "Boeung Keng Kang Ti Muoy", "បឹងកេងកងទី១"),
+        new GeoCommuneSeed("030201", "0302", "Ampil", "អំពិល"),
+        new GeoCommuneSeed("050301", "0503", "Tang Krouch", "តាំងក្រូច"));
+  }
+
+  private List<GeoVillageSeed> buildVillageSeeds() {
+    return List.of(
+        new GeoVillageSeed("12050101", "120501", "Village 1", "ភូមិ១"),
+        new GeoVillageSeed("03020101", "030201", "Ampil Village", "ភូមិអំពិល"),
+        new GeoVillageSeed("05030101", "050301", "Tang Krouch Village", "ភូមិតាំងក្រូច"));
+  }
+
+  private void removeStaleOrganizationSeeds() {
+    Set<String> activeOfficeNames = new HashSet<>();
+    for (DepartmentSeed seed : buildDepartmentSeeds()) {
+      activeOfficeNames.add(seed.name());
+    }
+
+    Set<String> activePositionCodes = new HashSet<>();
+    for (PositionSeed seed : buildPositionSeeds()) {
+      activePositionCodes.add(seed.code().toUpperCase());
+    }
+
+    for (PositionModel position : positionRepository.findAll()) {
+      String code = position.getCode() == null ? "" : position.getCode().toUpperCase();
+      if (!activePositionCodes.contains(code)
+          && officerRepository.countByPosition_Id(position.getId()) == 0) {
+        positionRepository.delete(position);
+      }
+    }
+
+    for (DepartmentModel office : departmentRepository.findAll()) {
+      if (!activeOfficeNames.contains(office.getName())
+          && positionRepository.countByDepartment_Id(office.getId()) == 0
+          && officerRepository.countByOffice_Id(office.getId()) == 0) {
+        departmentRepository.delete(office);
+      }
+    }
+  }
+
   private List<DepartmentSeed> buildDepartmentSeeds() {
     return List.of(
+        new DepartmentSeed("DEP-01", "គណៈអភិបាល", "", "គណៈអភិបាល"),
+        new DepartmentSeed("DEP-02", "គណៈនាយករដ្ឋបាល", "", "គណៈនាយករដ្ឋបាល"),
         new DepartmentSeed(
-            "DEP-01", "នាយកដ្ឋានរដ្ឋបាល", "លោក សុខ វុទ្ធី", "គ្រប់គ្រងការងាររដ្ឋបាលទូទៅ"),
+            "DEP-03", "ការិយាល័យរដ្ឋបាល និងបុគ្គលិក", "", "ការិយាល័យរដ្ឋបាល និងបុគ្គលិក"),
         new DepartmentSeed(
-            "DEP-02",
-            "នាយកដ្ឋានធនធានមនុស្ស",
-            "លោកស្រី ចាន់ ស្រីពៅ",
-            "គ្រប់គ្រងបុគ្គលិក និងវិន័យការងារ"),
+            "DEP-04", "ការិយាល័យផែនការ និងហិរញ្ញវត្ថុ", "", "ការិយាល័យផែនការ និងហិរញ្ញវត្ថុ"),
+        new DepartmentSeed("DEP-05", "អង្គភាពលទ្ធកម្ម", "", "អង្គភាពលទ្ធកម្ម"),
         new DepartmentSeed(
-            "DEP-03", "នាយកដ្ឋានហិរញ្ញវត្ថុ", "លោក ម៉ៅ រតនា", "គ្រប់គ្រងថវិកា និងចំណាយ"),
+            "DEP-06", "ការិយាល័យលេខាធិការក្រុមប្រឹក្សា", "", "ការិយាល័យលេខាធិការក្រុមប្រឹក្សា"),
         new DepartmentSeed(
-            "DEP-04", "នាយកដ្ឋានព័ត៌មានវិទ្យា", "លោក លី ដារ៉ា", "ថែទាំប្រព័ន្ធបច្ចេកវិទ្យាព័ត៌មាន"),
-        new DepartmentSeed("DEP-05", "នាយកដ្ឋានផែនការ", "លោក ឈុន សុភ័ក្រ", "រៀបចំផែនការអភិវឌ្ឍន៍"),
+            "DEP-07", "ការិយាល័យអប់រំ យុវជន និងកីឡា", "", "ការិយាល័យអប់រំ យុវជន និងកីឡា"),
         new DepartmentSeed(
-            "DEP-06", "នាយកដ្ឋានលទ្ធកម្ម", "លោក តាំង វិសាល", "គ្រប់គ្រងការទិញ និងផ្គត់ផ្គង់"),
-        new DepartmentSeed(
-            "DEP-07", "នាយកដ្ឋានច្បាប់", "លោកស្រី ហេង មល្លិកា", "ផ្តល់យោបល់ផ្នែកច្បាប់"),
-        new DepartmentSeed(
-            "DEP-08", "នាយកដ្ឋានបណ្ណសារ", "លោក រ៉ា វណ្ណៈ", "គ្រប់គ្រងឯកសារ និងបណ្ណសារ"),
+            "DEP-08",
+            "ការិយាល័យរៀបចំដែនដី នគរូបនីយកម្ម សំណង់ និងភូមិបាល",
+            "",
+            "ការិយាល័យរៀបចំដែនដី នគរូបនីយកម្ម សំណង់ និងភូមិបាល"),
         new DepartmentSeed(
             "DEP-09",
-            "នាយកដ្ឋានទំនាក់ទំនងសាធារណៈ",
-            "លោកស្រី សៀង លក្ខិណា",
-            "ផ្សព្វផ្សាយព័ត៌មានស្ថាប័ន"),
+            "ការិយាល័យច្បាប់ និងសម្រុះសម្រួលវិវាទមូលដ្ឋាន",
+            "",
+            "ការិយាល័យច្បាប់ និងសម្រុះសម្រួលវិវាទមូលដ្ឋាន"),
         new DepartmentSeed(
             "DEP-10",
-            "នាយកដ្ឋានសវនកម្មផ្ទៃក្នុង",
-            "លោក គឹម សុវណ្ណ",
-            "ត្រួតពិនិត្យប្រព័ន្ធគ្រប់គ្រងផ្ទៃក្នុង"));
+            "ការិយាល័យសាធារណការ ដឹកជញ្ជូន អនាម័យ បរិស្ថាន និងសណ្តាប់ធ្នាប់សាធារណៈ",
+            "",
+            "ការិយាល័យសាធារណការ ដឹកជញ្ជូន អនាម័យ បរិស្ថាន និងសណ្តាប់ធ្នាប់សាធារណៈ"),
+        new DepartmentSeed(
+            "DEP-11",
+            "ការិយាល័យសេដ្ឋកិច្ច និងអភិវឌ្ឍន៍សហគមន៍",
+            "",
+            "ការិយាល័យសេដ្ឋកិច្ច និងអភិវឌ្ឍន៍សហគមន៍"),
+        new DepartmentSeed(
+            "DEP-12",
+            "ការិយាល័យសង្គមកិច្ច និងសុខុមាលភាពសង្គម",
+            "",
+            "ការិយាល័យសង្គមកិច្ច និងសុខុមាលភាពសង្គម"),
+        new DepartmentSeed("DEP-13", "ការិយាល័យច្រកចេញចូលតែមួយ", "", "ការិយាល័យច្រកចេញចូលតែមួយ"));
   }
 
   private List<PositionSeed> buildPositionSeeds() {
-    return List.of(
-        new PositionSeed("POS-01", "ប្រធាននាយកដ្ឋាន", "DEP-01", "ដឹកនាំនាយកដ្ឋាន"),
-        new PositionSeed("POS-02", "អនុប្រធាននាយកដ្ឋាន", "DEP-02", "ជួយសម្របសម្រួលការងារនាយកដ្ឋាន"),
-        new PositionSeed("POS-03", "មន្រ្តីរដ្ឋបាល", "DEP-03", "អនុវត្តការងាររដ្ឋបាលប្រចាំថ្ងៃ"),
-        new PositionSeed("POS-04", "មន្រ្តីធនធានមនុស្ស", "DEP-04", "គ្រប់គ្រងទិន្នន័យបុគ្គលិក"),
-        new PositionSeed("POS-05", "គណនេយ្យករ", "DEP-05", "កត់ត្រា និងត្រួតពិនិត្យហិរញ្ញវត្ថុ"),
-        new PositionSeed("POS-06", "អ្នកអភិវឌ្ឍន៍ប្រព័ន្ធ", "DEP-06", "អភិវឌ្ឍន៍ប្រព័ន្ធព័ត៌មាន"),
-        new PositionSeed(
-            "POS-07", "អ្នកវិភាគទិន្នន័យ", "DEP-07", "វិភាគទិន្នន័យសម្រាប់សេចក្ដីសម្រេច"),
-        new PositionSeed("POS-08", "មន្រ្តីផែនការ", "DEP-08", "រៀបចំ និងតាមដានផែនការ"),
-        new PositionSeed("POS-09", "មន្រ្តីទំនាក់ទំនង", "DEP-09", "ទំនាក់ទំនងជាមួយសាធារណៈ"),
-        new PositionSeed("POS-10", "មន្រ្តីឯកសារ", "DEP-10", "គ្រប់គ្រងឯកសារផ្លូវការ"));
+    List<PositionNameSeed> governorPositions =
+        List.of(
+            new PositionNameSeed("POS-01", "អភិបាល"), new PositionNameSeed("POS-02", "អភិបាលរង"));
+    List<PositionNameSeed> managementPositions =
+        List.of(
+            new PositionNameSeed("POS-03", "នាយករដ្ឋបាល"),
+            new PositionNameSeed("POS-04", "នាយករងរដ្ឋបាល"));
+    List<PositionNameSeed> officePositions =
+        List.of(
+            new PositionNameSeed("POS-05", "ប្រធានការិយាល័យ"),
+            new PositionNameSeed("POS-06", "អនុប្រធានការិយាល័យ"),
+            new PositionNameSeed("POS-07", "មន្ត្រី"),
+            new PositionNameSeed("POS-08", "មន្ត្រីកិច្ចសន្យា"));
+
+    List<PositionSeed> positions = new ArrayList<>();
+    for (DepartmentSeed department : buildDepartmentSeeds()) {
+      List<PositionNameSeed> positionNames =
+          switch (department.code()) {
+            case "DEP-01" -> governorPositions;
+            case "DEP-02" -> managementPositions;
+            default -> officePositions;
+          };
+      for (PositionNameSeed position : positionNames) {
+        positions.add(
+            new PositionSeed(
+                position.code() + "-" + department.code(),
+                position.name(),
+                department.code(),
+                position.name()));
+      }
+    }
+    return positions;
   }
 
   private List<OfficerSeed> buildOfficerSeeds() {
@@ -467,6 +861,33 @@ public class OfficerDataLoading implements CommandLineRunner {
   private record PositionSeed(
       String code, String name, String departmentCode, String description) {}
 
+  private record PositionNameSeed(String code, String name) {}
+
+  private record EducationLevelSeed(String name, String description) {}
+
+  private record GeoSeedContext(
+      Map<String, GeoProvinceModel> provincesByCode,
+      Map<String, GeoDistrictModel> districtsByCode,
+      Map<String, GeoCommuneModel> communesByCode,
+      Map<String, GeoVillageModel> villagesByCode) {}
+
+  private record GeoProvinceSeed(String code, String nameEn, String nameKh) {}
+
+  private record GeoDistrictSeed(String code, String provinceCode, String nameEn, String nameKh) {}
+
+  private record GeoCommuneSeed(String code, String districtCode, String nameEn, String nameKh) {}
+
+  private record GeoVillageSeed(String code, String communeCode, String nameEn, String nameKh) {}
+
+  private record AddressSeed(
+      String addressType,
+      String provinceCode,
+      String districtCode,
+      String communeCode,
+      String villageCode,
+      String streetAndHomeNumber,
+      Boolean primary) {}
+
   private record OfficerSeed(
       String officerCode,
       String username,
@@ -476,5 +897,76 @@ public class OfficerDataLoading implements CommandLineRunner {
       String lastName,
       GenderEnum gender,
       String phone,
-      String positionCode) {}
+      String positionCode) {
+
+    String firstNameEn() {
+      return "Officer";
+    }
+
+    String lastNameEn() {
+      return String.format("Seed %03d", seedNumber());
+    }
+
+    String firstNameKh() {
+      return firstName;
+    }
+
+    String lastNameKh() {
+      return lastName;
+    }
+
+    LocalDate dateOfBirth() {
+      int number = seedNumber();
+      return LocalDate.of(1984 + (number % 16), 1 + (number % 12), 1 + (number % 27));
+    }
+
+    String nationalId() {
+      return String.format("KH%09d", seedNumber());
+    }
+
+    String nationality() {
+      return "Cambodian";
+    }
+
+    String ethnicity() {
+      return "Cambodian";
+    }
+
+    String educationLevelName() {
+      return switch (seedNumber() % 5) {
+        case 0 -> "អនុបណ្ឌិត";
+        case 1 -> "បរិញ្ញាបត្រ";
+        case 2 -> "បរិញ្ញាបត្ររង";
+        case 3 -> "មធ្យមសិក្សាទុតិយភូមិ";
+        default -> "បណ្ឌិត";
+      };
+    }
+
+    LocalDate hireDate() {
+      int number = seedNumber();
+      return LocalDate.of(2018 + (number % 7), 1 + (number % 12), 1 + (number % 27));
+    }
+
+    String contractType() {
+      return seedNumber() % 4 == 0 ? "Contract" : "Permanent";
+    }
+
+    String seededPositionCode() {
+      int number = seedNumber();
+      if (number <= 2) {
+        return String.format("POS-%02d-DEP-01", number);
+      }
+      if (number <= 4) {
+        return String.format("POS-%02d-DEP-02", number);
+      }
+      int positionNumber = ((number - 5) % 4) + 5;
+      int officeNumber = ((number - 5) % 11) + 3;
+      return String.format("POS-%02d-DEP-%02d", positionNumber, officeNumber);
+    }
+
+    int seedNumber() {
+      String digits = officerCode.replaceAll("\\D", "");
+      return digits.isBlank() ? 1 : Integer.parseInt(digits);
+    }
+  }
 }

@@ -53,6 +53,7 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
       SELECT a
       FROM Attendance a
       JOIN FETCH a.officer o
+      JOIN FETCH o.office
       JOIN FETCH o.position p
       JOIN FETCH p.department
       LEFT JOIN FETCH a.status
@@ -66,9 +67,9 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     SELECT new com.norton.backend.dto.responses.attendances.AttendanceResponse(
         a.id,
         o.id,
-        o.firstName,
-        o.lastName,
-        o.position.department.name,
+        o.firstNameEn,
+        o.lastNameEn,
+        o.office.name,
         o.officerCode,
         o.imageUrl,
         a.date,
@@ -89,9 +90,9 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     SELECT new com.norton.backend.dto.responses.attendances.AttendanceResponse(
         a.id,
         o.id,
-        o.firstName,
-        o.lastName,
-        o.position.department.name,
+        o.firstNameEn,
+        o.lastNameEn,
+        o.office.name,
         o.officerCode,
         o.imageUrl,
         a.date,
@@ -106,14 +107,14 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     LEFT JOIN a.status s
       WHERE a.date >= :dateStart
         AND a.date <= :dateEnd
-        AND (:officeId IS NULL OR o.position.department.id = :officeId)
-        AND (:department = '' OR LOWER(o.position.department.name) = :department)
+        AND (:officeId IS NULL OR o.office.id = :officeId)
+        AND (:department = '' OR LOWER(o.office.name) = :department)
         AND (:status = '' OR LOWER(s.name) = :status)
       AND (
         LOWER(o.officerCode) LIKE :searchPattern
-        OR LOWER(o.firstName) LIKE :searchPattern
-        OR LOWER(o.lastName) LIKE :searchPattern
-        OR LOWER(CONCAT(o.firstName, ' ', o.lastName)) LIKE :searchPattern
+        OR LOWER(o.firstNameEn) LIKE :searchPattern
+        OR LOWER(o.lastNameEn) LIKE :searchPattern
+        OR LOWER(CONCAT(o.firstNameEn, ' ', o.lastNameEn)) LIKE :searchPattern
       )
     ORDER BY a.date DESC, a.id DESC
 """)
@@ -131,9 +132,9 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     SELECT new com.norton.backend.dto.responses.attendances.AttendanceResponse(
         a.id,
         o.id,
-        o.firstName,
-        o.lastName,
-        o.position.department.name,
+        o.firstNameEn,
+        o.lastNameEn,
+        o.office.name,
         o.officerCode,
         o.imageUrl,
         a.date,
@@ -148,14 +149,14 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
     LEFT JOIN a.status s
       WHERE a.date >= :dateStart
         AND a.date <= :dateEnd
-        AND (:officeId IS NULL OR o.position.department.id = :officeId)
-        AND (:department = '' OR LOWER(o.position.department.name) = :department)
+        AND (:officeId IS NULL OR o.office.id = :officeId)
+        AND (:department = '' OR LOWER(o.office.name) = :department)
         AND (:status = '' OR LOWER(s.name) = :status)
       AND (
         LOWER(o.officerCode) LIKE :searchPattern
-        OR LOWER(o.firstName) LIKE :searchPattern
-        OR LOWER(o.lastName) LIKE :searchPattern
-        OR LOWER(CONCAT(o.firstName, ' ', o.lastName)) LIKE :searchPattern
+        OR LOWER(o.firstNameEn) LIKE :searchPattern
+        OR LOWER(o.lastNameEn) LIKE :searchPattern
+        OR LOWER(CONCAT(o.firstNameEn, ' ', o.lastNameEn)) LIKE :searchPattern
       )
     ORDER BY a.date DESC, a.id DESC
 """)

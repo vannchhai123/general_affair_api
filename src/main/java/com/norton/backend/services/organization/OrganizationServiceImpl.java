@@ -13,11 +13,9 @@ import com.norton.backend.exceptions.ConflictException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.DepartmentModel;
 import com.norton.backend.models.PositionModel;
-import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.DepartmentRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.PositionRepository;
-import com.norton.backend.repositories.UserRepository;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +32,6 @@ public class OrganizationServiceImpl implements OrganizationService {
   private final DepartmentRepository departmentRepository;
   private final PositionRepository positionRepository;
   private final OfficerRepository officerRepository;
-  private final UserRepository userRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -49,8 +46,7 @@ public class OrganizationServiceImpl implements OrganizationService {
               (root, query, cb) ->
                   cb.or(
                       cb.like(cb.lower(root.get("name")), keyword),
-                      cb.like(cb.lower(root.get("code")), keyword),
-                      cb.like(cb.lower(root.get("manager")), keyword)));
+                      cb.like(cb.lower(root.get("description")), keyword)));
     }
 
     DepartmentStatus parsedStatus = parseDepartmentStatus(status);
@@ -75,17 +71,13 @@ public class OrganizationServiceImpl implements OrganizationService {
   @Override
   @Transactional
   public DepartmentResponseDto createDepartment(DepartmentUpsertRequest request) {
-    String normalizedCode = request.getCode().trim();
-    if (departmentRepository.existsByCodeIgnoreCase(normalizedCode)) {
-      throw new ConflictException("Department code already exists: " + normalizedCode);
+    if (departmentRepository.existsByName(request.getName().trim())) {
+      throw new ConflictException("Office name already exists: " + request.getName().trim());
     }
 
     DepartmentModel department =
         DepartmentModel.builder()
             .name(request.getName().trim())
-            .code(normalizedCode)
-            .manager(trimToNull(request.getManager()))
-            .admin(resolveOfficeAdmin(request.getAdminId(), null))
             .status(parseDepartmentStatusRequired(request.getStatus()))
             .description(trimToNull(request.getDescription()))
             .build();
@@ -112,15 +104,21 @@ public class OrganizationServiceImpl implements OrganizationService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Department", "id", id));
 
-    String normalizedCode = request.getCode().trim();
-    if (departmentRepository.existsByCodeIgnoreCaseAndIdNot(normalizedCode, id)) {
-      throw new ConflictException("Department code already exists: " + normalizedCode);
+    departmentRepository
+        .findByNameIgnoreCase(request.getName().trim())
+        .filter(existing -> !existing.getId().equals(id))
+        .ifPresent(
+            existing -> {
+              throw new ConflictException(
+                  "Office name already exists: " + request.getName().trim());
+            });
+
+    if (positionRepository.countByDepartment_Id(id) > 0
+        && !department.getName().equals(request.getName().trim())) {
+      throw new BadRequestException("Cannot rename office with existing positions");
     }
 
     department.setName(request.getName().trim());
-    department.setCode(normalizedCode);
-    department.setManager(trimToNull(request.getManager()));
-    department.setAdmin(resolveOfficeAdmin(request.getAdminId(), id));
     department.setStatus(parseDepartmentStatusRequired(request.getStatus()));
     department.setDescription(trimToNull(request.getDescription()));
 
@@ -284,41 +282,10 @@ public class OrganizationServiceImpl implements OrganizationService {
         .id(department.getId())
         .uuid(department.getUuid())
         .name(department.getName())
-        .code(department.getCode())
-        .manager(department.getManager())
-        .adminId(department.getAdmin() != null ? department.getAdmin().getId() : null)
-        .adminName(department.getAdmin() != null ? department.getAdmin().getFullName() : null)
-        .adminUsername(department.getAdmin() != null ? department.getAdmin().getUsername() : null)
-        .officerCount(officerRepository.countByPosition_Department_Id(department.getId()))
+        .officerCount(officerRepository.countByOffice_Id(department.getId()))
         .status(toLower(department.getStatus()))
         .description(department.getDescription())
         .build();
-  }
-
-  private UserModel resolveOfficeAdmin(Long adminId, Long departmentId) {
-    if (adminId == null) {
-      return null;
-    }
-
-    UserModel admin =
-        userRepository
-            .findById(adminId)
-            .orElseThrow(() -> new ResourceNotFoundException("User", "id", adminId));
-
-    String roleName = admin.getRole() != null ? admin.getRole().getRoleName() : null;
-    if (!"ROLE_ADMIN".equals(roleName)) {
-      throw new BadRequestException("Office admin must have ROLE_ADMIN");
-    }
-
-    boolean alreadyAssigned =
-        departmentId == null
-            ? departmentRepository.existsByAdmin_Id(adminId)
-            : departmentRepository.existsByAdmin_IdAndIdNot(adminId, departmentId);
-    if (alreadyAssigned) {
-      throw new ConflictException("Admin is already assigned to another office");
-    }
-
-    return admin;
   }
 
   private PositionResponseDto toPositionDto(PositionModel position) {

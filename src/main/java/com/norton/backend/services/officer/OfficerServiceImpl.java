@@ -17,11 +17,13 @@ import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.mapper.OfficerMapper;
 import com.norton.backend.mapper.UserMapper;
 import com.norton.backend.models.DepartmentModel;
+import com.norton.backend.models.EducationLevelModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.PositionModel;
 import com.norton.backend.models.UserModel;
 import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.DepartmentRepository;
+import com.norton.backend.repositories.EducationLevelRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.PositionRepository;
 import com.norton.backend.repositories.UserRepository;
@@ -46,6 +48,7 @@ public class OfficerServiceImpl implements OfficerService {
   private final OfficerRepository officerRepository;
   private final OfficerMapper officerMapper;
   private final DepartmentRepository departmentRepository;
+  private final EducationLevelRepository educationLevelRepository;
   private final PositionRepository positionRepository;
   private final UserRepository userRepository;
   private final UserRoleRepository userRoleRepository;
@@ -76,30 +79,11 @@ public class OfficerServiceImpl implements OfficerService {
       throw new ConflictException("User email already exists: " + request.getEmail());
     }
 
-    DepartmentModel department =
-        departmentRepository
-            .findByNameIgnoreCase(request.getDepartment())
-            .orElseGet(
-                () ->
-                    departmentRepository.save(
-                        DepartmentModel.builder()
-                            .name(request.getDepartment().trim())
-                            .status(DepartmentStatus.ACTIVE)
-                            .build()));
+    DepartmentModel department = resolveOffice(request);
     officeAccessService.assertCanAccessOffice(department.getId());
 
-    PositionModel position =
-        positionRepository
-            .findByNameIgnoreCaseAndDepartment_NameIgnoreCase(
-                request.getPosition(), request.getDepartment())
-            .orElseGet(
-                () ->
-                    positionRepository.save(
-                        PositionModel.builder()
-                            .name(request.getPosition().trim())
-                            .department(department)
-                            .status(PositionStatus.ACTIVE)
-                            .build()));
+    PositionModel position = resolvePosition(request, department);
+    EducationLevelModel educationLevel = resolveEducationLevel(request.getEducationLevelId());
 
     UserRoleModel officerRole =
         userRoleRepository
@@ -125,29 +109,50 @@ public class OfficerServiceImpl implements OfficerService {
         officerRepository.save(
             OfficerModel.builder()
                 .officerCode(request.getOfficerCode().trim())
-                .firstName(request.getFirstName().trim())
-                .lastName(request.getLastName().trim())
+                .firstNameEn(request.getFirstName().trim())
+                .lastNameEn(request.getLastName().trim())
+                .firstNameKh(request.getFirstNameKh().trim())
+                .lastNameKh(request.getLastNameKh().trim())
                 .gender(parseGender(request.getSex()))
+                .dateOfBirth(request.getDateOfBirth())
+                .nationalId(trimToNull(request.getNationalId()))
+                .nationality(defaultNationality(request.getNationality()))
+                .ethnicity(defaultEthnicity(request.getEthnicity()))
                 .email(request.getEmail().trim())
                 .phone(request.getPhone().trim())
                 .status(parseOfficerStatus(request.getStatus()))
+                .office(department)
                 .position(position)
+                .educationLevel(educationLevel)
+                .hireDate(request.getHireDate())
+                .contractType(trimToNull(request.getContractType()))
                 .user(user)
                 .build());
 
     return CreateOfficerResponse.builder()
         .id(officer.getId())
-        .userId(null)
+        .userId(user.getId())
+        .officeId(department.getId())
+        .positionId(position.getId())
+        .educationLevelId(educationLevel != null ? educationLevel.getId() : null)
         .officerCode(officer.getOfficerCode())
         .firstName(officer.getFirstName())
         .lastName(officer.getLastName())
+        .firstNameKh(officer.getFirstNameKh())
+        .lastNameKh(officer.getLastNameKh())
         .sex(officer.getGender().name().toLowerCase(Locale.ROOT))
+        .dateOfBirth(officer.getDateOfBirth())
+        .nationalId(officer.getNationalId())
+        .nationality(officer.getNationality())
+        .ethnicity(officer.getEthnicity())
         .email(officer.getEmail())
         .position(officer.getPosition().getName())
-        .department(officer.getPosition().getDepartment().getName())
+        .department(officer.getOffice().getName())
         .phone(officer.getPhone())
+        .hireDate(officer.getHireDate())
+        .contractType(officer.getContractType())
         .status(officer.getStatus().name().toLowerCase(Locale.ROOT))
-        .username(null)
+        .username(user.getUsername())
         .build();
   }
 
@@ -173,39 +178,30 @@ public class OfficerServiceImpl implements OfficerService {
       throw new ConflictException("User email already exists: " + request.getEmail());
     }
 
-    DepartmentModel department =
-        departmentRepository
-            .findByNameIgnoreCase(request.getDepartment())
-            .orElseGet(
-                () ->
-                    departmentRepository.save(
-                        DepartmentModel.builder()
-                            .name(request.getDepartment().trim())
-                            .status(DepartmentStatus.ACTIVE)
-                            .build()));
+    DepartmentModel department = resolveOffice(request);
     officeAccessService.assertCanAccessOffice(department.getId());
 
-    PositionModel position =
-        positionRepository
-            .findByNameIgnoreCaseAndDepartment_NameIgnoreCase(
-                request.getPosition(), request.getDepartment())
-            .orElseGet(
-                () ->
-                    positionRepository.save(
-                        PositionModel.builder()
-                            .name(request.getPosition().trim())
-                            .department(department)
-                            .status(PositionStatus.ACTIVE)
-                            .build()));
+    PositionModel position = resolvePosition(request, department);
+    EducationLevelModel educationLevel = resolveEducationLevel(request.getEducationLevelId());
 
     officer.setOfficerCode(request.getOfficerCode().trim());
     officer.setFirstName(request.getFirstName().trim());
     officer.setLastName(request.getLastName().trim());
+    officer.setFirstNameKh(request.getFirstNameKh().trim());
+    officer.setLastNameKh(request.getLastNameKh().trim());
     officer.setGender(parseGender(request.getSex()));
+    officer.setDateOfBirth(request.getDateOfBirth());
+    officer.setNationalId(trimToNull(request.getNationalId()));
+    officer.setNationality(defaultNationality(request.getNationality()));
+    officer.setEthnicity(defaultEthnicity(request.getEthnicity()));
     officer.setEmail(request.getEmail().trim());
     officer.setPhone(request.getPhone().trim());
     officer.setStatus(parseOfficerStatus(request.getStatus()));
+    officer.setOffice(department);
     officer.setPosition(position);
+    officer.setEducationLevel(educationLevel);
+    officer.setHireDate(request.getHireDate());
+    officer.setContractType(trimToNull(request.getContractType()));
 
     if (officer.getUser() != null) {
       UserModel user = officer.getUser();
@@ -218,17 +214,28 @@ public class OfficerServiceImpl implements OfficerService {
 
     return CreateOfficerResponse.builder()
         .id(updatedOfficer.getId())
-        .userId(null)
+        .userId(updatedOfficer.getUser() != null ? updatedOfficer.getUser().getId() : null)
+        .officeId(department.getId())
+        .positionId(position.getId())
+        .educationLevelId(educationLevel != null ? educationLevel.getId() : null)
         .officerCode(updatedOfficer.getOfficerCode())
         .firstName(updatedOfficer.getFirstName())
         .lastName(updatedOfficer.getLastName())
+        .firstNameKh(updatedOfficer.getFirstNameKh())
+        .lastNameKh(updatedOfficer.getLastNameKh())
         .sex(updatedOfficer.getGender().name().toLowerCase(Locale.ROOT))
+        .dateOfBirth(updatedOfficer.getDateOfBirth())
+        .nationalId(updatedOfficer.getNationalId())
+        .nationality(updatedOfficer.getNationality())
+        .ethnicity(updatedOfficer.getEthnicity())
         .email(updatedOfficer.getEmail())
         .position(updatedOfficer.getPosition().getName())
-        .department(updatedOfficer.getPosition().getDepartment().getName())
+        .department(updatedOfficer.getOffice().getName())
         .phone(updatedOfficer.getPhone())
+        .hireDate(updatedOfficer.getHireDate())
+        .contractType(updatedOfficer.getContractType())
         .status(updatedOfficer.getStatus().name().toLowerCase(Locale.ROOT))
-        .username(null)
+        .username(updatedOfficer.getUser() != null ? updatedOfficer.getUser().getUsername() : null)
         .build();
   }
 
@@ -239,7 +246,7 @@ public class OfficerServiceImpl implements OfficerService {
     Page<OfficerModel> officer =
         officeId == null
             ? officerRepository.findAll(pageable)
-            : officerRepository.findByPosition_Department_Id(officeId, pageable);
+            : officerRepository.findByOffice_Id(officeId, pageable);
     List<OfficerResponseDto> content =
         officer.getContent().stream().map(officerMapper::toResponse).toList();
 
@@ -257,25 +264,20 @@ public class OfficerServiceImpl implements OfficerService {
   public OfficerStatsResponse getOfficerStats() {
     Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
     long total =
-        officeId == null
-            ? officerRepository.count()
-            : officerRepository.countByPosition_Department_Id(officeId);
+        officeId == null ? officerRepository.count() : officerRepository.countByOffice_Id(officeId);
 
     long active =
         officeId == null
             ? officerRepository.countByStatus(OfficerStatus.ACTIVE)
-            : officerRepository.countByStatusAndPosition_Department_Id(
-                OfficerStatus.ACTIVE, officeId);
+            : officerRepository.countByStatusAndOffice_Id(OfficerStatus.ACTIVE, officeId);
     long inactive =
         officeId == null
             ? officerRepository.countByStatus(OfficerStatus.INACTIVE)
-            : officerRepository.countByStatusAndPosition_Department_Id(
-                OfficerStatus.INACTIVE, officeId);
+            : officerRepository.countByStatusAndOffice_Id(OfficerStatus.INACTIVE, officeId);
     long onLeave =
         officeId == null
             ? officerRepository.countByStatus(OfficerStatus.ON_LEAVE)
-            : officerRepository.countByStatusAndPosition_Department_Id(
-                OfficerStatus.ON_LEAVE, officeId);
+            : officerRepository.countByStatusAndOffice_Id(OfficerStatus.ON_LEAVE, officeId);
 
     return officerMapper.toStatsResponse(total, active, inactive, onLeave);
   }
@@ -319,5 +321,80 @@ public class OfficerServiceImpl implements OfficerService {
       suffix++;
     }
     return candidate;
+  }
+
+  private EducationLevelModel resolveEducationLevel(Long educationLevelId) {
+    if (educationLevelId == null) {
+      return null;
+    }
+    return educationLevelRepository
+        .findById(educationLevelId)
+        .orElseThrow(() -> new ResourceNotFoundException("EducationLevel", "id", educationLevelId));
+  }
+
+  private DepartmentModel resolveOffice(CreateOfficerRequest request) {
+    if (request.getOfficeId() != null) {
+      return departmentRepository
+          .findById(request.getOfficeId())
+          .orElseThrow(() -> new ResourceNotFoundException("Office", "id", request.getOfficeId()));
+    }
+    if (request.getDepartment() == null || request.getDepartment().isBlank()) {
+      throw new BadRequestException("office_id or office is required");
+    }
+    return departmentRepository
+        .findByNameIgnoreCase(request.getDepartment())
+        .orElseGet(
+            () ->
+                departmentRepository.save(
+                    DepartmentModel.builder()
+                        .name(request.getDepartment().trim())
+                        .status(DepartmentStatus.ACTIVE)
+                        .build()));
+  }
+
+  private PositionModel resolvePosition(CreateOfficerRequest request, DepartmentModel office) {
+    if (request.getPositionId() != null) {
+      PositionModel position =
+          positionRepository
+              .findById(request.getPositionId())
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Position", "id", request.getPositionId()));
+      if (position.getDepartment() == null
+          || !office.getId().equals(position.getDepartment().getId())) {
+        throw new BadRequestException("Position does not belong to the selected office");
+      }
+      return position;
+    }
+    if (request.getPosition() == null || request.getPosition().isBlank()) {
+      throw new BadRequestException("position_id or position is required");
+    }
+    return positionRepository
+        .findByNameIgnoreCaseAndDepartment_NameIgnoreCase(request.getPosition(), office.getName())
+        .orElseGet(
+            () ->
+                positionRepository.save(
+                    PositionModel.builder()
+                        .name(request.getPosition().trim())
+                        .department(office)
+                        .status(PositionStatus.ACTIVE)
+                        .build()));
+  }
+
+  private String defaultNationality(String nationality) {
+    String trimmed = trimToNull(nationality);
+    return trimmed == null ? "Cambodian" : trimmed;
+  }
+
+  private String defaultEthnicity(String ethnicity) {
+    String trimmed = trimToNull(ethnicity);
+    return trimmed == null ? "Cambodian" : trimmed;
+  }
+
+  private String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 }

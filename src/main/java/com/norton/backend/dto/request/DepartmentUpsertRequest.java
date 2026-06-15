@@ -10,7 +10,6 @@ public class DepartmentUpsertRequest {
   @Size(max = 100, message = "name must not exceed 100 characters")
   private String name;
 
-  @NotBlank(message = "code is required")
   @Size(max = 50, message = "code must not exceed 50 characters")
   private String code;
 

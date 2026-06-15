@@ -15,15 +15,5 @@ public interface DepartmentRepository
 
   Optional<DepartmentModel> findByNameIgnoreCase(String name);
 
-  Optional<DepartmentModel> findByAdmin_Id(Long adminId);
-
-  boolean existsByCodeIgnoreCase(String code);
-
-  boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
-
-  boolean existsByAdmin_Id(Long adminId);
-
-  boolean existsByAdmin_IdAndIdNot(Long adminId, Long id);
-
   long countByStatus(DepartmentStatus status);
 }

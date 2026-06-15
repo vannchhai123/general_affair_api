@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import lombok.Data;
 
 @Data
@@ -16,26 +18,61 @@ public class CreateOfficerRequest {
   private String officerCode;
 
   @NotBlank(message = "first_name is required")
-  @JsonProperty("first_name")
-  private String firstName;
+  @JsonAlias({"first_name", "firstName", "first_name_en"})
+  @JsonProperty("first_name_en")
+  private String firstNameEn;
 
   @NotBlank(message = "last_name is required")
-  @JsonProperty("last_name")
-  private String lastName;
+  @JsonAlias({"last_name", "lastName", "last_name_en"})
+  @JsonProperty("last_name_en")
+  private String lastNameEn;
+
+  @NotBlank(message = "first_name_kh is required")
+  @JsonProperty("first_name_kh")
+  private String firstNameKh;
+
+  @NotBlank(message = "last_name_kh is required")
+  @JsonProperty("last_name_kh")
+  private String lastNameKh;
 
   @NotBlank(message = "sex is required")
+  @JsonAlias("gender")
   private String sex;
+
+  @JsonProperty("date_of_birth")
+  private LocalDate dateOfBirth;
+
+  @JsonProperty("national_id")
+  private String nationalId;
+
+  private String nationality;
+
+  private String ethnicity;
 
   @NotBlank(message = "email is required")
   @Email(message = "Invalid email format")
   private String email;
 
-  @NotBlank(message = "position is required")
+  @JsonProperty("position_id")
+  private Long positionId;
+
   private String position;
 
-  @NotBlank(message = "department is required")
-  @JsonAlias("office")
+  @JsonProperty("office_id")
+  private Long officeId;
+
+  @JsonAlias({"office", "office_name"})
   private String department;
+
+  @JsonProperty("education_level_id")
+  private Long educationLevelId;
+
+  @NotNull(message = "hire_date is required")
+  @JsonProperty("hire_date")
+  private LocalDate hireDate;
+
+  @JsonProperty("contract_type")
+  private String contractType;
 
   @NotBlank(message = "phone is required")
   @Size(max = 100, message = "phone must not exceed 100 characters")
@@ -44,4 +81,12 @@ public class CreateOfficerRequest {
 
   @NotBlank(message = "status is required")
   private String status;
+
+  public String getFirstName() {
+    return firstNameEn;
+  }
+
+  public String getLastName() {
+    return lastNameEn;
+  }
 }

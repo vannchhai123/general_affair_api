@@ -12,15 +12,20 @@ public interface OfficerMapper {
 
   @Mapping(target = "uuid", expression = "java(officer.getUuid())")
   @Mapping(source = "position.name", target = "positionName")
-  @Mapping(source = "position.department.name", target = "departmentName")
+  @Mapping(source = "office.name", target = "departmentName")
   @Mapping(source = "status", target = "status")
   OfficerResponse toProfileResponse(OfficerModel officer);
 
   @Mapping(source = "user.id", target = "userId")
+  @Mapping(source = "office.id", target = "officeId")
+  @Mapping(source = "position.id", target = "positionId")
+  @Mapping(source = "educationLevel.id", target = "educationLevelId")
   @Mapping(source = "officerCode", target = "officerCode")
   @Mapping(source = "user.username", target = "username")
   @Mapping(source = "position.name", target = "position")
-  @Mapping(source = "position.department.name", target = "department")
+  @Mapping(source = "office.name", target = "department")
+  @Mapping(source = "firstNameKh", target = "firstNameKh")
+  @Mapping(source = "lastNameKh", target = "lastNameKh")
   @Mapping(
       target = "sex",
       expression =

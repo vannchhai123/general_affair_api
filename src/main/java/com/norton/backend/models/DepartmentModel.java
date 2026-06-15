@@ -14,28 +14,16 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "department")
+@Table(name = "offices")
 public class DepartmentModel extends BaseIdModel {
 
   @Column(name = "uuid", unique = true, length = 36)
   private String uuid;
 
-  @NotBlank(message = "Department name is required")
-  @Size(max = 100, message = "Department name must not exceed 100 characters")
-  @Column(nullable = false, length = 100)
+  @NotBlank(message = "Office name is required")
+  @Size(max = 100, message = "Office name must not exceed 100 characters")
+  @Column(nullable = false, unique = true, length = 100)
   private String name;
-
-  @Size(max = 50, message = "Department code must not exceed 50 characters")
-  @Column(name = "code", length = 50, unique = true)
-  private String code;
-
-  @Size(max = 255, message = "Manager must not exceed 255 characters")
-  @Column(name = "manager", length = 255)
-  private String manager;
-
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "admin_user_id", unique = true)
-  private UserModel admin;
 
   @Size(max = 500, message = "Description must not exceed 500 characters")
   private String description;

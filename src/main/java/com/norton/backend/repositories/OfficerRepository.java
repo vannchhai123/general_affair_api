@@ -15,7 +15,7 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
 
   long countByStatus(OfficerStatus status);
 
-  long countByStatusAndPosition_Department_Id(OfficerStatus status, Long departmentId);
+  long countByStatusAndOffice_Id(OfficerStatus status, Long officeId);
 
   boolean existsByOfficerCode(String officerCode);
 
@@ -31,18 +31,26 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
   long countAll();
 
   @Override
-  @EntityGraph(attributePaths = {"user", "position", "position.department"})
+  @EntityGraph(
+      attributePaths = {"user", "office", "position", "position.department", "educationLevel"})
   Page<OfficerModel> findAll(Pageable pageable);
 
-  @EntityGraph(attributePaths = {"user", "position", "position.department"})
+  @EntityGraph(
+      attributePaths = {"user", "office", "position", "position.department", "educationLevel"})
   Page<OfficerModel> findByPosition_Department_Id(Long departmentId, Pageable pageable);
+
+  @EntityGraph(
+      attributePaths = {"user", "office", "position", "position.department", "educationLevel"})
+  Page<OfficerModel> findByOffice_Id(Long officeId, Pageable pageable);
 
   @Query(
       """
     SELECT o
     FROM OfficerModel o
+    JOIN FETCH o.office
     JOIN FETCH o.position p
     JOIN FETCH p.department
+    LEFT JOIN FETCH o.educationLevel
     WHERE o.id = :officerId
 """)
   Optional<OfficerModel> findByIdWithPosition(Long officerId);
@@ -51,13 +59,17 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
       """
     SELECT o
     FROM OfficerModel o
+    JOIN FETCH o.office
     JOIN FETCH o.position p
     JOIN FETCH p.department
+    LEFT JOIN FETCH o.educationLevel
     WHERE o.user.id = :userId
 """)
   Optional<OfficerModel> findByUserIdWithPosition(Long userId);
 
   long countByPosition_Department_Id(Long departmentId);
+
+  long countByOffice_Id(Long officeId);
 
   long countByPosition_Id(Long positionId);
 
