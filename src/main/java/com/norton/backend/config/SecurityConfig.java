@@ -80,6 +80,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/v1/session/*/qr")
                     .permitAll()
+                    .requestMatchers("/api/v1/dashboard")
+                    .permitAll()
                     .requestMatchers("/")
                     .permitAll()
                     .anyRequest()

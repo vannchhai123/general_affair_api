@@ -54,7 +54,7 @@ public class OfficerController {
   @GetMapping
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
   public ResponseEntity<PageResponse<OfficerResponseDto>> getAllOfficers(
-      @PageableDefault(size = 10, sort = "id") Pageable request) {
+      @PageableDefault(size = 20, sort = "id") Pageable request) {
     return ResponseEntity.ok(officerService.getAllOfficers(request));
   }
 

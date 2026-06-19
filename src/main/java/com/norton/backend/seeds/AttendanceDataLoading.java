@@ -97,7 +97,50 @@ public class AttendanceDataLoading implements CommandLineRunner {
       attendanceRepository.saveAll(records);
     }
 
+    // Ensure today's attendance exists for officers in the planning & finance office (seeded in
+    // Khmer)
+    LocalDate today = LocalDate.now(ZoneId.of("Asia/Phnom_Penh"));
+    ensureTodaysAttendanceForOffice("ការិយាល័យផែនការ និងហិរញ្ញវត្ថុ", today, present, approved);
+
     System.out.println("Monthly attendance seed data inserted/updated successfully.");
+  }
+
+  private void ensureTodaysAttendanceForOffice(
+      String officeName,
+      LocalDate date,
+      AttendanceStatusModel present,
+      AttendanceStatusModel approved) {
+    List<OfficerModel> officeOfficers = officerRepository.findByOffice_NameIgnoreCase(officeName);
+    if (officeOfficers == null || officeOfficers.isEmpty()) {
+      return;
+    }
+
+    List<AttendanceModel> todays = new ArrayList<>();
+    for (OfficerModel officer : officeOfficers) {
+      if (attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
+        continue;
+      }
+
+      LocalDateTime checkIn = date.atTime(8, 0);
+      LocalDateTime checkOut = date.atTime(17, 0);
+      AttendanceModel a =
+          AttendanceModel.builder()
+              .officer(officer)
+              .date(date)
+              .checkIn(checkIn)
+              .checkOut(checkOut)
+              .totalWorkMin((int) java.time.Duration.between(checkIn, checkOut).toMinutes())
+              .totalLateMin(0)
+              .status(present != null ? present : approved)
+              .notes("Seeded attendance for " + date)
+              .build();
+      todays.add(a);
+    }
+
+    if (!todays.isEmpty()) {
+      attendanceRepository.saveAll(todays);
+      System.out.println("Inserted today's attendance for office: " + officeName);
+    }
   }
 
   private List<OfficerModel> loadSeedOfficers() {

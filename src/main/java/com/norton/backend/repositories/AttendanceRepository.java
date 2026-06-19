@@ -36,6 +36,9 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
   java.util.Optional<AttendanceModel> findByOfficerIdAndDate(
       Long officerId, java.time.LocalDate date);
 
+  java.util.List<AttendanceModel> findAllByDateAndOfficer_Office_NameIgnoreCase(
+      java.time.LocalDate date, String officeName);
+
   @Query(
       """
       SELECT a

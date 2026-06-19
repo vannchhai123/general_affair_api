@@ -3,6 +3,7 @@ package com.norton.backend.services.attendance;
 import com.norton.backend.dto.request.CreateAttendanceRequest;
 import com.norton.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.norton.backend.dto.responses.PageResponse;
+import com.norton.backend.dto.responses.attendances.AllOfficersReportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceExportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceImportErrorResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceImportResponse;
@@ -84,6 +85,7 @@ public class AttendanceServiceImpl implements AttendanceService {
       Set.of("PRESENT", "ABSENT", "LATE", "HALF_DAY");
   private static final DateTimeFormatter EXPORT_DATE_FORMAT =
       DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
   private final AttendanceRepository attendanceRepository;
   private final AttendanceSessionRepository attendanceSessionRepository;
@@ -243,6 +245,204 @@ public class AttendanceServiceImpl implements AttendanceService {
         .message("Attendance summary fetched successfully")
         .data(data)
         .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public AllOfficersReportResponse getAllOfficersReport(String onOffice, LocalDate onTodayDate) {
+    if (onOffice == null || onOffice.isBlank()) {
+      throw new BadRequestException("Office name is required");
+    }
+    if (onTodayDate == null) {
+      throw new BadRequestException("Date is required");
+    }
+
+    String normalizedOffice = onOffice.trim();
+
+    List<OfficerModel> officers = officerRepository.findByOffice_NameIgnoreCase(normalizedOffice);
+
+    Long scopeOfficeId = officeAccessService.currentOfficeScopeIdOrNull();
+    if (scopeOfficeId != null && !officers.isEmpty()) {
+      Long requestedOfficeId =
+          officers.get(0).getOffice() != null ? officers.get(0).getOffice().getId() : null;
+      if (requestedOfficeId != null && !scopeOfficeId.equals(requestedOfficeId)) {
+        throw new UnauthorizedException("You can only access officers in your own office");
+      }
+    }
+
+    // If current user is a regular officer on mobile, only return their own information
+    String currentRole = officeAccessService.currentUser().getRole().getRoleName();
+    if ("ROLE_OFFICER".equals(currentRole)) {
+      Long currentUserId = officeAccessService.currentUser().getId();
+      OfficerModel selfOfficer =
+          officerRepository.findByUserIdWithPosition(currentUserId).orElse(null);
+
+      if (selfOfficer == null) {
+        return AllOfficersReportResponse.builder()
+            .summary(
+                AllOfficersReportResponse.Summary.builder()
+                    .totalStaff(0)
+                    .presentCount(0)
+                    .absentCount(0)
+                    .attendancePercentage(0)
+                    .build())
+            .attendanceStaffs(Collections.emptyList())
+            .build();
+      }
+
+      AttendanceModel attendance =
+          attendanceRepository
+              .findByOfficerIdAndDate(selfOfficer.getId(), onTodayDate)
+              .orElse(null);
+      boolean isPresent = attendance != null && attendance.getCheckIn() != null;
+
+      AllOfficersReportResponse.AttendanceStaffReportItem item =
+          AllOfficersReportResponse.AttendanceStaffReportItem.builder()
+              .officerId(selfOfficer.getUuid())
+              .name(selfOfficer.getFirstNameEn() + " " + selfOfficer.getLastNameEn())
+              .role(selfOfficer.getPosition() != null ? selfOfficer.getPosition().getName() : null)
+              .departmentId(
+                  selfOfficer.getOffice() != null ? selfOfficer.getOffice().getId() : null)
+              .departmentName(
+                  selfOfficer.getOffice() != null ? selfOfficer.getOffice().getName() : null)
+              .isPresent(isPresent)
+              .imageUrl(selfOfficer.getImageUrl())
+              .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
+              .checkOutTime(formatTime(attendance != null ? attendance.getCheckOut() : null))
+              .build();
+
+      int presentCount = isPresent ? 1 : 0;
+      int totalStaff = 1;
+      int absentCount = totalStaff - presentCount;
+      int attendancePercentage = presentCount == 0 ? 0 : 100;
+
+      return AllOfficersReportResponse.builder()
+          .summary(
+              AllOfficersReportResponse.Summary.builder()
+                  .totalStaff(totalStaff)
+                  .presentCount(presentCount)
+                  .absentCount(absentCount)
+                  .attendancePercentage(attendancePercentage)
+                  .build())
+          .attendanceStaffs(Collections.singletonList(item))
+          .build();
+    }
+
+    Map<Long, AttendanceModel> attendancesByOfficerId =
+        attendanceRepository
+            .findAllByDateAndOfficer_Office_NameIgnoreCase(onTodayDate, normalizedOffice)
+            .stream()
+            .filter(att -> att.getOfficer() != null)
+            .collect(
+                Collectors.toMap(
+                    att -> att.getOfficer().getId(),
+                    att -> att,
+                    (existing, replacement) -> existing));
+
+    List<AllOfficersReportResponse.AttendanceStaffReportItem> attendanceStaffs =
+        officers.stream()
+            .map(
+                officer -> {
+                  AttendanceModel attendance = attendancesByOfficerId.get(officer.getId());
+                  boolean isPresent = attendance != null && attendance.getCheckIn() != null;
+
+                  return AllOfficersReportResponse.AttendanceStaffReportItem.builder()
+                      .officerId(officer.getUuid())
+                      .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
+                      .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
+                      .departmentId(
+                          officer.getOffice() != null ? officer.getOffice().getId() : null)
+                      .departmentName(
+                          officer.getOffice() != null ? officer.getOffice().getName() : null)
+                      .isPresent(isPresent)
+                      .imageUrl(officer.getImageUrl())
+                      .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
+                      .checkOutTime(
+                          formatTime(attendance != null ? attendance.getCheckOut() : null))
+                      .build();
+                })
+            .collect(Collectors.toList());
+
+    int totalStaff = attendanceStaffs.size();
+    int presentCount =
+        (int)
+            attendanceStaffs.stream()
+                .filter(AllOfficersReportResponse.AttendanceStaffReportItem::isPresent)
+                .count();
+    int absentCount = Math.max(totalStaff - presentCount, 0);
+    int attendancePercentage =
+        totalStaff == 0 ? 0 : (int) Math.round((presentCount * 100.0) / totalStaff);
+
+    return AllOfficersReportResponse.builder()
+        .summary(
+            AllOfficersReportResponse.Summary.builder()
+                .totalStaff(totalStaff)
+                .presentCount(presentCount)
+                .absentCount(absentCount)
+                .attendancePercentage(attendancePercentage)
+                .build())
+        .attendanceStaffs(attendanceStaffs)
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public com.norton.backend.dto.responses.attendances.OfficerReportResponse getOfficerReport(
+      Long officerId, LocalDate onDate) {
+    if (officerId == null) {
+      throw new BadRequestException("officerId is required");
+    }
+    if (onDate == null) {
+      throw new BadRequestException("date is required");
+    }
+
+    OfficerModel officer =
+        officerRepository
+            .findByIdWithPosition(officerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", officerId));
+    officeAccessService.assertCanAccessOfficer(officer);
+
+    // If current user is ROLE_OFFICER ensure they only access their own record
+    String currentRole = officeAccessService.currentUser().getRole().getRoleName();
+    if ("ROLE_OFFICER".equals(currentRole)) {
+      Long currentUserId = officeAccessService.currentUser().getId();
+      if (officer.getUser() == null || !currentUserId.equals(officer.getUser().getId())) {
+        throw new UnauthorizedException("Officers can only access their own report");
+      }
+    }
+
+    AttendanceModel attendance =
+        attendanceRepository.findByOfficerIdAndDate(officerId, onDate).orElse(null);
+
+    com.norton.backend.dto.responses.attendances.OfficerReportResponse.Attendance attendanceDto =
+        null;
+    if (attendance != null) {
+      attendanceDto =
+          com.norton.backend.dto.responses.attendances.OfficerReportResponse.Attendance.builder()
+              .date(attendance.getDate())
+              .status(attendance.getStatus() != null ? attendance.getStatus().getCode() : null)
+              .checkInTime(formatTime(attendance.getCheckIn()))
+              .checkOutTime(formatTime(attendance.getCheckOut()))
+              .workingHours(attendance.getTotalWorkMin())
+              .lateMinutes(attendance.getTotalLateMin())
+              .build();
+    }
+
+    return com.norton.backend.dto.responses.attendances.OfficerReportResponse.builder()
+        .officerId(officer.getUuid())
+        .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
+        .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
+        .departmentId(officer.getOffice() != null ? officer.getOffice().getId() : null)
+        .departmentName(officer.getOffice() != null ? officer.getOffice().getName() : null)
+        .imageUrl(officer.getImageUrl())
+        .phone(officer.getPhone())
+        .email(officer.getEmail())
+        .attendance(attendanceDto)
+        .build();
+  }
+
+  private String formatTime(LocalDateTime dateTime) {
+    return dateTime == null ? null : dateTime.format(TIME_FORMAT);
   }
 
   @Override

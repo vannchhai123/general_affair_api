@@ -3,6 +3,7 @@ package com.norton.backend.services.attendance;
 import com.norton.backend.dto.request.CreateAttendanceRequest;
 import com.norton.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.norton.backend.dto.responses.PageResponse;
+import com.norton.backend.dto.responses.attendances.AllOfficersReportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceExportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceImportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceResponse;
@@ -26,6 +27,11 @@ public interface AttendanceService {
   AttendanceStatusResponse getMyAttendanceStatus(Long officerId);
 
   AttendanceSummaryResponse getMyAttendanceSummary(Long officerId);
+
+  AllOfficersReportResponse getAllOfficersReport(String onOffice, LocalDate onTodayDate);
+
+  com.norton.backend.dto.responses.attendances.OfficerReportResponse getOfficerReport(
+      Long officerId, LocalDate onDate);
 
   CreateAttendanceResponse createAttendance(CreateAttendanceRequest request);
 

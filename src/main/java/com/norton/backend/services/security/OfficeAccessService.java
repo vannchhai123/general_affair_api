@@ -5,6 +5,7 @@ import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.OfficerRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OfficeAccessService {
 
   private final OfficerRepository officerRepository;
@@ -40,10 +42,15 @@ public class OfficeAccessService {
     }
 
     UserModel currentUser = currentUser();
-    return officerRepository
-        .findByUserIdWithPosition(currentUser.getId())
-        .map(OfficeAccessService::officeIdOf)
-        .orElseThrow(() -> new UnauthorizedException("Admin is not assigned to an office"));
+    Long currentUserId = currentUser.getId();
+    Long scopeOfficeId =
+        officerRepository
+            .findByUserIdWithPosition(currentUser.getId())
+            .map(OfficeAccessService::officeIdOf)
+            .orElseThrow(() -> new UnauthorizedException("Admin is not assigned to an office"));
+
+    log.debug("currentUser={} currentUserScopeOfficeId={}", currentUserId, scopeOfficeId);
+    return scopeOfficeId;
   }
 
   public void assertCanAccessOfficer(OfficerModel officer) {
@@ -53,6 +60,11 @@ public class OfficeAccessService {
     }
 
     Long officerOfficeId = officeIdOf(officer);
+    log.debug(
+        "assertCanAccessOfficer: scopeOfficeId={} officerId={} officerOfficeId={}",
+        scopeOfficeId,
+        officer != null ? officer.getId() : null,
+        officerOfficeId);
     if (!scopeOfficeId.equals(officerOfficeId)) {
       throw new UnauthorizedException("You can only access officers in your own office");
     }

@@ -2,33 +2,27 @@ package com.norton.backend.dto.responses.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class DashboardResponse {
+public class DashboardStats {
 
-  private OfficersSummary officers;
-  private AttendanceSummary attendance;
-  private InvitationsSummary invitations;
-  private ApprovalSummary missions;
+  private OfficersStats officers;
+  private AttendanceStats attendance;
+  private InvitationsStats invitations;
+  private MissionsStats missions;
 
   @JsonProperty("leave_requests")
-  private ApprovalSummary leaveRequests;
+  private LeaveRequestsStats leaveRequests;
 
   @JsonProperty("recent_attendance")
   private List<RecentAttendanceDto> recentAttendance;
 
   @Data
   @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class OfficersSummary {
+  public static class OfficersStats {
     private long total;
     private long active;
 
@@ -40,9 +34,7 @@ public class DashboardResponse {
 
   @Data
   @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class AttendanceSummary {
+  public static class AttendanceStats {
     private long total;
     private long approved;
     private long pending;
@@ -51,9 +43,7 @@ public class DashboardResponse {
 
   @Data
   @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class InvitationsSummary {
+  public static class InvitationsStats {
     private long total;
     private long active;
     private long completed;
@@ -61,9 +51,15 @@ public class DashboardResponse {
 
   @Data
   @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class ApprovalSummary {
+  public static class MissionsStats {
+    private long total;
+    private long approved;
+    private long pending;
+  }
+
+  @Data
+  @Builder
+  public static class LeaveRequestsStats {
     private long total;
     private long approved;
     private long pending;

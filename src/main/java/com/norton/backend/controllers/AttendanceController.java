@@ -4,6 +4,7 @@ import com.norton.backend.dto.request.AttendanceScanRequest;
 import com.norton.backend.dto.request.CreateAttendanceRequest;
 import com.norton.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.norton.backend.dto.responses.PageResponse;
+import com.norton.backend.dto.responses.attendances.AllOfficersReportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceExportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceImportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceResponse;
@@ -71,6 +72,14 @@ public class AttendanceController {
   public ResponseEntity<AttendanceSummaryResponse> getMyAttendanceSummary(
       @RequestParam(required = false) Long officerId) {
     return ResponseEntity.ok(attendanceService.getMyAttendanceSummary(officerId));
+  }
+
+  @GetMapping("/report/{onOffice}/{onTodayDate}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
+  public ResponseEntity<AllOfficersReportResponse> getAllOfficersReport(
+      @PathVariable String onOffice,
+      @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onTodayDate) {
+    return ResponseEntity.ok(attendanceService.getAllOfficersReport(onOffice, onTodayDate));
   }
 
   @PostMapping
