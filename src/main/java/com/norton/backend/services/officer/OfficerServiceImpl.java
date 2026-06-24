@@ -83,7 +83,7 @@ public class OfficerServiceImpl implements OfficerService {
     officeAccessService.assertCanAccessOffice(department.getId());
 
     PositionModel position = resolvePosition(request, department);
-    EducationLevelModel educationLevel = resolveEducationLevel(request.getEducationLevelId());
+    EducationLevelModel educationLevel = resolveEducationLevel(request);
 
     UserRoleModel officerRole =
         userRoleRepository
@@ -182,7 +182,7 @@ public class OfficerServiceImpl implements OfficerService {
     officeAccessService.assertCanAccessOffice(department.getId());
 
     PositionModel position = resolvePosition(request, department);
-    EducationLevelModel educationLevel = resolveEducationLevel(request.getEducationLevelId());
+    EducationLevelModel educationLevel = resolveEducationLevel(request);
 
     officer.setOfficerCode(request.getOfficerCode().trim());
     officer.setFirstName(request.getFirstName().trim());
@@ -323,13 +323,18 @@ public class OfficerServiceImpl implements OfficerService {
     return candidate;
   }
 
-  private EducationLevelModel resolveEducationLevel(Long educationLevelId) {
-    if (educationLevelId == null) {
+  private EducationLevelModel resolveEducationLevel(CreateOfficerRequest request) {
+    String educationLevelName = request.getEducationLevel();
+    if (educationLevelName == null || educationLevelName.isBlank()) {
       return null;
     }
+    String trimmed = educationLevelName.trim();
     return educationLevelRepository
-        .findById(educationLevelId)
-        .orElseThrow(() -> new ResourceNotFoundException("EducationLevel", "id", educationLevelId));
+        .findByNameIgnoreCase(trimmed)
+        .orElseGet(
+            () ->
+                educationLevelRepository.save(
+                    EducationLevelModel.builder().name(trimmed).description(null).build()));
   }
 
   private DepartmentModel resolveOffice(CreateOfficerRequest request) {

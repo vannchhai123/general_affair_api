@@ -14,6 +14,9 @@ import com.norton.backend.dto.responses.attendances.AttendanceStatusResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceSummaryDataResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceSummaryResponse;
 import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
+import com.norton.backend.dto.responses.attendances.OfficerAttendanceDailyDetailResponse;
+import com.norton.backend.dto.responses.attendances.OfficerAttendanceMonthlyHistoryResponse;
+import com.norton.backend.dto.responses.attendances.OfficerAttendanceTodayScanInfoResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.exceptions.ConflictException;
@@ -77,6 +80,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
+
   private static final List<String> MORNING_SHIFT_NAMES =
       List.of("ážœáŸáž“áž–áŸ’ážšáž¹áž€", "Morning Shift");
   private static final List<String> AFTERNOON_SHIFT_NAMES =
@@ -625,6 +629,210 @@ public class AttendanceServiceImpl implements AttendanceService {
         .updated(updated)
         .failed(failed)
         .errors(errors)
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public OfficerAttendanceMonthlyHistoryResponse getOfficerAttendanceMonthlyHistory(
+      Long officerId, String onMonth) {
+    if (officerId == null) {
+      throw new BadRequestException("officerId is required");
+    }
+    if (onMonth == null || onMonth.isBlank()) {
+      throw new BadRequestException("onMonth is required (format: yyyy-MM)");
+    }
+
+    OfficerModel officer =
+        officerRepository
+            .findByIdWithPosition(officerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", officerId));
+    officeAccessService.assertCanAccessOfficer(officer);
+
+    try {
+      String[] parts = onMonth.trim().split("-");
+      if (parts.length != 2) {
+        throw new BadRequestException("Invalid month format. Use yyyy-MM");
+      }
+      int year = Integer.parseInt(parts[0]);
+      int month = Integer.parseInt(parts[1]);
+      LocalDate startDate = LocalDate.of(year, month, 1);
+      LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+      List<AttendanceModel> attendances =
+          attendanceRepository.findAllByOfficerIdAndDateBetween(officerId, startDate, endDate);
+
+      List<LocalDate> presentDates = new ArrayList<>();
+      List<LocalDate> absentDates = new ArrayList<>();
+      List<LocalDate> lateDates = new ArrayList<>();
+
+      for (AttendanceModel attendance : attendances) {
+        if (attendance.getCheckIn() == null) {
+          absentDates.add(attendance.getDate());
+        } else if (attendance.getTotalLateMin() != null && attendance.getTotalLateMin() > 0) {
+          lateDates.add(attendance.getDate());
+        } else {
+          presentDates.add(attendance.getDate());
+        }
+      }
+
+      OfficerAttendanceMonthlyHistoryResponse.MonthlySummary summary =
+          OfficerAttendanceMonthlyHistoryResponse.MonthlySummary.builder()
+              .present(presentDates.size())
+              .absent(absentDates.size())
+              .late(lateDates.size())
+              .build();
+
+      return OfficerAttendanceMonthlyHistoryResponse.builder()
+          .month(onMonth)
+          .summary(summary)
+          .presentDates(presentDates)
+          .absentDates(absentDates)
+          .lateDates(lateDates)
+          .build();
+    } catch (NumberFormatException | java.time.DateTimeException ex) {
+      throw new BadRequestException("Invalid month format. Use yyyy-MM");
+    }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public OfficerAttendanceDailyDetailResponse getOfficerAttendanceDailyDetail(
+      Long officerId, LocalDate onDate) {
+    if (officerId == null) {
+      throw new BadRequestException("officerId is required");
+    }
+    if (onDate == null) {
+      throw new BadRequestException("onDate is required");
+    }
+
+    OfficerModel officer =
+        officerRepository
+            .findByIdWithPosition(officerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", officerId));
+    officeAccessService.assertCanAccessOfficer(officer);
+
+    AttendanceModel attendance =
+        attendanceRepository
+            .findByOfficerIdAndDate(officerId, onDate)
+            .orElseThrow(() -> new ResourceNotFoundException("Attendance", "date", onDate));
+
+    String status = attendance.getStatus() != null ? attendance.getStatus().getCode() : "UNKNOWN";
+    LocalTime checkInTime =
+        attendance.getCheckIn() != null ? attendance.getCheckIn().toLocalTime() : null;
+    LocalTime checkOutTime =
+        attendance.getCheckOut() != null ? attendance.getCheckOut().toLocalTime() : null;
+
+    String workingHours = "00:00";
+    if (checkInTime != null && checkOutTime != null) {
+      long minutes = attendance.getTotalWorkMin() != null ? attendance.getTotalWorkMin() : 0;
+      long hours = minutes / 60;
+      long mins = minutes % 60;
+      workingHours = String.format("%02d:%02d", hours, mins);
+    }
+
+    Integer lateMinutes = attendance.getTotalLateMin() != null ? attendance.getTotalLateMin() : 0;
+
+    List<OfficerAttendanceDailyDetailResponse.TimelineEntry> timeline = new ArrayList<>();
+    if (checkInTime != null) {
+      timeline.add(
+          OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
+              .time(checkInTime)
+              .type("check_in")
+              .build());
+    }
+    if (checkOutTime != null) {
+      timeline.add(
+          OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
+              .time(checkOutTime)
+              .type("check_out")
+              .build());
+    }
+
+    OfficerAttendanceDailyDetailResponse.OfficeInfo officeInfo = null;
+    if (officer.getOffice() != null) {
+      officeInfo =
+          OfficerAttendanceDailyDetailResponse.OfficeInfo.builder()
+              .id(officer.getOffice().getId())
+              .name(officer.getOffice().getName())
+              .build();
+    }
+
+    return OfficerAttendanceDailyDetailResponse.builder()
+        .date(attendance.getDate())
+        .status(status)
+        .checkIn(checkInTime)
+        .checkOut(checkOutTime)
+        .workingHours(workingHours)
+        .lateMinutes(lateMinutes)
+        .office(officeInfo)
+        .timeline(timeline)
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public OfficerAttendanceTodayScanInfoResponse getOfficerAttendanceTodayScanInfo(Long officerId) {
+    if (officerId == null) {
+      throw new BadRequestException("officerId is required");
+    }
+
+    OfficerModel officer =
+        officerRepository
+            .findByIdWithPosition(officerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", officerId));
+    officeAccessService.assertCanAccessOfficer(officer);
+
+    ZoneId zoneId = resolveScanZoneId();
+    LocalDate today = LocalDate.now(zoneId);
+
+    AttendanceModel attendance =
+        attendanceRepository
+            .findByOfficerIdAndDate(officerId, today)
+            .orElseThrow(() -> new ResourceNotFoundException("Attendance", "date", today));
+
+    LocalTime checkInTime =
+        attendance.getCheckIn() != null ? attendance.getCheckIn().toLocalTime() : null;
+    LocalTime checkOutTime =
+        attendance.getCheckOut() != null ? attendance.getCheckOut().toLocalTime() : null;
+
+    String workingDuration = "00:00:00";
+    if (checkInTime != null && checkOutTime != null) {
+      long totalSeconds =
+          attendance.getTotalWorkMin() != null ? attendance.getTotalWorkMin() * 60 : 0;
+      long hours = totalSeconds / 3600;
+      long minutes = (totalSeconds % 3600) / 60;
+      long seconds = totalSeconds % 60;
+      workingDuration = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    String status = attendance.getStatus() != null ? attendance.getStatus().getCode() : "PRESENT";
+
+    List<OfficerAttendanceTodayScanInfoResponse.TimelineEntry> timeline = new ArrayList<>();
+    if (checkInTime != null) {
+      timeline.add(
+          OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
+              .time(checkInTime.toString())
+              .title("Check In")
+              .type("check_in")
+              .build());
+    }
+    if (checkOutTime != null) {
+      timeline.add(
+          OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
+              .time(checkOutTime.toString())
+              .title("Check Out")
+              .type("check_out")
+              .build());
+    }
+
+    return OfficerAttendanceTodayScanInfoResponse.builder()
+        .date(today)
+        .checkIn(checkInTime)
+        .checkOut(checkOutTime)
+        .workingDuration(workingDuration)
+        .status(status)
+        .timeline(timeline)
         .build();
   }
 

@@ -10,11 +10,15 @@ import com.norton.backend.dto.responses.attendances.AttendanceResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceStatusResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceSummaryResponse;
 import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
+import com.norton.backend.dto.responses.attendances.OfficerAttendanceDailyDetailResponse;
+import com.norton.backend.dto.responses.attendances.OfficerAttendanceMonthlyHistoryResponse;
+import com.norton.backend.dto.responses.attendances.OfficerAttendanceTodayScanInfoResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import java.time.LocalDate;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AttendanceService {
+
   PageResponse<AttendanceResponse> getAllAttendance(
       int page,
       int size,
@@ -41,4 +45,12 @@ public interface AttendanceService {
       LocalDate date, String department, String status, String search, String viewMode);
 
   AttendanceImportResponse importAttendance(MultipartFile file);
+
+  OfficerAttendanceMonthlyHistoryResponse getOfficerAttendanceMonthlyHistory(
+      Long officerId, String onMonth);
+
+  OfficerAttendanceDailyDetailResponse getOfficerAttendanceDailyDetail(
+      Long officerId, LocalDate onDate);
+
+  OfficerAttendanceTodayScanInfoResponse getOfficerAttendanceTodayScanInfo(Long officerId);
 }

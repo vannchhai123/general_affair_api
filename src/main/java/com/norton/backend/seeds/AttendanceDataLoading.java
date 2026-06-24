@@ -97,6 +97,11 @@ public class AttendanceDataLoading implements CommandLineRunner {
       attendanceRepository.saveAll(records);
     }
 
+    // Additionally seed December 2026 so sample dates (e.g., 2026-12-01..2026-12-31) exist for
+    // testing
+    YearMonth dec2026 = YearMonth.of(2026, 12);
+    seedMonthIfMissing(officers, dec2026, present, late, approved, absent);
+
     // Ensure today's attendance exists for officers in the planning & finance office (seeded in
     // Khmer)
     LocalDate today = LocalDate.now(ZoneId.of("Asia/Phnom_Penh"));
@@ -244,5 +249,36 @@ public class AttendanceDataLoading implements CommandLineRunner {
 
   private String buildKey(Long officerId, LocalDate date) {
     return officerId + "|" + date;
+  }
+
+  private void seedMonthIfMissing(
+      List<OfficerModel> officers,
+      YearMonth month,
+      AttendanceStatusModel present,
+      AttendanceStatusModel late,
+      AttendanceStatusModel approved,
+      AttendanceStatusModel absent) {
+    if (officers == null || officers.isEmpty()) {
+      return;
+    }
+
+    List<AttendanceModel> newRecords = new ArrayList<>();
+    for (int officerIndex = 0; officerIndex < officers.size(); officerIndex++) {
+      OfficerModel officer = officers.get(officerIndex);
+      for (int day = 1; day <= month.lengthOfMonth(); day++) {
+        LocalDate date = month.atDay(day);
+        if (isWeekend(date)
+            || attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
+          continue;
+        }
+        newRecords.add(
+            buildDailyAttendance(officer, officerIndex, date, present, late, approved, absent));
+      }
+    }
+
+    if (!newRecords.isEmpty()) {
+      attendanceRepository.saveAll(newRecords);
+      System.out.println("Seeded attendance for month: " + month);
+    }
   }
 }

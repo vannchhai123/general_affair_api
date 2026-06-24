@@ -64,8 +64,9 @@ public class CreateOfficerRequest {
   @JsonAlias({"office", "office_name"})
   private String department;
 
-  @JsonProperty("education_level_id")
-  private Long educationLevelId;
+  @JsonProperty("education_level")
+  @JsonAlias({"education_level", "education_level_name"})
+  private String educationLevel;
 
   @NotNull(message = "hire_date is required")
   @JsonProperty("hire_date")
