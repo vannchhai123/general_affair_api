@@ -9,6 +9,7 @@ public class MeResponse {
   private String username;
   private String fullName;
   private String role;
+  private Long officerId;
 
   private OfficerResponse officer;
 }

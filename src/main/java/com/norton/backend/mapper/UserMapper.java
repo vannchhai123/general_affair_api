@@ -16,6 +16,7 @@ public interface UserMapper {
 
   @Mapping(target = "uuid", expression = "java(user.getUuid().toString())")
   @Mapping(target = "role", source = "role.roleName")
+  @Mapping(target = "officerId", source = "officer.id")
   @Mapping(target = "officer", source = "officer")
   MeResponse toMeResponse(UserModel user);
 }
