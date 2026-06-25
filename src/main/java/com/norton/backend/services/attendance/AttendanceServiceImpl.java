@@ -25,12 +25,14 @@ import com.norton.backend.exceptions.UnauthorizedException;
 import com.norton.backend.models.AttendanceModel;
 import com.norton.backend.models.AttendanceSessionModel;
 import com.norton.backend.models.AttendanceStatusModel;
+import com.norton.backend.models.DepartmentModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.ShiftModel;
 import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.AttendanceRepository;
 import com.norton.backend.repositories.AttendanceSessionRepository;
 import com.norton.backend.repositories.AttendanceStatusRepository;
+import com.norton.backend.repositories.DepartmentRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.services.security.OfficeAccessService;
 import com.norton.backend.services.shift.ShiftResolutionService;
@@ -94,6 +96,7 @@ public class AttendanceServiceImpl implements AttendanceService {
   private final AttendanceRepository attendanceRepository;
   private final AttendanceSessionRepository attendanceSessionRepository;
   private final OfficerRepository officerRepository;
+  private final DepartmentRepository departmentRepository;
   private final AttendanceStatusRepository attendanceStatusRepository;
   private final ShiftResolutionService shiftResolutionService;
   private final OfficeAccessService officeAccessService;
@@ -263,17 +266,14 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     String normalizedOffice = onOffice.trim();
-
-    List<OfficerModel> officers = officerRepository.findByOffice_NameIgnoreCase(normalizedOffice);
+    DepartmentModel requestedOffice = resolveOfficeByName(normalizedOffice);
 
     Long scopeOfficeId = officeAccessService.currentOfficeScopeIdOrNull();
-    if (scopeOfficeId != null && !officers.isEmpty()) {
-      Long requestedOfficeId =
-          officers.get(0).getOffice() != null ? officers.get(0).getOffice().getId() : null;
-      if (requestedOfficeId != null && !scopeOfficeId.equals(requestedOfficeId)) {
-        throw new UnauthorizedException("You can only access officers in your own office");
-      }
+    if (scopeOfficeId != null && !scopeOfficeId.equals(requestedOffice.getId())) {
+      throw new UnauthorizedException("You can only access officers in your own office");
     }
+
+    List<OfficerModel> officers = officerRepository.findByOffice_Id(requestedOffice.getId());
 
     // If current user is a regular officer on mobile, only return their own information
     String currentRole = officeAccessService.currentUser().getRole().getRoleName();
@@ -335,7 +335,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     Map<Long, AttendanceModel> attendancesByOfficerId =
         attendanceRepository
-            .findAllByDateAndOfficer_Office_NameIgnoreCase(onTodayDate, normalizedOffice)
+            .findAllByDateAndOfficer_Office_Id(onTodayDate, requestedOffice.getId())
             .stream()
             .filter(att -> att.getOfficer() != null)
             .collect(
@@ -388,6 +388,25 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .build())
         .attendanceStaffs(attendanceStaffs)
         .build();
+  }
+
+  private DepartmentModel resolveOfficeByName(String officeName) {
+    return departmentRepository
+        .findByNameIgnoreCase(officeName)
+        .orElseThrow(() -> new ResourceNotFoundException("Office", "name", officeName));
+  }
+
+  private static Long resolveOfficerOfficeId(OfficerModel officer) {
+    if (officer == null) {
+      return null;
+    }
+    if (officer.getOffice() != null) {
+      return officer.getOffice().getId();
+    }
+    if (officer.getPosition() != null && officer.getPosition().getDepartment() != null) {
+      return officer.getPosition().getDepartment().getId();
+    }
+    return null;
   }
 
   @Override

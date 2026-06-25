@@ -45,6 +45,8 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
       attributePaths = {"user", "office", "position", "position.department", "educationLevel"})
   Page<OfficerModel> findByOffice_Id(Long officeId, Pageable pageable);
 
+  java.util.List<OfficerModel> findByOffice_Id(Long officeId);
+
   @Query(
       """
     SELECT o

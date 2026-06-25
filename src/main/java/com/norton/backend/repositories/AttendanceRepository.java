@@ -35,6 +35,9 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
 
   java.util.List<AttendanceModel> findAllByDate(java.time.LocalDate date);
 
+  java.util.List<AttendanceModel> findAllByDateAndOfficer_Office_Id(
+      java.time.LocalDate date, Long officeId);
+
   void deleteByDate(java.time.LocalDate date);
 
   java.util.Optional<AttendanceModel> findByOfficerIdAndDate(
