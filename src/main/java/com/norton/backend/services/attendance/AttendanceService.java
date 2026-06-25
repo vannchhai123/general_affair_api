@@ -61,4 +61,14 @@ public interface AttendanceService {
    * @param officerId Officer ID (optional, uses current user if null)
    */
   void deleteTodayAttendance(Long officerId);
+
+  /**
+   * Scheduler support: delete all attendance records for the given date.
+   *
+   * @param date the date whose attendances should be removed
+   */
+  void deleteAllAttendancesForDate(java.time.LocalDate date);
+
+  /** Delete all attendance records for today in the configured scan timezone. */
+  void deleteAllAttendancesForToday();
 }

@@ -850,7 +850,52 @@ public class AttendanceServiceImpl implements AttendanceService {
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", targetOfficerId));
     officeAccessService.assertCanAccessOfficer(officer);
 
-    attendanceRepository.deleteByOfficerIdAndDate(targetOfficerId, today);
+    Optional<ShiftDecision> currentShift =
+        Optional.ofNullable(resolveCurrentShift(officer, LocalDateTime.now(zoneId)));
+    LocalDate attendanceDate = currentShift.map(ShiftDecision::shiftDate).orElse(today);
+
+    // delete both the current attendance date and today's date if they differ,
+    // because overnight shifts may span midnight and status may still resolve to the previous shift
+    // date.
+    if (!attendanceDate.equals(today)) {
+      deleteAttendanceForOfficerAndDate(targetOfficerId, attendanceDate);
+    }
+    deleteAttendanceForOfficerAndDate(targetOfficerId, today);
+  }
+
+  private void deleteAttendanceForOfficerAndDate(Long officerId, LocalDate date) {
+    if (date == null) {
+      return;
+    }
+    AttendanceModel attendance =
+        attendanceRepository.findByOfficerIdAndDate(officerId, date).orElse(null);
+    if (attendance == null) {
+      return;
+    }
+    attendanceSessionRepository.deleteByAttendanceId(attendance.getId());
+    attendanceRepository.delete(attendance);
+  }
+
+  @Override
+  @Transactional
+  public void deleteAllAttendancesForDate(LocalDate date) {
+    if (date == null) {
+      throw new BadRequestException("Date is required for attendance reset");
+    }
+
+    List<AttendanceModel> attendances = attendanceRepository.findAllByDate(date);
+    if (attendances.isEmpty()) {
+      return;
+    }
+    List<Long> attendanceIds = attendances.stream().map(AttendanceModel::getId).toList();
+    attendanceSessionRepository.deleteByAttendanceIdIn(attendanceIds);
+    attendanceRepository.deleteByDate(date);
+  }
+
+  @Override
+  @Transactional
+  public void deleteAllAttendancesForToday() {
+    deleteAllAttendancesForDate(LocalDate.now(resolveScanZoneId()));
   }
 
   private AttendanceModel upsertAttendanceModel(

@@ -25,6 +25,7 @@ public final class Permissions {
   public static final String ATTENDANCE_VIEW = "ATTENDANCE_VIEW";
   public static final String ATTENDANCE_CREATE = "ATTENDANCE_CREATE";
   public static final String ATTENDANCE_UPDATE = "ATTENDANCE_UPDATE";
+  public static final String ATTENDANCE_DELETE = "ATTENDANCE_DELETE";
   public static final String ATTENDANCE_EXPORT = "ATTENDANCE_EXPORT";
   public static final String ATTENDANCE_IMPORT = "ATTENDANCE_IMPORT";
   public static final String ATTENDANCE_SCAN = "ATTENDANCE_SCAN";

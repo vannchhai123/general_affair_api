@@ -60,6 +60,8 @@ public class PermissionDataLoading implements CommandLineRunner {
         createPermission("ATTENDANCE_CREATE", "Create attendance", "Attendance");
     PermissionModel attendanceUpdate =
         createPermission("ATTENDANCE_UPDATE", "Update attendance", "Attendance");
+    PermissionModel attendanceDelete =
+        createPermission("ATTENDANCE_DELETE", "Delete attendance", "Attendance");
     PermissionModel attendanceExport =
         createPermission("ATTENDANCE_EXPORT", "Export attendance", "Attendance");
     PermissionModel attendanceImport =
@@ -114,6 +116,7 @@ public class PermissionDataLoading implements CommandLineRunner {
             attendanceView,
             attendanceCreate,
             attendanceUpdate,
+            attendanceDelete,
             attendanceExport,
             attendanceImport,
             attendanceScan,
@@ -148,6 +151,7 @@ public class PermissionDataLoading implements CommandLineRunner {
             attendanceView,
             attendanceCreate,
             attendanceUpdate,
+            attendanceDelete,
             attendanceExport,
             attendanceImport,
             attendanceScan,

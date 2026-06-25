@@ -14,6 +14,10 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
 
   List<AttendanceSessionModel> findByAttendanceId(Long attendanceId);
 
+  void deleteByAttendanceId(Long attendanceId);
+
+  void deleteByAttendanceIdIn(List<Long> attendanceIds);
+
   @Query(
       """
       SELECT s

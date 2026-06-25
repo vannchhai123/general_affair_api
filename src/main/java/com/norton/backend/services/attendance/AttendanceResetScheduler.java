@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AttendanceResetScheduler {
 
+  private final AttendanceService attendanceService;
+
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
 
@@ -47,13 +49,18 @@ public class AttendanceResetScheduler {
         today);
 
     try {
+      clearTodayAttendanceRecords(today);
       log.info("DAILY ATTENDANCE RESET COMPLETED SUCCESSFULLY");
-      log.info("Status: All attendance records properly isolated by date");
+      log.info("Status: Today's attendance records cleared for new day");
       log.info("Next queries will return empty state for new day (unless manually created)");
 
     } catch (Exception e) {
       log.error("ERROR during daily attendance reset", e);
     }
+  }
+
+  private void clearTodayAttendanceRecords(LocalDate today) {
+    attendanceService.deleteAllAttendancesForDate(today);
   }
 
   /**

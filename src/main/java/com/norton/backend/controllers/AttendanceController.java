@@ -18,6 +18,7 @@ import com.norton.backend.services.attendance.AttendanceScanService;
 import com.norton.backend.services.attendance.AttendanceService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -146,6 +147,18 @@ public class AttendanceController {
     return ResponseEntity.ok(attendanceScanService.submitScan(request));
   }
 
+  @PostMapping("/reset-day")
+  @PreAuthorize("hasAuthority('ATTENDANCE_DELETE')")
+  public ResponseEntity<Map<String, String>> resetAttendanceDay() {
+    attendanceService.deleteAllAttendancesForToday();
+    return ResponseEntity.ok(
+        Map.of(
+            "message",
+            "Attendance reset triggered. Today's attendance state has been reset for testing.",
+            "endpoint",
+            "/api/v1/attendance/status"));
+  }
+
   private String preferOffice(String office, String department) {
     return office != null && !office.isBlank() ? office : department;
   }
@@ -159,7 +172,7 @@ public class AttendanceController {
    * @return Success message
    */
   @PostMapping("/test/reset-today")
-  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_DELETE)")
+  @PreAuthorize("hasAuthority('ATTENDANCE_DELETE')")
   public ResponseEntity<?> testResetTodayAttendance(
       @RequestParam(required = false) Long officerId) {
     attendanceService.deleteTodayAttendance(officerId);
