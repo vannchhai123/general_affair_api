@@ -188,6 +188,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             .workingHours(formatWorkingHours(workedDuration))
             .shift(resolveShiftLabel(currentShift, relevantSession))
             .displayText(formatDisplayText(workedDuration))
+            .attendanceDate(attendanceDate)
             .build();
 
     return AttendanceStatusResponse.builder()

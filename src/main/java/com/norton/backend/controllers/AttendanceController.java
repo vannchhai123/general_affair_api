@@ -39,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping(AttendanceController.BASE_PATH)
 @RequiredArgsConstructor
 public class AttendanceController {
+
   public static final String BASE_PATH = "/api/v1/attendance";
 
   private final AttendanceService attendanceService;
@@ -64,6 +65,15 @@ public class AttendanceController {
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<AttendanceStatusResponse> getMyAttendanceStatus(
       @RequestParam(required = false) Long officerId) {
+    return ResponseEntity.ok(attendanceService.getMyAttendanceStatus(officerId));
+  }
+
+  @GetMapping("/status/debug")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
+  public ResponseEntity<AttendanceStatusResponse> getAttendanceStatusDebug(
+      @RequestParam(required = false) Long officerId) {
+    // Debug endpoint to verify reset logic is working
+    // Shows the current state with timezone context
     return ResponseEntity.ok(attendanceService.getMyAttendanceStatus(officerId));
   }
 
