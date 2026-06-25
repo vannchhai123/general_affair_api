@@ -149,4 +149,26 @@ public class AttendanceController {
   private String preferOffice(String office, String department) {
     return office != null && !office.isBlank() ? office : department;
   }
+
+  /**
+   * TEST ENDPOINT: Delete today's attendance record to test the auto-reset logic. After calling
+   * this, calling /status should return empty state (isCheckedIn=false). This simulates what
+   * happens when a new day starts.
+   *
+   * @param officerId Officer ID (optional, defaults to current user)
+   * @return Success message
+   */
+  @PostMapping("/test/reset-today")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_DELETE)")
+  public ResponseEntity<?> testResetTodayAttendance(
+      @RequestParam(required = false) Long officerId) {
+    attendanceService.deleteTodayAttendance(officerId);
+    return ResponseEntity.ok(
+        new Object() {
+          public String message =
+              "Today's attendance record deleted. Next /status call will show empty state (reset).";
+          public String instruction =
+              "Call GET /api/v1/attendance/status to verify reset: isCheckedIn=false, checkInTime=null";
+        });
+  }
 }

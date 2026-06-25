@@ -47,9 +47,6 @@ public class AttendanceResetScheduler {
         today);
 
     try {
-      // Note: Attendance records are NOT deleted. They're kept for historical audit.
-      // The reset works on-demand: when querying today's status, no record exists
-      // for today's date, so the API returns empty state (isCheckedIn=false, etc.)
       log.info("DAILY ATTENDANCE RESET COMPLETED SUCCESSFULLY");
       log.info("Status: All attendance records properly isolated by date");
       log.info("Next queries will return empty state for new day (unless manually created)");

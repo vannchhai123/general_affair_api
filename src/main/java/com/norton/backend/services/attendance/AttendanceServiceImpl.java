@@ -837,6 +837,22 @@ public class AttendanceServiceImpl implements AttendanceService {
         .build();
   }
 
+  @Override
+  @Transactional
+  public void deleteTodayAttendance(Long officerId) {
+    Long targetOfficerId = resolveTargetOfficerId(officerId);
+    ZoneId zoneId = resolveScanZoneId();
+    LocalDate today = LocalDate.now(zoneId);
+
+    OfficerModel officer =
+        officerRepository
+            .findByIdWithPosition(targetOfficerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", targetOfficerId));
+    officeAccessService.assertCanAccessOfficer(officer);
+
+    attendanceRepository.deleteByOfficerIdAndDate(targetOfficerId, today);
+  }
+
   private AttendanceModel upsertAttendanceModel(
       AttendanceModel attendance,
       OfficerModel officer,

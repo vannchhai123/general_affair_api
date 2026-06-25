@@ -53,4 +53,12 @@ public interface AttendanceService {
       Long officerId, LocalDate onDate);
 
   OfficerAttendanceTodayScanInfoResponse getOfficerAttendanceTodayScanInfo(Long officerId);
+
+  /**
+   * TEST METHOD: Delete today's attendance record for the officer. Used for testing the auto-reset
+   * logic without waiting for midnight.
+   *
+   * @param officerId Officer ID (optional, uses current user if null)
+   */
+  void deleteTodayAttendance(Long officerId);
 }

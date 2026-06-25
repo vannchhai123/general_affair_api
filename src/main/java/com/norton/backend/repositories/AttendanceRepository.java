@@ -170,4 +170,10 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
       String searchPattern,
       String department,
       String status);
+
+  /**
+   * Delete attendance record for a specific officer on a specific date. Used for testing/resetting
+   * attendance data.
+   */
+  void deleteByOfficerIdAndDate(Long officerId, LocalDate date);
 }
