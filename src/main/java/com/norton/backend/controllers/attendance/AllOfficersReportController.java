@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(AllOfficersReportController.BASE_PATH)
 @RequiredArgsConstructor
 public class AllOfficersReportController {
+
   public static final String BASE_PATH = "/api";
 
   private final AttendanceService attendanceService;
@@ -29,6 +30,18 @@ public class AllOfficersReportController {
       @PathVariable String onOffice,
       @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onTodayDate) {
     return ResponseEntity.ok(attendanceService.getAllOfficersReport(onOffice, onTodayDate));
+  }
+
+  @GetMapping({
+    "/getAllOfficersAttendanceReport/{onDate}/admin/{adminOfficerId}",
+    "/v1/getAllOfficersAttendanceReport/{onDate}/admin/{adminOfficerId}"
+  })
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
+  public ResponseEntity<AllOfficersReportResponse> getAllOfficersAttendanceReport(
+      @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate,
+      @PathVariable Long adminOfficerId) {
+    return ResponseEntity.ok(
+        attendanceService.getAllOfficersAttendanceReport(onDate, adminOfficerId));
   }
 
   @GetMapping({

@@ -18,6 +18,7 @@ import com.norton.backend.dto.responses.attendances.OfficerAttendanceDailyDetail
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceMonthlyHistoryResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceTodayScanInfoResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
+import com.norton.backend.dto.responses.organization.DepartmentResponseDto;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.exceptions.ConflictException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
@@ -283,16 +284,7 @@ public class AttendanceServiceImpl implements AttendanceService {
           officerRepository.findByUserIdWithPosition(currentUserId).orElse(null);
 
       if (selfOfficer == null) {
-        return AllOfficersReportResponse.builder()
-            .summary(
-                AllOfficersReportResponse.Summary.builder()
-                    .totalStaff(0)
-                    .presentCount(0)
-                    .absentCount(0)
-                    .attendancePercentage(0)
-                    .build())
-            .attendanceStaffs(Collections.emptyList())
-            .build();
+        return buildAllOfficersReportResponse(Collections.emptyList(), Collections.emptyList());
       }
 
       AttendanceModel attendance =
@@ -368,6 +360,77 @@ public class AttendanceServiceImpl implements AttendanceService {
                 })
             .collect(Collectors.toList());
 
+    return buildAllOfficersReportResponse(
+        attendanceStaffs, List.of(toDepartmentDto(requestedOffice)));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public AllOfficersReportResponse getAllOfficersAttendanceReport(
+      LocalDate onDate, Long adminOfficerId) {
+    if (onDate == null) {
+      throw new BadRequestException("Date is required");
+    }
+    if (adminOfficerId == null) {
+      throw new BadRequestException("adminOfficerId is required");
+    }
+
+    OfficerModel adminOfficer =
+        officerRepository
+            .findByIdWithPosition(adminOfficerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", adminOfficerId));
+
+    String currentRole = officeAccessService.currentUser().getRole().getRoleName();
+    if ("ROLE_OFFICER".equals(currentRole)) {
+      throw new UnauthorizedException("Officers cannot access admin-scoped attendance reports");
+    }
+
+    officeAccessService.assertCanAccessOfficer(adminOfficer);
+
+    DepartmentModel adminOffice = resolveOfficerDepartment(adminOfficer);
+    if (adminOffice == null) {
+      throw new BadRequestException("Admin officer is not assigned to an office");
+    }
+
+    List<OfficerModel> officers = officerRepository.findByOffice_Id(adminOffice.getId());
+
+    Map<Long, AttendanceModel> attendancesByOfficerId =
+        attendanceRepository.findAllByDateAndOfficer_Office_Id(onDate, adminOffice.getId()).stream()
+            .filter(att -> att.getOfficer() != null)
+            .collect(
+                Collectors.toMap(
+                    att -> att.getOfficer().getId(),
+                    att -> att,
+                    (existing, replacement) -> existing));
+
+    List<AllOfficersReportResponse.AttendanceStaffReportItem> attendanceStaffs =
+        officers.stream()
+            .map(
+                officer -> {
+                  AttendanceModel attendance = attendancesByOfficerId.get(officer.getId());
+                  boolean isPresent = attendance != null && attendance.getCheckIn() != null;
+
+                  return AllOfficersReportResponse.AttendanceStaffReportItem.builder()
+                      .officerId(officer.getUuid())
+                      .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
+                      .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
+                      .departmentId(resolveOfficerOfficeId(officer))
+                      .departmentName(resolveOfficerOfficeName(officer))
+                      .isPresent(isPresent)
+                      .imageUrl(officer.getImageUrl())
+                      .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
+                      .checkOutTime(
+                          formatTime(attendance != null ? attendance.getCheckOut() : null))
+                      .build();
+                })
+            .collect(Collectors.toList());
+
+    return buildAllOfficersReportResponse(attendanceStaffs, List.of(toDepartmentDto(adminOffice)));
+  }
+
+  private AllOfficersReportResponse buildAllOfficersReportResponse(
+      List<AllOfficersReportResponse.AttendanceStaffReportItem> attendanceStaffs,
+      List<DepartmentResponseDto> officerAllowViewDepartmetn) {
     int totalStaff = attendanceStaffs.size();
     int presentCount =
         (int)
@@ -386,8 +449,49 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .absentCount(absentCount)
                 .attendancePercentage(attendancePercentage)
                 .build())
+        .officerAllowViewDepartmetn(officerAllowViewDepartmetn)
         .attendanceStaffs(attendanceStaffs)
         .build();
+  }
+
+  private DepartmentResponseDto toDepartmentDto(DepartmentModel department) {
+    if (department == null) {
+      return null;
+    }
+    return DepartmentResponseDto.builder()
+        .id(department.getId())
+        .uuid(department.getUuid())
+        .name(department.getName())
+        .officerCount(officerRepository.countByOffice_Id(department.getId()))
+        .status(department.getStatus() != null ? department.getStatus().name().toLowerCase() : null)
+        .description(department.getDescription())
+        .build();
+  }
+
+  private DepartmentModel resolveOfficerDepartment(OfficerModel officer) {
+    if (officer == null) {
+      return null;
+    }
+    if (officer.getOffice() != null) {
+      return officer.getOffice();
+    }
+    if (officer.getPosition() != null) {
+      return officer.getPosition().getDepartment();
+    }
+    return null;
+  }
+
+  private static String resolveOfficerOfficeName(OfficerModel officer) {
+    if (officer == null) {
+      return null;
+    }
+    if (officer.getOffice() != null && officer.getOffice().getName() != null) {
+      return officer.getOffice().getName();
+    }
+    if (officer.getPosition() != null && officer.getPosition().getDepartment() != null) {
+      return officer.getPosition().getDepartment().getName();
+    }
+    return null;
   }
 
   private DepartmentModel resolveOfficeByName(String officeName) {

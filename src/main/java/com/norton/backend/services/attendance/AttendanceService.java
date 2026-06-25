@@ -34,6 +34,8 @@ public interface AttendanceService {
 
   AllOfficersReportResponse getAllOfficersReport(String onOffice, LocalDate onTodayDate);
 
+  AllOfficersReportResponse getAllOfficersAttendanceReport(LocalDate onDate, Long adminOfficerId);
+
   com.norton.backend.dto.responses.attendances.OfficerReportResponse getOfficerReport(
       Long officerId, LocalDate onDate);
 
