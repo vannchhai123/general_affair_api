@@ -67,6 +67,18 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
     JOIN FETCH o.position p
     JOIN FETCH p.department
     LEFT JOIN FETCH o.educationLevel
+    WHERE o.uuid = :officerUuid
+""")
+  Optional<OfficerModel> findByUuidWithPosition(String officerUuid);
+
+  @Query(
+      """
+    SELECT o
+    FROM OfficerModel o
+    JOIN FETCH o.office
+    JOIN FETCH o.position p
+    JOIN FETCH p.department
+    LEFT JOIN FETCH o.educationLevel
     WHERE o.user.id = :userId
 """)
   Optional<OfficerModel> findByUserIdWithPosition(Long userId);

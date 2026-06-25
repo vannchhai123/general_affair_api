@@ -528,9 +528,31 @@ public class AttendanceServiceImpl implements AttendanceService {
         officerRepository
             .findByIdWithPosition(officerId)
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", officerId));
+    return buildOfficerReportResponse(officer, onDate);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public com.norton.backend.dto.responses.attendances.OfficerReportResponse getOfficerReport(
+      String officerUuid, LocalDate onDate) {
+    if (officerUuid == null || officerUuid.isBlank()) {
+      throw new BadRequestException("officerUuid is required");
+    }
+    if (onDate == null) {
+      throw new BadRequestException("date is required");
+    }
+
+    OfficerModel officer =
+        officerRepository
+            .findByUuidWithPosition(officerUuid)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "uuid", officerUuid));
+    return buildOfficerReportResponse(officer, onDate);
+  }
+
+  private com.norton.backend.dto.responses.attendances.OfficerReportResponse
+      buildOfficerReportResponse(OfficerModel officer, LocalDate onDate) {
     officeAccessService.assertCanAccessOfficer(officer);
 
-    // If current user is ROLE_OFFICER ensure they only access their own record
     String currentRole = officeAccessService.currentUser().getRole().getRoleName();
     if ("ROLE_OFFICER".equals(currentRole)) {
       Long currentUserId = officeAccessService.currentUser().getId();
@@ -540,10 +562,9 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     AttendanceModel attendance =
-        attendanceRepository.findByOfficerIdAndDate(officerId, onDate).orElse(null);
+        attendanceRepository.findByOfficerIdAndDate(officer.getId(), onDate).orElse(null);
 
-    com.norton.backend.dto.responses.attendances.OfficerReportResponse.Attendance attendanceDto =
-        null;
+    com.norton.backend.dto.responses.attendances.OfficerReportResponse.Attendance attendanceDto;
     if (attendance != null) {
       attendanceDto =
           com.norton.backend.dto.responses.attendances.OfficerReportResponse.Attendance.builder()
@@ -553,6 +574,16 @@ public class AttendanceServiceImpl implements AttendanceService {
               .checkOutTime(formatTime(attendance.getCheckOut()))
               .workingHours(attendance.getTotalWorkMin())
               .lateMinutes(attendance.getTotalLateMin())
+              .build();
+    } else {
+      attendanceDto =
+          com.norton.backend.dto.responses.attendances.OfficerReportResponse.Attendance.builder()
+              .date(onDate)
+              .status("ABSENT")
+              .checkInTime(null)
+              .checkOutTime(null)
+              .workingHours(0)
+              .lateMinutes(0)
               .build();
     }
 

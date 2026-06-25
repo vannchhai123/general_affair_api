@@ -45,14 +45,33 @@ public class AllOfficersReportController {
   }
 
   @GetMapping({
-    "/getOfficerReport/{officerId}/{onDate}",
-    "/v1/getOfficerReport/{officerId}/{onDate}"
+    "/getOfficerReport/{officerIdentifier}/{onDate}",
+    "/v1/getOfficerReport/{officerIdentifier}/{onDate}"
   })
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<com.norton.backend.dto.responses.attendances.OfficerReportResponse>
       getOfficerReport(
-          @PathVariable Long officerId,
+          @PathVariable String officerIdentifier,
           @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate) {
-    return ResponseEntity.ok(attendanceService.getOfficerReport(officerId, onDate));
+    if (officerIdentifier == null || officerIdentifier.isBlank()) {
+      throw new IllegalArgumentException("Officer identifier is required");
+    }
+    if (officerIdentifier.matches("\\d+")) {
+      return ResponseEntity.ok(
+          attendanceService.getOfficerReport(Long.valueOf(officerIdentifier), onDate));
+    }
+    return ResponseEntity.ok(attendanceService.getOfficerReport(officerIdentifier, onDate));
+  }
+
+  @GetMapping({
+    "/getOfficersReport/{officerUuid}/{onDate}",
+    "/v1/getOfficersReport/{officerUuid}/{onDate}"
+  })
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
+  public ResponseEntity<com.norton.backend.dto.responses.attendances.OfficerReportResponse>
+      getOfficerReportByUuid(
+          @PathVariable String officerUuid,
+          @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate) {
+    return ResponseEntity.ok(attendanceService.getOfficerReport(officerUuid, onDate));
   }
 }

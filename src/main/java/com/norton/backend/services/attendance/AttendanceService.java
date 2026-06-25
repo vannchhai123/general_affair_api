@@ -39,6 +39,9 @@ public interface AttendanceService {
   com.norton.backend.dto.responses.attendances.OfficerReportResponse getOfficerReport(
       Long officerId, LocalDate onDate);
 
+  com.norton.backend.dto.responses.attendances.OfficerReportResponse getOfficerReport(
+      String officerUuid, LocalDate onDate);
+
   CreateAttendanceResponse createAttendance(CreateAttendanceRequest request);
 
   UpdateAttendanceResponse updateAttendanceStatus(Long id, UpdateAttendanceStatusRequest request);
