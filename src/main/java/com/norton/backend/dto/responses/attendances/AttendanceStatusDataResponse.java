@@ -20,6 +20,9 @@ public class AttendanceStatusDataResponse {
 
   private Instant checkInTime;
   private Instant checkOutTime;
+  // Local representations (including timezone offset) for UI convenience
+  private String checkInLocal;
+  private String checkOutLocal;
   private String workingHours;
   private String shift;
   private String displayText;

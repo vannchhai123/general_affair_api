@@ -171,11 +171,13 @@ public class AttendanceServiceImpl implements AttendanceService {
       LocalDate sessionDate = attendance != null ? attendance.getDate() : currentDate;
       LocalDateTime checkInDateTime = LocalDateTime.of(sessionDate, relevantSession.getCheckIn());
       checkInTime = checkInDateTime.atZone(zoneId).toInstant();
+      String checkInLocal = checkInDateTime.atZone(zoneId).toOffsetDateTime().toString();
 
       if (checkedOut) {
         LocalDateTime checkOutDateTime =
             LocalDateTime.of(sessionDate, relevantSession.getCheckOut());
         checkOutTime = checkOutDateTime.atZone(zoneId).toInstant();
+        String checkOutLocal = checkOutDateTime.atZone(zoneId).toOffsetDateTime().toString();
         workedDuration = safeDurationBetween(checkInDateTime, checkOutDateTime);
       } else {
         workedDuration = safeDurationBetween(checkInDateTime, LocalDateTime.now(zoneId));
@@ -188,7 +190,25 @@ public class AttendanceServiceImpl implements AttendanceService {
             .isCheckedIn(checkedIn)
             .isCheckedOut(checkedOut)
             .checkInTime(checkInTime)
+            .checkInLocal(
+                checkedIn
+                    ? (attendance != null
+                        ? LocalDateTime.of(attendance.getDate(), relevantSession.getCheckIn())
+                            .atZone(zoneId)
+                            .toOffsetDateTime()
+                            .toString()
+                        : null)
+                    : null)
             .checkOutTime(checkOutTime)
+            .checkOutLocal(
+                checkedOut
+                    ? (attendance != null
+                        ? LocalDateTime.of(attendance.getDate(), relevantSession.getCheckOut())
+                            .atZone(zoneId)
+                            .toOffsetDateTime()
+                            .toString()
+                        : null)
+                    : null)
             .workingHours(formatWorkingHours(workedDuration))
             .shift(resolveShiftLabel(currentShift, relevantSession))
             .displayText(formatDisplayText(workedDuration))
