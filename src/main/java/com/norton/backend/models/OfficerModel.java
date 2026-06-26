@@ -83,6 +83,10 @@ public class OfficerModel extends BaseIdModel {
   @Column(length = 50)
   private OfficerStatus status;
 
+  @Column(name = "invitation_priority", nullable = false)
+  @Builder.Default
+  private boolean invitationPriority = false;
+
   @NotNull(message = "Office is required")
   @ManyToOne
   @JoinColumn(name = "office_id", nullable = false)

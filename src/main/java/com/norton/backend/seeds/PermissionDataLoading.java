@@ -53,6 +53,11 @@ public class PermissionDataLoading implements CommandLineRunner {
     PermissionModel officerViewPermission =
         createPermission(
             "OFFICER_VIEW_PERMISSION", "View officer permissions", "OfficerPermission");
+    PermissionModel invitationParticipantView =
+        createPermission(
+            "INVITATION_PARTICIPANT_VIEW",
+            "View eligible participants for invitations",
+            "Invitation");
 
     PermissionModel attendanceView =
         createPermission("ATTENDANCE_VIEW", "View attendance", "Attendance");
@@ -113,6 +118,7 @@ public class PermissionDataLoading implements CommandLineRunner {
             officerAssignPermission,
             officerRemovePermission,
             officerViewPermission,
+            invitationParticipantView,
             attendanceView,
             attendanceCreate,
             attendanceUpdate,
@@ -148,6 +154,7 @@ public class PermissionDataLoading implements CommandLineRunner {
             officerUpdate,
             officerDelete,
             officerViewPermission,
+            invitationParticipantView,
             attendanceView,
             attendanceCreate,
             attendanceUpdate,

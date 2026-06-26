@@ -83,6 +83,9 @@ public class CreateOfficerRequest {
   @NotBlank(message = "status is required")
   private String status;
 
+  @JsonProperty("invitation_priority")
+  private Boolean invitationPriority;
+
   public String getFirstName() {
     return firstNameEn;
   }

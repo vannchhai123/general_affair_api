@@ -71,9 +71,10 @@ public class OfficerDataLoading implements CommandLineRunner {
 
     List<OfficerSeed> officers = buildOfficerSeeds();
     for (OfficerSeed seed : officers) {
-      PositionModel position = positionsByCode.get(seed.seededPositionCode().toUpperCase());
+      String normalizedPositionCode = normalizePositionCode(seed.positionCode());
+      PositionModel position = positionsByCode.get(normalizedPositionCode);
       if (position == null) {
-        throw new RuntimeException("Position code not found: " + seed.seededPositionCode());
+        throw new RuntimeException("Position code not found: " + normalizedPositionCode);
       }
 
       EducationLevelModel educationLevel = educationLevelsByName.get(seed.educationLevelName());
@@ -136,12 +137,12 @@ public class OfficerDataLoading implements CommandLineRunner {
     Map<String, PositionModel> positionsByCode = new HashMap<>();
     for (PositionModel position : positionRepository.findAll()) {
       if (position.getCode() != null) {
-        positionsByCode.put(position.getCode().toUpperCase(), position);
+        positionsByCode.put(normalizePositionCode(position.getCode()), position);
       }
     }
 
     for (PositionSeed seed : buildPositionSeeds()) {
-      String key = seed.code().toUpperCase();
+      String key = normalizePositionCode(seed.code());
       if (positionsByCode.containsKey(key)) {
         continue;
       }
@@ -163,6 +164,10 @@ public class OfficerDataLoading implements CommandLineRunner {
       positionsByCode.put(key, position);
     }
     return positionsByCode;
+  }
+
+  private static String normalizePositionCode(String positionCode) {
+    return positionCode == null ? null : positionCode.trim().toUpperCase();
   }
 
   private Map<String, EducationLevelModel> loadOrCreateEducationLevels() {
@@ -375,6 +380,7 @@ public class OfficerDataLoading implements CommandLineRunner {
         .hireDate(seed.hireDate())
         .contractType(seed.contractType())
         .status(OfficerStatus.ACTIVE)
+        .invitationPriority(seed.invitationPriority())
         .user(user)
         .build();
   }
@@ -401,6 +407,7 @@ public class OfficerDataLoading implements CommandLineRunner {
     officer.setHireDate(seed.hireDate());
     officer.setContractType(seed.contractType());
     officer.setStatus(OfficerStatus.ACTIVE);
+    officer.setInvitationPriority(seed.invitationPriority());
 
     if (officer.getUser() != null) {
       officer.getUser().setFullName(seed.firstNameEn() + " " + seed.lastNameEn());
@@ -609,7 +616,9 @@ public class OfficerDataLoading implements CommandLineRunner {
             new PositionNameSeed("POS-05", "ប្រធានការិយាល័យ"),
             new PositionNameSeed("POS-06", "អនុប្រធានការិយាល័យ"),
             new PositionNameSeed("POS-07", "មន្ត្រី"),
-            new PositionNameSeed("POS-08", "មន្ត្រីកិច្ចសន្យា"));
+            new PositionNameSeed("POS-08", "មន្ត្រីកិច្ចសន្យា"),
+            new PositionNameSeed("POS-09", "មន្ត្រីជំនាញ"),
+            new PositionNameSeed("POS-10", "មន្ត្រីអនុវត្ត"));
 
     List<PositionSeed> positions = new ArrayList<>();
     for (DepartmentSeed department : buildDepartmentSeeds()) {
@@ -643,7 +652,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "វិរៈ",
             GenderEnum.MALE,
             "010000001",
-            "POS-01"));
+            "POS-01-DEP-01"));
     seeds.add(
         new OfficerSeed(
             "OFF-002",
@@ -654,7 +663,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ស្រីនិត",
             GenderEnum.FEMALE,
             "010000002",
-            "POS-02"));
+            "POS-02-DEP-01"));
     seeds.add(
         new OfficerSeed(
             "OFF-003",
@@ -665,7 +674,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "គីលី",
             GenderEnum.MALE,
             "010000003",
-            "POS-03"));
+            "POS-03-DEP-02"));
     seeds.add(
         new OfficerSeed(
             "OFF-004",
@@ -676,7 +685,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ចាន់",
             GenderEnum.MALE,
             "010000004",
-            "POS-04"));
+            "POS-04-DEP-02"));
     seeds.add(
         new OfficerSeed(
             "OFF-005",
@@ -687,7 +696,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "លីណា",
             GenderEnum.FEMALE,
             "010000005",
-            "POS-05"));
+            "POS-05-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-006",
@@ -698,7 +707,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "សុភក្ត្រ",
             GenderEnum.MALE,
             "010000006",
-            "POS-06"));
+            "POS-06-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-007",
@@ -709,7 +718,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "រីណា",
             GenderEnum.FEMALE,
             "010000007",
-            "POS-07"));
+            "POS-07-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-008",
@@ -720,7 +729,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "មុនី",
             GenderEnum.MALE,
             "010000008",
-            "POS-08"));
+            "POS-08-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-009",
@@ -731,7 +740,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ចរិយា",
             GenderEnum.FEMALE,
             "010000009",
-            "POS-09"));
+            "POS-09-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-010",
@@ -742,7 +751,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ពេជ្រ",
             GenderEnum.MALE,
             "010000010",
-            "POS-10"));
+            "POS-10-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-011",
@@ -753,7 +762,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "វណ្ណា",
             GenderEnum.FEMALE,
             "010000011",
-            "POS-01"));
+            "POS-01-DEP-01"));
     seeds.add(
         new OfficerSeed(
             "OFF-012",
@@ -764,7 +773,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "វិសាល",
             GenderEnum.MALE,
             "010000012",
-            "POS-02"));
+            "POS-02-DEP-01"));
     seeds.add(
         new OfficerSeed(
             "OFF-013",
@@ -775,7 +784,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "នារី",
             GenderEnum.FEMALE,
             "010000013",
-            "POS-03"));
+            "POS-03-DEP-02"));
     seeds.add(
         new OfficerSeed(
             "OFF-014",
@@ -786,7 +795,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "កក្កដា",
             GenderEnum.MALE,
             "010000014",
-            "POS-04"));
+            "POS-04-DEP-02"));
     seeds.add(
         new OfficerSeed(
             "OFF-015",
@@ -797,7 +806,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "សុធា",
             GenderEnum.FEMALE,
             "010000015",
-            "POS-05"));
+            "POS-05-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-016",
@@ -808,7 +817,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "រតនា",
             GenderEnum.MALE,
             "010000016",
-            "POS-06"));
+            "POS-06-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-017",
@@ -819,7 +828,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ស្រីមុំ",
             GenderEnum.FEMALE,
             "010000017",
-            "POS-07"));
+            "POS-07-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-018",
@@ -830,7 +839,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ថាវី",
             GenderEnum.MALE,
             "010000018",
-            "POS-08"));
+            "POS-08-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-019",
@@ -841,7 +850,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "ធីតា",
             GenderEnum.FEMALE,
             "010000019",
-            "POS-09"));
+            "POS-09-DEP-03"));
     seeds.add(
         new OfficerSeed(
             "OFF-020",
@@ -852,7 +861,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             "សុផល",
             GenderEnum.MALE,
             "010000020",
-            "POS-10"));
+            "POS-10-DEP-03"));
     return seeds;
   }
 
@@ -951,17 +960,10 @@ public class OfficerDataLoading implements CommandLineRunner {
       return seedNumber() % 4 == 0 ? "Contract" : "Permanent";
     }
 
-    String seededPositionCode() {
-      int number = seedNumber();
-      if (number <= 2) {
-        return String.format("POS-%02d-DEP-01", number);
-      }
-      if (number <= 4) {
-        return String.format("POS-%02d-DEP-02", number);
-      }
-      int positionNumber = ((number - 5) % 4) + 5;
-      int officeNumber = ((number - 5) % 11) + 3;
-      return String.format("POS-%02d-DEP-%02d", positionNumber, officeNumber);
+    boolean invitationPriority() {
+      return java.util.List.of(
+              "OFF-001", "OFF-002", "OFF-003", "OFF-004", "OFF-005", "OFF-006", "OFF-007")
+          .contains(officerCode());
     }
 
     int seedNumber() {

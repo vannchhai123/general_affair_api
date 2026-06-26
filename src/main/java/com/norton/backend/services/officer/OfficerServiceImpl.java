@@ -4,6 +4,7 @@ import com.norton.backend.dto.request.CreateOfficerRequest;
 import com.norton.backend.dto.responses.PageResponse;
 import com.norton.backend.dto.responses.officers.CreateOfficerResponse;
 import com.norton.backend.dto.responses.officers.MeResponse;
+import com.norton.backend.dto.responses.officers.OfficerResponse;
 import com.norton.backend.dto.responses.officers.OfficerResponseDto;
 import com.norton.backend.dto.responses.officers.OfficerStatsResponse;
 import com.norton.backend.enums.DepartmentStatus;
@@ -121,6 +122,7 @@ public class OfficerServiceImpl implements OfficerService {
                 .email(request.getEmail().trim())
                 .phone(request.getPhone().trim())
                 .status(parseOfficerStatus(request.getStatus()))
+                .invitationPriority(Boolean.TRUE.equals(request.getInvitationPriority()))
                 .office(department)
                 .position(position)
                 .educationLevel(educationLevel)
@@ -152,6 +154,7 @@ public class OfficerServiceImpl implements OfficerService {
         .hireDate(officer.getHireDate())
         .contractType(officer.getContractType())
         .status(officer.getStatus().name().toLowerCase(Locale.ROOT))
+        .invitationPriority(officer.isInvitationPriority())
         .username(user.getUsername())
         .build();
   }
@@ -202,6 +205,7 @@ public class OfficerServiceImpl implements OfficerService {
     officer.setEducationLevel(educationLevel);
     officer.setHireDate(request.getHireDate());
     officer.setContractType(trimToNull(request.getContractType()));
+    officer.setInvitationPriority(Boolean.TRUE.equals(request.getInvitationPriority()));
 
     if (officer.getUser() != null) {
       UserModel user = officer.getUser();
@@ -258,6 +262,30 @@ public class OfficerServiceImpl implements OfficerService {
         .totalPages(officer.getTotalPages())
         .last(officer.isLast())
         .build();
+  }
+
+  @Override
+  public java.util.List<OfficerResponse> getEligibleInvitationParticipants(
+      String keyword, Integer limit) {
+    Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
+    String search = keyword == null ? null : keyword.trim();
+    if (search != null && search.isBlank()) {
+      search = null;
+    }
+    if (limit != null && limit <= 0) {
+      throw new BadRequestException("limit must be a positive number");
+    }
+    if (limit != null) {
+      return officerRepository
+          .findEligibleParticipants(
+              officeId, search, org.springframework.data.domain.PageRequest.of(0, limit))
+          .stream()
+          .map(officerMapper::toProfileResponse)
+          .toList();
+    }
+    return officerRepository.findEligibleParticipants(officeId, search).stream()
+        .map(officerMapper::toProfileResponse)
+        .toList();
   }
 
   @Override

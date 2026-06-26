@@ -2,12 +2,14 @@ package com.norton.backend.repositories;
 
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.models.OfficerModel;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -46,6 +48,52 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
   Page<OfficerModel> findByOffice_Id(Long officeId, Pageable pageable);
 
   java.util.List<OfficerModel> findByOffice_Id(Long officeId);
+
+  @Query(
+      """
+    SELECT o
+    FROM OfficerModel o
+    JOIN FETCH o.office
+    JOIN FETCH o.position p
+    JOIN FETCH p.department
+    LEFT JOIN FETCH o.educationLevel
+    LEFT JOIN FETCH o.user u
+    WHERE o.status = com.norton.backend.enums.OfficerStatus.ACTIVE
+      AND o.invitationPriority = true
+      AND (:officeId IS NULL OR o.office.id = :officeId)
+      AND (
+          :keyword IS NULL
+          OR :keyword = ''
+          OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          OR LOWER(COALESCE(o.phone, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+      )
+      ORDER BY o.invitationPriority DESC, LOWER(u.fullName)
+""")
+  List<OfficerModel> findEligibleParticipants(
+      @Param("officeId") Long officeId, @Param("keyword") String keyword);
+
+  @Query(
+      """
+    SELECT o
+    FROM OfficerModel o
+    JOIN FETCH o.office
+    JOIN FETCH o.position p
+    JOIN FETCH p.department
+    LEFT JOIN FETCH o.educationLevel
+    LEFT JOIN FETCH o.user u
+    WHERE o.status = com.norton.backend.enums.OfficerStatus.ACTIVE
+      AND o.invitationPriority = true
+      AND (:officeId IS NULL OR o.office.id = :officeId)
+      AND (
+          :keyword IS NULL
+          OR :keyword = ''
+          OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          OR LOWER(COALESCE(o.phone, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+      )
+      ORDER BY o.invitationPriority DESC, LOWER(u.fullName)
+""")
+  List<OfficerModel> findEligibleParticipants(
+      @Param("officeId") Long officeId, @Param("keyword") String keyword, Pageable pageable);
 
   @Query(
       """

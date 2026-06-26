@@ -17,4 +17,5 @@ public class OfficerResponse {
   private OfficerStatus status;
   private String positionName;
   private String departmentName;
+  private boolean invitationPriority;
 }

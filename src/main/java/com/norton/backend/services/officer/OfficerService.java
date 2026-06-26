@@ -9,6 +9,7 @@ import com.norton.backend.dto.responses.officers.OfficerStatsResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface OfficerService {
+
   MeResponse getMyProfile();
 
   CreateOfficerResponse createOfficer(CreateOfficerRequest request);
@@ -16,6 +17,9 @@ public interface OfficerService {
   CreateOfficerResponse updateOfficer(Long id, CreateOfficerRequest request);
 
   PageResponse<OfficerResponseDto> getAllOfficers(Pageable pageable);
+
+  java.util.List<com.norton.backend.dto.responses.officers.OfficerResponse>
+      getEligibleInvitationParticipants(String keyword, Integer limit);
 
   OfficerStatsResponse getOfficerStats();
 }

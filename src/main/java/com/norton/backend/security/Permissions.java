@@ -17,6 +17,8 @@ public final class Permissions {
   public static final String OFFICER_REMOVE_PERMISSION = "OFFICER_REMOVE_PERMISSION";
   public static final String OFFICER_VIEW_PERMISSION = "OFFICER_VIEW_PERMISSION";
 
+  public static final String INVITATION_PARTICIPANT_VIEW = "INVITATION_PARTICIPANT_VIEW";
+
   public static final String OFFICER_VIEW = "OFFICER_VIEW";
   public static final String OFFICER_CREATE = "OFFICER_CREATE";
   public static final String OFFICER_UPDATE = "OFFICER_UPDATE";

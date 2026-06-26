@@ -59,6 +59,10 @@ public class CreateOfficerResponse {
   private String contractType;
 
   private String status;
+
+  @JsonProperty("invitation_priority")
+  private Boolean invitationPriority;
+
   private String username;
 
   @JsonProperty("office")
