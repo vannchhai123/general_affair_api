@@ -44,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AttendanceScanServiceImpl implements AttendanceScanService {
+
   private static final String ACTION_CHECK_IN = "CHECK_IN";
   private static final String ACTION_CHECK_OUT = "CHECK_OUT";
   private static final String ACTION_ALREADY_COMPLETED = "ALREADY_COMPLETED";
@@ -90,7 +91,7 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
                         "OFFICER_NOT_ALLOWED"));
 
     ZoneId scanZoneId = resolveScanZoneId();
-    Instant currentTimestamp = Instant.now();
+    Instant currentTimestamp = request.getScannedAt();
     LocalDateTime currentDateTime = LocalDateTime.ofInstant(currentTimestamp, scanZoneId);
     Optional<ShiftWindow> shiftWindow =
         shiftResolutionService.resolveOfficerShift(officer, currentDateTime);
@@ -189,7 +190,14 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
         };
 
     return buildResponse(
-        true, message, updatedAttendance, session, officer, currentTimestamp, action, shiftLabel);
+        true,
+        message,
+        updatedAttendance,
+        session,
+        officer,
+        request.getScannedAt(),
+        action,
+        shiftLabel);
   }
 
   private Claims validateQrToken(String token) {
