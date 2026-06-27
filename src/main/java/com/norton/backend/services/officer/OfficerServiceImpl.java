@@ -267,7 +267,6 @@ public class OfficerServiceImpl implements OfficerService {
   @Override
   public java.util.List<OfficerResponse> getEligibleInvitationParticipants(
       String keyword, Integer limit) {
-    Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
     String search = keyword == null ? null : keyword.trim();
     if (search != null && search.isBlank()) {
       search = null;
@@ -278,12 +277,12 @@ public class OfficerServiceImpl implements OfficerService {
     if (limit != null) {
       return officerRepository
           .findEligibleParticipants(
-              officeId, search, org.springframework.data.domain.PageRequest.of(0, limit))
+              null, search, org.springframework.data.domain.PageRequest.of(0, limit))
           .stream()
           .map(officerMapper::toProfileResponse)
           .toList();
     }
-    return officerRepository.findEligibleParticipants(officeId, search).stream()
+    return officerRepository.findEligibleParticipants(null, search).stream()
         .map(officerMapper::toProfileResponse)
         .toList();
   }
