@@ -1,5 +1,6 @@
 package com.norton.backend.services.invitation;
 
+import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -20,4 +21,12 @@ public interface InvitationService {
       String location,
       List<Long> imageIds,
       List<Long> participantIds);
+
+  List<CreateInvitationResponse> getInvitations();
+
+  CreateInvitationResponse getInvitationById(Long id);
+
+  CreateInvitationResponse updateInvitation(Long id, CreateInvitationRequest request);
+
+  void deleteInvitation(Long id);
 }

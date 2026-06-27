@@ -1,8 +1,10 @@
 package com.norton.backend.services.invitation;
 
+import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.exceptions.BadRequestException;
+import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.InvitationModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.UploadImageModel;
@@ -87,6 +89,161 @@ public class InvitationServiceImpl implements InvitationService {
         participantIds,
         uploadImages,
         imageUrls);
+  }
+
+  @Override
+  public List<CreateInvitationResponse> getInvitations() {
+    return invitationRepository.findAll().stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public CreateInvitationResponse getInvitationById(Long id) {
+    InvitationModel invitation =
+        invitationRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", id));
+    return toResponse(invitation);
+  }
+
+  @Override
+  @Transactional
+  public CreateInvitationResponse updateInvitation(Long id, CreateInvitationRequest request) {
+    InvitationModel invitation =
+        invitationRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", id));
+
+    if (request.getTitle() == null || request.getTitle().isBlank()) {
+      throw new BadRequestException("title is required");
+    }
+    if (request.getDescription() == null || request.getDescription().isBlank()) {
+      throw new BadRequestException("description is required");
+    }
+    if (request.getPresidedBy() == null || request.getPresidedBy().isBlank()) {
+      throw new BadRequestException("presidedBy is required");
+    }
+    if (request.getEventDate() == null) {
+      throw new BadRequestException("eventDate is required");
+    }
+    if (request.getEventTime() == null) {
+      throw new BadRequestException("eventTime is required");
+    }
+    if (request.getLocation() == null || request.getLocation().isBlank()) {
+      throw new BadRequestException("location is required");
+    }
+
+    Set<Long> uniqueParticipantIds = new LinkedHashSet<>(request.getParticipantIds());
+    uniqueParticipantIds.removeIf(participantId -> participantId == null);
+    if (uniqueParticipantIds.isEmpty()) {
+      throw new BadRequestException("participant_ids must contain at least one valid id");
+    }
+
+    List<OfficerModel> officers = officerRepository.findAllById(uniqueParticipantIds);
+    Set<Long> foundParticipantIds =
+        officers.stream().map(OfficerModel::getId).collect(Collectors.toSet());
+    if (foundParticipantIds.size() != uniqueParticipantIds.size()) {
+      Set<Long> missingIds =
+          uniqueParticipantIds.stream()
+              .filter(participantId -> !foundParticipantIds.contains(participantId))
+              .collect(Collectors.toCollection(LinkedHashSet::new));
+      throw new BadRequestException("Officers not found for ids: " + missingIds);
+    }
+
+    for (OfficerModel officer : officers) {
+      if (officer.getStatus() != OfficerStatus.ACTIVE || !officer.isInvitationPriority()) {
+        throw new BadRequestException(
+            "Officer with id " + officer.getId() + " is not eligible for invitations");
+      }
+    }
+
+    List<String> imageUrls = null;
+    List<UploadImageModel> uploadImages = null;
+    if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+      Set<Long> uniqueImageIds = new LinkedHashSet<>(request.getImageIds());
+      uniqueImageIds.removeIf(imageId -> imageId == null);
+      if (uniqueImageIds.isEmpty()) {
+        throw new BadRequestException("imageIds must contain at least one valid id");
+      }
+
+      uploadImages = uploadImageRepository.findAllById(uniqueImageIds);
+      Set<Long> foundImageIds =
+          uploadImages.stream().map(UploadImageModel::getId).collect(Collectors.toSet());
+      if (foundImageIds.size() != uniqueImageIds.size()) {
+        Set<Long> missingIds =
+            uniqueImageIds.stream()
+                .filter(imageId -> !foundImageIds.contains(imageId))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        throw new BadRequestException("Upload images not found for ids: " + missingIds);
+      }
+      imageUrls = uploadImages.stream().map(UploadImageModel::getUrl).collect(Collectors.toList());
+    }
+
+    invitation.setTitle(request.getTitle().trim());
+    invitation.setDescription(request.getDescription());
+    invitation.setPresidedBy(request.getPresidedBy());
+    invitation.setEventDate(request.getEventDate());
+    invitation.setEventTime(request.getEventTime());
+    invitation.setLocation(request.getLocation());
+    invitation.setImageId(
+        request.getImageIds() != null && !request.getImageIds().isEmpty()
+            ? request.getImageIds().get(0)
+            : null);
+    invitation.setImageUrl(imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null);
+
+    invitation.getParticipants().clear();
+    officers.forEach(invitation::addParticipant);
+
+    if (request.getImageIds() != null) {
+      invitation.getImages().clear();
+      if (uploadImages != null) {
+        uploadImages.forEach(invitation::addImage);
+      }
+    }
+
+    InvitationModel updatedInvitation = invitationRepository.save(invitation);
+    return toResponse(updatedInvitation);
+  }
+
+  @Override
+  @Transactional
+  public void deleteInvitation(Long id) {
+    InvitationModel invitation =
+        invitationRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", id));
+    invitationRepository.delete(invitation);
+  }
+
+  private CreateInvitationResponse toResponse(InvitationModel savedInvitation) {
+    return CreateInvitationResponse.builder()
+        .id(savedInvitation.getId())
+        .title(savedInvitation.getTitle())
+        .description(savedInvitation.getDescription())
+        .presidedBy(savedInvitation.getPresidedBy())
+        .eventDate(
+            savedInvitation.getEventDate() != null
+                ? savedInvitation.getEventDate().toString()
+                : null)
+        .eventTime(
+            savedInvitation.getEventTime() != null
+                ? savedInvitation.getEventTime().toString()
+                : null)
+        .location(savedInvitation.getLocation())
+        .imageIds(
+            savedInvitation.getImages().stream()
+                .map(invImage -> invImage.getUploadImage().getId())
+                .collect(Collectors.toList()))
+        .imageUrls(
+            savedInvitation.getImages().stream()
+                .map(invImage -> invImage.getUploadImage().getUrl())
+                .collect(Collectors.toList()))
+        .participantIds(
+            savedInvitation.getParticipants().stream()
+                .map(participant -> participant.getOfficer().getId())
+                .collect(Collectors.toList()))
+        .build();
   }
 
   @Transactional

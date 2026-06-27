@@ -13,8 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -80,5 +83,35 @@ public class InvitationController {
             request.getImageIds(),
             request.getParticipantIds());
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
+  }
+
+  @GetMapping
+  @PreAuthorize(
+      "(hasRole('SUPER_ADMIN') or hasRole('ADMIN')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  public ResponseEntity<List<CreateInvitationResponse>> getInvitations() {
+    return ResponseEntity.ok(invitationService.getInvitations());
+  }
+
+  @GetMapping("/{id}")
+  @PreAuthorize(
+      "(hasRole('SUPER_ADMIN') or hasRole('ADMIN')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  public ResponseEntity<CreateInvitationResponse> getInvitationById(@PathVariable Long id) {
+    return ResponseEntity.ok(invitationService.getInvitationById(id));
+  }
+
+  @PutMapping("/{id}")
+  @PreAuthorize(
+      "(hasRole('SUPER_ADMIN') or hasRole('ADMIN')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  public ResponseEntity<CreateInvitationResponse> updateInvitation(
+      @PathVariable Long id, @Validated @RequestBody CreateInvitationRequest request) {
+    return ResponseEntity.ok(invitationService.updateInvitation(id, request));
+  }
+
+  @DeleteMapping("/{id}")
+  @PreAuthorize(
+      "(hasRole('SUPER_ADMIN') or hasRole('ADMIN')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  public ResponseEntity<Void> deleteInvitation(@PathVariable Long id) {
+    invitationService.deleteInvitation(id);
+    return ResponseEntity.noContent().build();
   }
 }
