@@ -4,7 +4,11 @@ import com.norton.backend.dto.responses.upload.UploadImageDataResponse;
 import com.norton.backend.dto.responses.upload.UploadImageResponse;
 import com.norton.backend.dto.responses.upload.UploadImagesResponse;
 import com.norton.backend.exceptions.ResourceNotFoundException;
+import com.norton.backend.models.InvitationImageModel;
+import com.norton.backend.models.InvitationModel;
 import com.norton.backend.models.UploadImageModel;
+import com.norton.backend.repositories.InvitationImageRepository;
+import com.norton.backend.repositories.InvitationRepository;
 import com.norton.backend.repositories.UploadImageRepository;
 import com.norton.backend.services.file.FileStorageService;
 import java.util.List;
@@ -26,17 +30,25 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping(UploadImageController.BASE_URL)
 public class UploadImageController {
 
-  public static final String BASE_URL = "/api/v1/uploads/images";
+  public static final String BASE_URL = "/api/v1/files";
 
   private final FileStorageService fileStorageService;
   private final UploadImageRepository uploadImageRepository;
+  private final InvitationRepository invitationRepository;
+  private final InvitationImageRepository invitationImageRepository;
 
-  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PostMapping(value = "/{inviteId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
   public ResponseEntity<UploadImagesResponse> uploadImages(
+      @PathVariable Long inviteId,
       @RequestParam(value = "files", required = false) MultipartFile[] files,
       @RequestParam(value = "file", required = false) MultipartFile file,
       @RequestParam(value = "image", required = false) MultipartFile image) {
+
+    InvitationModel invitation =
+        invitationRepository
+            .findById(inviteId)
+            .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", inviteId));
 
     List<MultipartFile> uploadFiles = new java.util.ArrayList<>();
     if (files != null) {
@@ -68,6 +80,10 @@ public class UploadImageController {
           UploadImageModel.builder().fileName(fileName).url(imageUrl).build();
       UploadImageModel saved = uploadImageRepository.save(uploadImage);
 
+      InvitationImageModel invitationImage =
+          InvitationImageModel.builder().invitation(invitation).uploadImage(saved).build();
+      invitationImageRepository.save(invitationImage);
+
       dataList.add(
           UploadImageDataResponse.builder()
               .id(saved.getId())
@@ -86,13 +102,25 @@ public class UploadImageController {
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/{id}")
+  @GetMapping("/{inviteId}/images/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-  public ResponseEntity<UploadImageResponse> getImageById(@PathVariable Long id) {
+  public ResponseEntity<UploadImageResponse> getImageById(
+      @PathVariable Long inviteId, @PathVariable Long id) {
+    InvitationModel invitation =
+        invitationRepository
+            .findById(inviteId)
+            .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", inviteId));
+
     UploadImageModel image =
         uploadImageRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("UploadImage", "id", id));
+
+    boolean belongsToInvitation =
+        invitationImageRepository.existsByInvitation_IdAndUploadImage_Id(inviteId, image.getId());
+    if (!belongsToInvitation) {
+      throw new ResourceNotFoundException("UploadImage", "id", id);
+    }
 
     UploadImageDataResponse data =
         UploadImageDataResponse.builder()
@@ -111,15 +139,27 @@ public class UploadImageController {
     return ResponseEntity.ok(response);
   }
 
-  @DeleteMapping("/{id}")
+  @DeleteMapping("/{inviteId}/images/{id}")
   @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-  public ResponseEntity<UploadImageResponse> deleteImageById(@PathVariable Long id) {
+  public ResponseEntity<UploadImageResponse> deleteImageById(
+      @PathVariable Long inviteId, @PathVariable Long id) {
+    invitationRepository
+        .findById(inviteId)
+        .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", inviteId));
+
     UploadImageModel image =
         uploadImageRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("UploadImage", "id", id));
 
+    boolean belongsToInvitation =
+        invitationImageRepository.existsByInvitation_IdAndUploadImage_Id(inviteId, image.getId());
+    if (!belongsToInvitation) {
+      throw new ResourceNotFoundException("UploadImage", "id", id);
+    }
+
     fileStorageService.deleteImage(image.getUrl());
+    invitationImageRepository.deleteByInvitation_IdAndUploadImage_Id(inviteId, image.getId());
     uploadImageRepository.delete(image);
 
     UploadImageResponse response =
