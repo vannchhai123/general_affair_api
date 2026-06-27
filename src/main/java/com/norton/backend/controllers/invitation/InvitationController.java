@@ -7,6 +7,7 @@ import com.norton.backend.dto.responses.officers.OfficerResponse;
 import com.norton.backend.services.invitation.InvitationService;
 import com.norton.backend.services.officer.OfficerService;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -110,8 +111,8 @@ public class InvitationController {
   @DeleteMapping("/{id}")
   @PreAuthorize(
       "(hasRole('SUPER_ADMIN') or hasRole('ADMIN')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
-  public ResponseEntity<Void> deleteInvitation(@PathVariable Long id) {
+  public ResponseEntity<Map<String, String>> deleteInvitation(@PathVariable Long id) {
     invitationService.deleteInvitation(id);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(Map.of("message", "Invitation deleted successfully"));
   }
 }
