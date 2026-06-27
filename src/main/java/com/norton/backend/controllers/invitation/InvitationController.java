@@ -2,6 +2,7 @@ package com.norton.backend.controllers.invitation;
 
 import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
+import com.norton.backend.dto.responses.invitation.EligibleParticipantsResponse;
 import com.norton.backend.dto.responses.officers.OfficerResponse;
 import com.norton.backend.services.invitation.InvitationService;
 import com.norton.backend.services.officer.OfficerService;
@@ -33,10 +34,22 @@ public class InvitationController {
   @GetMapping("/eligible-participants")
   @PreAuthorize(
       "(hasRole('SUPER_ADMIN') or hasRole('ADMIN')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
-  public ResponseEntity<List<OfficerResponse>> getEligibleParticipants(
+  public ResponseEntity<EligibleParticipantsResponse> getEligibleParticipants(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Integer limit) {
-    return ResponseEntity.ok(officerService.getEligibleInvitationParticipants(keyword, limit));
+    List<OfficerResponse> participants =
+        officerService.getEligibleInvitationParticipants(keyword, limit);
+    List<Long> participantIds =
+        participants.stream()
+            .map(OfficerResponse::getId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+
+    return ResponseEntity.ok(
+        EligibleParticipantsResponse.builder()
+            .participantIds(participantIds)
+            .participants(participants)
+            .build());
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -64,7 +77,7 @@ public class InvitationController {
             request.getEventDate(),
             request.getEventTime(),
             request.getLocation(),
-            request.getImageId(),
+            request.getImageIds(),
             request.getParticipantIds());
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }

@@ -53,17 +53,28 @@ public class InvitationServiceImpl implements InvitationService {
       LocalDate eventDate,
       LocalTime eventTime,
       String location,
-      Long imageId,
+      List<Long> imageIds,
       List<Long> participantIds) {
-    String imageUrl = null;
-    UploadImageModel uploadImage = null;
-    if (imageId != null) {
-      uploadImage =
-          uploadImageRepository
-              .findById(imageId)
-              .orElseThrow(
-                  () -> new BadRequestException("Upload image not found for id: " + imageId));
-      imageUrl = uploadImage.getUrl();
+    List<String> imageUrls = null;
+    List<UploadImageModel> uploadImages = null;
+    if (imageIds != null && !imageIds.isEmpty()) {
+      Set<Long> uniqueImageIds = new LinkedHashSet<>(imageIds);
+      uniqueImageIds.removeIf(id -> id == null);
+      if (uniqueImageIds.isEmpty()) {
+        throw new BadRequestException("imageIds must contain at least one valid id");
+      }
+
+      uploadImages = uploadImageRepository.findAllById(uniqueImageIds);
+      Set<Long> foundImageIds =
+          uploadImages.stream().map(UploadImageModel::getId).collect(Collectors.toSet());
+      if (foundImageIds.size() != uniqueImageIds.size()) {
+        Set<Long> missingIds =
+            uniqueImageIds.stream()
+                .filter(id -> !foundImageIds.contains(id))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        throw new BadRequestException("Upload images not found for ids: " + missingIds);
+      }
+      imageUrls = uploadImages.stream().map(UploadImageModel::getUrl).collect(Collectors.toList());
     }
     return createInvitation(
         title,
@@ -72,9 +83,10 @@ public class InvitationServiceImpl implements InvitationService {
         eventDate,
         eventTime,
         location,
-        imageId,
+        imageIds,
         participantIds,
-        imageUrl);
+        uploadImages,
+        imageUrls);
   }
 
   @Transactional
@@ -88,6 +100,31 @@ public class InvitationServiceImpl implements InvitationService {
       Long imageId,
       List<Long> participantIds,
       String imageUrl) {
+    return createInvitation(
+        title,
+        description,
+        presidedBy,
+        eventDate,
+        eventTime,
+        location,
+        imageId != null ? List.of(imageId) : null,
+        participantIds,
+        null,
+        imageUrl != null ? List.of(imageUrl) : null);
+  }
+
+  @Transactional
+  private CreateInvitationResponse createInvitation(
+      String title,
+      String description,
+      String presidedBy,
+      LocalDate eventDate,
+      LocalTime eventTime,
+      String location,
+      List<Long> imageIds,
+      List<Long> participantIds,
+      List<UploadImageModel> uploadImages,
+      List<String> imageUrls) {
     if (title == null || title.isBlank()) {
       throw new BadRequestException("title is required");
     }
@@ -143,10 +180,13 @@ public class InvitationServiceImpl implements InvitationService {
             .eventDate(eventDate)
             .eventTime(eventTime)
             .location(location)
-            .imageId(imageId)
-            .imageUrl(imageUrl)
+            .imageId(imageIds != null && !imageIds.isEmpty() ? imageIds.get(0) : null)
+            .imageUrl(imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null)
             .build();
     officers.forEach(invitation::addParticipant);
+    if (uploadImages != null) {
+      uploadImages.forEach(invitation::addImage);
+    }
 
     InvitationModel savedInvitation = invitationRepository.save(invitation);
 
@@ -169,8 +209,14 @@ public class InvitationServiceImpl implements InvitationService {
                 ? savedInvitation.getEventTime().toString()
                 : null)
         .location(savedInvitation.getLocation())
-        .imageId(savedInvitation.getImageId())
-        .imageUrl(savedInvitation.getImageUrl())
+        .imageIds(
+            savedInvitation.getImages().stream()
+                .map(invImage -> invImage.getUploadImage().getId())
+                .collect(Collectors.toList()))
+        .imageUrls(
+            savedInvitation.getImages().stream()
+                .map(invImage -> invImage.getUploadImage().getUrl())
+                .collect(Collectors.toList()))
         .participantIds(savedParticipantIds)
         .build();
   }

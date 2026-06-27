@@ -61,6 +61,29 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
   }
 
+  @Override
+  public void deleteImage(String fileUrl) {
+    if (fileUrl == null || fileUrl.isBlank()) {
+      return;
+    }
+
+    String filename = Paths.get(fileUrl).getFileName().toString();
+    if (filename.isBlank()) {
+      return;
+    }
+
+    Path path = uploadPath.resolve(filename).normalize();
+    if (!path.startsWith(uploadPath)) {
+      throw new BadRequestException("Invalid image URL");
+    }
+
+    try {
+      Files.deleteIfExists(path);
+    } catch (IOException ex) {
+      throw new BadRequestException("Failed to delete image file");
+    }
+  }
+
   private void validateFile(MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new BadRequestException("File must not be empty");

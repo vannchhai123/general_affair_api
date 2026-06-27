@@ -10,6 +10,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface OfficerMapper {
 
+  @Mapping(source = "id", target = "id")
   @Mapping(target = "uuid", expression = "java(officer.getUuid())")
   @Mapping(source = "position.name", target = "positionName")
   @Mapping(source = "office.name", target = "departmentName")

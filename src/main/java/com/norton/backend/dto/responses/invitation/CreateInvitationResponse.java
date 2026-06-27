@@ -15,7 +15,7 @@ public class CreateInvitationResponse {
   private String eventDate;
   private String eventTime;
   private String location;
-  private Long imageId;
-  private String imageUrl;
+  private List<Long> imageIds;
+  private List<String> imageUrls;
   private List<Long> participantIds;
 }

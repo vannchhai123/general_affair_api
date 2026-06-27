@@ -6,6 +6,8 @@ import lombok.Data;
 
 @Data
 public class OfficerResponse {
+
+  private Long id;
   private String uuid;
   private String officerCode;
   private String firstName;

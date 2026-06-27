@@ -50,9 +50,19 @@ public class InvitationModel extends BaseIdModel {
   @OneToMany(mappedBy = "invitation", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<InvitationParticipantModel> participants = new ArrayList<>();
 
+  @Builder.Default
+  @OneToMany(mappedBy = "invitation", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<InvitationImageModel> images = new ArrayList<>();
+
   public void addParticipant(OfficerModel officer) {
     InvitationParticipantModel participant =
         InvitationParticipantModel.builder().officer(officer).invitation(this).build();
     this.participants.add(participant);
+  }
+
+  public void addImage(UploadImageModel uploadImage) {
+    InvitationImageModel invitationImage =
+        InvitationImageModel.builder().uploadImage(uploadImage).invitation(this).build();
+    this.images.add(invitationImage);
   }
 }

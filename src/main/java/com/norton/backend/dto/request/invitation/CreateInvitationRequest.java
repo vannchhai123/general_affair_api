@@ -34,8 +34,9 @@ public class CreateInvitationRequest {
   @NotBlank(message = "location is required")
   private String location;
 
-  @JsonProperty("imageId")
-  private Long imageId;
+  @JsonProperty("imageIds")
+  @JsonAlias({"imageIds", "image_ids"})
+  private List<Long> imageIds;
 
   @NotNull(message = "participant_ids is required")
   @NotEmpty(message = "participant_ids must not be empty")

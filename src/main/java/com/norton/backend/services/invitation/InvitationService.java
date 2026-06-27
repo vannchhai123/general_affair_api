@@ -18,6 +18,6 @@ public interface InvitationService {
       LocalDate eventDate,
       LocalTime eventTime,
       String location,
-      Long imageId,
+      List<Long> imageIds,
       List<Long> participantIds);
 }
