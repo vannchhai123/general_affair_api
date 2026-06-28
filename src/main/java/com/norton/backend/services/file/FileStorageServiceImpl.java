@@ -4,6 +4,8 @@ import com.norton.backend.config.FileStorageProperties;
 import com.norton.backend.exceptions.BadRequestException;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,7 +69,7 @@ public class FileStorageServiceImpl implements FileStorageService {
       return;
     }
 
-    String filename = Paths.get(fileUrl).getFileName().toString();
+    String filename = extractFilenameFromUrl(fileUrl);
     if (filename.isBlank()) {
       return;
     }
@@ -81,6 +83,21 @@ public class FileStorageServiceImpl implements FileStorageService {
       Files.deleteIfExists(path);
     } catch (IOException ex) {
       throw new BadRequestException("Failed to delete image file");
+    }
+  }
+
+  private String extractFilenameFromUrl(String fileUrl) {
+    try {
+      URI uri = new URI(fileUrl);
+      String path = uri.getPath();
+      if (path == null || path.isBlank()) {
+        return "";
+      }
+      return Paths.get(path).getFileName().toString();
+    } catch (URISyntaxException ex) {
+      // If the URL is not a valid URI, fall back to taking the last segment.
+      String[] segments = fileUrl.split("/");
+      return segments.length == 0 ? "" : segments[segments.length - 1];
     }
   }
 
