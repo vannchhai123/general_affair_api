@@ -65,7 +65,6 @@ logging:
 attendance:
   scan:
     timezone: ${ATTENDANCE_TIMEZONE:Asia/Phnom_Penh}
-
 app:
   password-reset:
     otp-expiry-minutes: ${PASSWORD_RESET_OTP_EXPIRY_MINUTES:10}
