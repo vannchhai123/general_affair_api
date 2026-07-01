@@ -16,6 +16,8 @@ public interface OfficerService {
 
   CreateOfficerResponse updateOfficer(Long id, CreateOfficerRequest request);
 
+  OfficerResponseDto getOfficerById(Long id);
+
   PageResponse<OfficerResponseDto> getAllOfficers(Pageable pageable);
 
   java.util.List<com.norton.backend.dto.responses.officers.OfficerResponse>

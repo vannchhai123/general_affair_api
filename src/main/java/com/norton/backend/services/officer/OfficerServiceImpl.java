@@ -72,12 +72,23 @@ public class OfficerServiceImpl implements OfficerService {
       throw new ConflictException("Officer code already exists: " + request.getOfficerCode());
     }
 
-    if (officerRepository.existsByEmail(request.getEmail())) {
-      throw new ConflictException("Officer email already exists: " + request.getEmail());
+    String username = request.getUsername().trim();
+    if (userRepository.existsByUsername(username)) {
+      throw new ConflictException("Username already exists: " + username);
     }
 
-    if (userRepository.existsByEmail(request.getEmail())) {
-      throw new ConflictException("User email already exists: " + request.getEmail());
+    String email =
+        request.getEmail() == null || request.getEmail().isBlank()
+            ? null
+            : request.getEmail().trim();
+    if (email != null) {
+      if (officerRepository.existsByEmail(email)) {
+        throw new ConflictException("Officer email already exists: " + email);
+      }
+
+      if (userRepository.existsByEmail(email)) {
+        throw new ConflictException("User email already exists: " + email);
+      }
     }
 
     DepartmentModel department = resolveOffice(request);
@@ -91,7 +102,6 @@ public class OfficerServiceImpl implements OfficerService {
             .findByRoleName("ROLE_OFFICER")
             .orElseThrow(() -> new ResourceNotFoundException("Role", "roleName", "ROLE_OFFICER"));
 
-    String username = buildUniqueUsername(request);
     String fullName = request.getFirstName().trim() + " " + request.getLastName().trim();
 
     UserModel user =
@@ -99,9 +109,9 @@ public class OfficerServiceImpl implements OfficerService {
             UserModel.builder()
                 .uuid(UUID.randomUUID())
                 .username(username)
-                .email(request.getEmail().trim())
+                .email(email)
                 .fullName(fullName.trim())
-                .passwordHash(passwordEncoder.encode(request.getOfficerCode().trim() + "@123"))
+                .passwordHash(passwordEncoder.encode("officer@1234"))
                 .role(officerRole)
                 .userStatus(UserStatus.ACTIVE)
                 .build());
@@ -119,7 +129,7 @@ public class OfficerServiceImpl implements OfficerService {
                 .nationalId(trimToNull(request.getNationalId()))
                 .nationality(defaultNationality(request.getNationality()))
                 .ethnicity(defaultEthnicity(request.getEthnicity()))
-                .email(request.getEmail().trim())
+                .email(email)
                 .phone(request.getPhone().trim())
                 .status(parseOfficerStatus(request.getStatus()))
                 .invitationPriority(Boolean.TRUE.equals(request.getInvitationPriority()))
@@ -172,13 +182,24 @@ public class OfficerServiceImpl implements OfficerService {
       throw new ConflictException("Officer code already exists: " + request.getOfficerCode());
     }
 
-    if (officerRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
-      throw new ConflictException("Officer email already exists: " + request.getEmail());
-    }
+    String username = request.getUsername().trim();
+    String email =
+        request.getEmail() == null || request.getEmail().isBlank()
+            ? null
+            : request.getEmail().trim();
 
     Long userId = officer.getUser() != null ? officer.getUser().getId() : null;
-    if (userId != null && userRepository.existsByEmailAndIdNot(request.getEmail(), userId)) {
-      throw new ConflictException("User email already exists: " + request.getEmail());
+    if (userId != null && userRepository.existsByUsernameAndIdNot(username, userId)) {
+      throw new ConflictException("Username already exists: " + username);
+    }
+
+    if (email != null) {
+      if (officerRepository.existsByEmailAndIdNot(email, id)) {
+        throw new ConflictException("Officer email already exists: " + email);
+      }
+      if (userId != null && userRepository.existsByEmailAndIdNot(email, userId)) {
+        throw new ConflictException("User email already exists: " + email);
+      }
     }
 
     DepartmentModel department = resolveOffice(request);
@@ -197,7 +218,7 @@ public class OfficerServiceImpl implements OfficerService {
     officer.setNationalId(trimToNull(request.getNationalId()));
     officer.setNationality(defaultNationality(request.getNationality()));
     officer.setEthnicity(defaultEthnicity(request.getEthnicity()));
-    officer.setEmail(request.getEmail().trim());
+    officer.setEmail(email);
     officer.setPhone(request.getPhone().trim());
     officer.setStatus(parseOfficerStatus(request.getStatus()));
     officer.setOffice(department);
@@ -205,11 +226,14 @@ public class OfficerServiceImpl implements OfficerService {
     officer.setEducationLevel(educationLevel);
     officer.setHireDate(request.getHireDate());
     officer.setContractType(trimToNull(request.getContractType()));
-    officer.setInvitationPriority(Boolean.TRUE.equals(request.getInvitationPriority()));
+    if (request.getInvitationPriority() != null) {
+      officer.setInvitationPriority(request.getInvitationPriority());
+    }
 
     if (officer.getUser() != null) {
       UserModel user = officer.getUser();
-      user.setEmail(request.getEmail().trim());
+      user.setUsername(username);
+      user.setEmail(email);
       user.setFullName((request.getFirstName().trim() + " " + request.getLastName().trim()).trim());
       userRepository.save(user);
     }
@@ -239,8 +263,19 @@ public class OfficerServiceImpl implements OfficerService {
         .hireDate(updatedOfficer.getHireDate())
         .contractType(updatedOfficer.getContractType())
         .status(updatedOfficer.getStatus().name().toLowerCase(Locale.ROOT))
+        .invitationPriority(updatedOfficer.isInvitationPriority())
         .username(updatedOfficer.getUser() != null ? updatedOfficer.getUser().getUsername() : null)
         .build();
+  }
+
+  @Override
+  public OfficerResponseDto getOfficerById(Long id) {
+    OfficerModel officer =
+        officerRepository
+            .findByIdWithPosition(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", id));
+    officeAccessService.assertCanAccessOfficer(officer);
+    return officerMapper.toResponse(officer);
   }
 
   @Override

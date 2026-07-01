@@ -51,6 +51,12 @@ public class OfficerController {
     return ResponseEntity.ok(officerService.updateOfficer(id, request));
   }
 
+  @GetMapping("/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
+  public ResponseEntity<OfficerResponseDto> getOfficerById(@PathVariable Long id) {
+    return ResponseEntity.ok(officerService.getOfficerById(id));
+  }
+
   @GetMapping
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
   public ResponseEntity<PageResponse<OfficerResponseDto>> getAllOfficers(

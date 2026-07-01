@@ -49,7 +49,9 @@ public class CreateOfficerRequest {
 
   private String ethnicity;
 
-  @NotBlank(message = "email is required")
+  @NotBlank(message = "Username is required")
+  private String username;
+
   @Email(message = "Invalid email format")
   private String email;
 

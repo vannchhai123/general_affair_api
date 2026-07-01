@@ -63,6 +63,9 @@ public class OfficerResponseDto {
   private String status;
   private String username;
 
+  @JsonProperty("invitation_priority")
+  private Boolean invitationPriority;
+
   @JsonProperty("office")
   public String getOffice() {
     return department;

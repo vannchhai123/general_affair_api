@@ -192,13 +192,45 @@ public class InvitationServiceImpl implements InvitationService {
             : null);
     invitation.setImageUrl(imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null);
 
-    invitation.getParticipants().clear();
-    officers.forEach(invitation::addParticipant);
+    // Update participants in-place to avoid unique constraint violations on (invitation_id,
+    // officer_id)
+    Set<Long> newParticipantIds =
+        officers.stream().map(OfficerModel::getId).collect(Collectors.toSet());
+
+    invitation
+        .getParticipants()
+        .removeIf(participant -> !newParticipantIds.contains(participant.getOfficer().getId()));
+
+    Set<Long> existingParticipantIds =
+        invitation.getParticipants().stream()
+            .map(participant -> participant.getOfficer().getId())
+            .collect(Collectors.toSet());
+
+    officers.stream()
+        .filter(officer -> !existingParticipantIds.contains(officer.getId()))
+        .forEach(invitation::addParticipant);
 
     if (request.getImageIds() != null) {
-      invitation.getImages().clear();
+      // Update images in-place to avoid unique constraint violations on (invitation_id,
+      // upload_image_id)
+      Set<Long> newImageIds =
+          uploadImages != null
+              ? uploadImages.stream().map(UploadImageModel::getId).collect(Collectors.toSet())
+              : java.util.Collections.emptySet();
+
+      invitation
+          .getImages()
+          .removeIf(invImage -> !newImageIds.contains(invImage.getUploadImage().getId()));
+
+      Set<Long> existingImageIds =
+          invitation.getImages().stream()
+              .map(invImage -> invImage.getUploadImage().getId())
+              .collect(Collectors.toSet());
+
       if (uploadImages != null) {
-        uploadImages.forEach(invitation::addImage);
+        uploadImages.stream()
+            .filter(image -> !existingImageIds.contains(image.getId()))
+            .forEach(invitation::addImage);
       }
     }
 
