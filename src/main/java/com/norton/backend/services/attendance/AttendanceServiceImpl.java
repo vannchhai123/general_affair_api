@@ -894,9 +894,11 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     String status = attendance.getStatus() != null ? attendance.getStatus().getCode() : "UNKNOWN";
     LocalTime checkInTime =
-        attendance.getCheckIn() != null ? attendance.getCheckIn().toLocalTime() : null;
+        attendance.getCheckIn() != null ? attendance.getCheckIn().toLocalTime().withNano(0) : null;
     LocalTime checkOutTime =
-        attendance.getCheckOut() != null ? attendance.getCheckOut().toLocalTime() : null;
+        attendance.getCheckOut() != null
+            ? attendance.getCheckOut().toLocalTime().withNano(0)
+            : null;
 
     String workingHours = "00:00";
     if (checkInTime != null && checkOutTime != null) {
@@ -967,9 +969,11 @@ public class AttendanceServiceImpl implements AttendanceService {
             .orElseThrow(() -> new ResourceNotFoundException("Attendance", "date", today));
 
     LocalTime checkInTime =
-        attendance.getCheckIn() != null ? attendance.getCheckIn().toLocalTime() : null;
+        attendance.getCheckIn() != null ? attendance.getCheckIn().toLocalTime().withNano(0) : null;
     LocalTime checkOutTime =
-        attendance.getCheckOut() != null ? attendance.getCheckOut().toLocalTime() : null;
+        attendance.getCheckOut() != null
+            ? attendance.getCheckOut().toLocalTime().withNano(0)
+            : null;
 
     String workingDuration = "00:00:00";
     if (checkInTime != null && checkOutTime != null) {
@@ -1202,10 +1206,14 @@ public class AttendanceServiceImpl implements AttendanceService {
         row.createCell(4).setCellValue(item.getDate() != null ? item.getDate().toString() : "");
         row.createCell(5)
             .setCellValue(
-                item.getCheckIn() != null ? item.getCheckIn().toLocalTime().toString() : "");
+                item.getCheckIn() != null
+                    ? item.getCheckIn().toLocalTime().withNano(0).toString()
+                    : "");
         row.createCell(6)
             .setCellValue(
-                item.getCheckOut() != null ? item.getCheckOut().toLocalTime().toString() : "");
+                item.getCheckOut() != null
+                    ? item.getCheckOut().toLocalTime().withNano(0).toString()
+                    : "");
         row.createCell(7).setCellValue(item.getTotalWorkMin() != null ? item.getTotalWorkMin() : 0);
         row.createCell(8).setCellValue(item.getTotalLateMin() != null ? item.getTotalLateMin() : 0);
         row.createCell(9).setCellValue(defaultString(item.getStatus()));
