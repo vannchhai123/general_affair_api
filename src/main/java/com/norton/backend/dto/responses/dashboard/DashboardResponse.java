@@ -21,6 +21,12 @@ public class DashboardResponse {
   @JsonProperty("leave_requests")
   private ApprovalSummary leaveRequests;
 
+  @JsonProperty("qr_sessions")
+  private QrSessionsSummary qrSessions;
+
+  @JsonProperty("gender_breakdown")
+  private GenderBreakdown genderBreakdown;
+
   @JsonProperty("recent_attendance")
   private List<RecentAttendanceDto> recentAttendance;
 
@@ -67,5 +73,32 @@ public class DashboardResponse {
     private long total;
     private long approved;
     private long pending;
+  }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class QrSessionsSummary {
+    private long total;
+    private long active;
+  }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class GenderBreakdown {
+    @JsonProperty("male_present")
+    private long malePresent;
+
+    @JsonProperty("female_present")
+    private long femalePresent;
+
+    @JsonProperty("male_late")
+    private long maleLate;
+
+    @JsonProperty("female_late")
+    private long femaleLate;
   }
 }

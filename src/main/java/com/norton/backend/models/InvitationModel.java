@@ -40,6 +40,14 @@ public class InvitationModel extends BaseIdModel {
   @Column(name = "location", length = 512)
   private String location;
 
+  @Builder.Default
+  @Column(name = "type", length = 50)
+  private String type = "incoming";
+
+  @Builder.Default
+  @Column(name = "status", length = 50)
+  private String status = "pending";
+
   @Column(name = "image_id")
   private Long imageId;
 

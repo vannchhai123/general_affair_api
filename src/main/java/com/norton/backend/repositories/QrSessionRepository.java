@@ -26,4 +26,6 @@ public interface QrSessionRepository extends JpaRepository<QrSessionModel, Long>
   List<QrSessionModel> findAllBySessionDateOrderByStartsAtAsc(LocalDate sessionDate);
 
   List<QrSessionModel> findAllByStatusIgnoreCase(String status);
+
+  long countByStatusIgnoreCase(String status);
 }

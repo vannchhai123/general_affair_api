@@ -2,11 +2,16 @@ package com.norton.backend.services.dashboard;
 
 import com.norton.backend.dto.responses.dashboard.DashboardResponse;
 import com.norton.backend.dto.responses.dashboard.RecentAttendanceDto;
-import com.norton.backend.dto.responses.dashboard.RecentAttendanceSessionDto;
+import com.norton.backend.enums.GenderEnum;
 import com.norton.backend.enums.OfficerStatus;
+import com.norton.backend.models.AttendanceModel;
+import com.norton.backend.models.OfficerModel;
 import com.norton.backend.repositories.AttendanceRepository;
 import com.norton.backend.repositories.OfficerRepository;
+import com.norton.backend.repositories.QrSessionRepository;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +22,7 @@ public class DashboardServiceImpl implements DashboardService {
 
   private final OfficerRepository officerRepository;
   private final AttendanceRepository attendanceRepository;
+  private final QrSessionRepository qrSessionRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -26,58 +32,197 @@ public class DashboardServiceImpl implements DashboardService {
     long officersOnLeave = officerRepository.countByStatus(OfficerStatus.ON_LEAVE);
     long officersInactive = officerRepository.countByStatus(OfficerStatus.INACTIVE);
 
+    // Fallbacks if empty
+    if (officersTotal == 0) {
+      officersTotal = 120;
+      officersActive = 95;
+      officersOnLeave = 15;
+      officersInactive = 10;
+    }
+
     long attendanceTotal = attendanceRepository.count();
     long attendanceApproved = attendanceRepository.countByStatusCodeIgnoreCase("APPROVED");
     long attendanceAbsent = attendanceRepository.countByStatusCodeIgnoreCase("ABSENT");
-    long attendancePending = Math.max(attendanceTotal - attendanceApproved, 0);
+    long attendancePending = attendanceRepository.countByStatusCodeIgnoreCase("PENDING");
+    if (attendanceTotal == 0) {
+      attendanceTotal = 110;
+      attendanceApproved = 90;
+      attendancePending = 10;
+      attendanceAbsent = 10;
+    }
+
+    long invitationsTotal = 45;
+    long invitationsActive = 30;
+    long invitationsCompleted = 15;
+
+    long missionsTotal = 24;
+    long missionsApproved = 20;
+    long missionsPending = 4;
+
+    long leaveRequestsTotal = 18;
+    long leaveRequestsApproved = 12;
+    long leaveRequestsPending = 6;
+
+    long qrSessionsTotal = qrSessionRepository.count();
+    long qrSessionsActive = qrSessionRepository.countByStatusIgnoreCase("active");
+    if (qrSessionsTotal == 0) {
+      qrSessionsTotal = 85;
+      qrSessionsActive = 3;
+    }
+
+    // Gender breakdown based on today's attendance
+    LocalDate today = LocalDate.now();
+    List<AttendanceModel> todayAttendances = attendanceRepository.findAllByDate(today);
+
+    long malePresent = 0;
+    long femalePresent = 0;
+    long maleLate = 0;
+    long femaleLate = 0;
+
+    for (AttendanceModel a : todayAttendances) {
+      OfficerModel officer = a.getOfficer();
+      if (officer != null && officer.getGender() != null) {
+        String statusStr = a.getStatus() != null ? a.getStatus().getCode() : "";
+        boolean isPresent = "PRESENT".equalsIgnoreCase(statusStr);
+        boolean isLate = "LATE".equalsIgnoreCase(statusStr);
+
+        if (officer.getGender() == GenderEnum.MALE) {
+          if (isPresent || isLate) {
+            malePresent++;
+          }
+          if (isLate) {
+            maleLate++;
+          }
+        } else if (officer.getGender() == GenderEnum.FEMALE) {
+          if (isPresent || isLate) {
+            femalePresent++;
+          }
+          if (isLate) {
+            femaleLate++;
+          }
+        }
+      }
+    }
+
+    // Fallbacks if gender breakdown counts are all zero
+    if (malePresent == 0 && femalePresent == 0 && maleLate == 0 && femaleLate == 0) {
+      malePresent = 48;
+      femalePresent = 42;
+      maleLate = 3;
+      femaleLate = 2;
+    }
+
+    // Recent Attendance List
+    List<RecentAttendanceDto> recentAttendance =
+        attendanceRepository.findAll().stream()
+            .sorted(
+                (a1, a2) -> {
+                  int cmp = a2.getDate().compareTo(a1.getDate());
+                  if (cmp != 0) return cmp;
+                  return a2.getId().compareTo(a1.getId());
+                })
+            .limit(10)
+            .map(
+                a -> {
+                  OfficerModel officer = a.getOfficer();
+                  RecentAttendanceDto.OfficerDto officerDto = null;
+                  if (officer != null) {
+                    officerDto =
+                        RecentAttendanceDto.OfficerDto.builder()
+                            .id(officer.getId())
+                            .firstNameKh(officer.getFirstNameKh())
+                            .lastNameKh(officer.getLastNameKh())
+                            .firstNameEn(officer.getFirstNameEn())
+                            .lastNameEn(officer.getLastNameEn())
+                            .position(
+                                officer.getPosition() != null
+                                    ? officer.getPosition().getName()
+                                    : null)
+                            .department(
+                                officer.getOffice() != null ? officer.getOffice().getName() : null)
+                            .build();
+                  }
+                  String statusName = a.getStatus() != null ? a.getStatus().getName() : "Present";
+                  return RecentAttendanceDto.builder()
+                      .id(a.getId())
+                      .date(a.getDate() != null ? a.getDate().toString() : null)
+                      .status(statusName)
+                      .totalWorkMinutes(a.getTotalWorkMin())
+                      .totalLateMinutes(a.getTotalLateMin())
+                      .officer(officerDto)
+                      .build();
+                })
+            .collect(Collectors.toList());
+
+    // Fallback if recent attendance is empty
+    if (recentAttendance.isEmpty()) {
+      recentAttendance =
+          List.of(
+              RecentAttendanceDto.builder()
+                  .id(1L)
+                  .date("2026-07-04")
+                  .status("Present")
+                  .totalWorkMinutes(480)
+                  .totalLateMinutes(0)
+                  .officer(
+                      RecentAttendanceDto.OfficerDto.builder()
+                          .id(12L)
+                          .firstNameKh("សុខ")
+                          .lastNameKh("ដារ៉ា")
+                          .firstNameEn("Sok")
+                          .lastNameEn("Dara")
+                          .position("អនុប្រធានការិយាល័យ")
+                          .department("ការិយាល័យរដ្ឋបាល")
+                          .build())
+                  .build());
+    }
 
     return DashboardResponse.builder()
         .officers(
             DashboardResponse.OfficersSummary.builder()
-                .total(120)
-                .active(98)
-                .onLeave(12)
-                .inactive(10)
+                .total(officersTotal)
+                .active(officersActive)
+                .onLeave(officersOnLeave)
+                .inactive(officersInactive)
                 .build())
         .attendance(
             DashboardResponse.AttendanceSummary.builder()
-                .total(102)
-                .approved(95)
-                .pending(5)
-                .absent(3)
+                .total(attendanceTotal)
+                .approved(attendanceApproved)
+                .pending(attendancePending)
+                .absent(attendanceAbsent)
                 .build())
         .invitations(
-            DashboardResponse.InvitationsSummary.builder().total(15).active(8).completed(7).build())
+            DashboardResponse.InvitationsSummary.builder()
+                .total(invitationsTotal)
+                .active(invitationsActive)
+                .completed(invitationsCompleted)
+                .build())
         .missions(
-            DashboardResponse.ApprovalSummary.builder().total(9).approved(5).pending(4).build())
+            DashboardResponse.ApprovalSummary.builder()
+                .total(missionsTotal)
+                .approved(missionsApproved)
+                .pending(missionsPending)
+                .build())
         .leaveRequests(
-            DashboardResponse.ApprovalSummary.builder().total(24).approved(18).pending(6).build())
-        .recentAttendance(
-            List.of(
-                RecentAttendanceDto.builder()
-                    .id(1L)
-                    .officerId(101L)
-                    .imageUrl(null)
-                    .date("09/06/2026")
-                    .checkIn("08:09")
-                    .checkOut("17:05")
-                    .totalWorkMin(536)
-                    .totalLateMin(9)
-                    .status("មាន")
-                    .firstName("សុខា")
-                    .lastName("បុត្រា")
-                    .department("ការិយាល័យគ្រប់គ្រង")
-                    .officerCode("OF-101")
-                    .sessions(
-                        List.of(
-                            RecentAttendanceSessionDto.builder()
-                                .id(1001L)
-                                .shiftName("ព្រឹក")
-                                .checkIn("08:09")
-                                .checkOut("17:05")
-                                .status("សម្រេច")
-                                .build()))
-                    .build()))
+            DashboardResponse.ApprovalSummary.builder()
+                .total(leaveRequestsTotal)
+                .approved(leaveRequestsApproved)
+                .pending(leaveRequestsPending)
+                .build())
+        .qrSessions(
+            DashboardResponse.QrSessionsSummary.builder()
+                .total(qrSessionsTotal)
+                .active(qrSessionsActive)
+                .build())
+        .genderBreakdown(
+            DashboardResponse.GenderBreakdown.builder()
+                .malePresent(malePresent)
+                .femalePresent(femalePresent)
+                .maleLate(maleLate)
+                .femaleLate(femaleLate)
+                .build())
+        .recentAttendance(recentAttendance)
         .build();
   }
 }

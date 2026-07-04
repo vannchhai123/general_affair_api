@@ -249,6 +249,26 @@ public class InvitationServiceImpl implements InvitationService {
   }
 
   private CreateInvitationResponse toResponse(InvitationModel savedInvitation) {
+    List<CreateInvitationResponse.AssignedOfficerDto> assignedOfficers =
+        savedInvitation.getParticipants().stream()
+            .map(
+                participant -> {
+                  OfficerModel officer = participant.getOfficer();
+                  return CreateInvitationResponse.AssignedOfficerDto.builder()
+                      .id(officer.getId())
+                      .firstName(officer.getFirstNameEn())
+                      .lastName(officer.getLastNameEn())
+                      .firstNameKh(officer.getFirstNameKh())
+                      .lastNameKh(officer.getLastNameKh())
+                      .department(
+                          officer.getOffice() != null ? officer.getOffice().getName() : null)
+                      .position(
+                          officer.getPosition() != null ? officer.getPosition().getName() : null)
+                      .officerCode(officer.getOfficerCode())
+                      .build();
+                })
+            .collect(Collectors.toList());
+
     return CreateInvitationResponse.builder()
         .id(savedInvitation.getId())
         .title(savedInvitation.getTitle())
@@ -275,6 +295,17 @@ public class InvitationServiceImpl implements InvitationService {
             savedInvitation.getParticipants().stream()
                 .map(participant -> participant.getOfficer().getId())
                 .collect(Collectors.toList()))
+        .assignedOfficers(assignedOfficers)
+        .type(savedInvitation.getType())
+        .status(savedInvitation.getStatus())
+        .createdAt(
+            savedInvitation.getCreatedAt() != null
+                ? savedInvitation.getCreatedAt().toString()
+                : null)
+        .updatedAt(
+            savedInvitation.getUpdatedAt() != null
+                ? savedInvitation.getUpdatedAt().toString()
+                : null)
         .build();
   }
 
@@ -378,35 +409,6 @@ public class InvitationServiceImpl implements InvitationService {
     }
 
     InvitationModel savedInvitation = invitationRepository.save(invitation);
-
-    List<Long> savedParticipantIds =
-        savedInvitation.getParticipants().stream()
-            .map(participant -> participant.getOfficer().getId())
-            .collect(Collectors.toList());
-
-    return CreateInvitationResponse.builder()
-        .id(savedInvitation.getId())
-        .title(savedInvitation.getTitle())
-        .description(savedInvitation.getDescription())
-        .presidedBy(savedInvitation.getPresidedBy())
-        .eventDate(
-            savedInvitation.getEventDate() != null
-                ? savedInvitation.getEventDate().toString()
-                : null)
-        .eventTime(
-            savedInvitation.getEventTime() != null
-                ? savedInvitation.getEventTime().toString()
-                : null)
-        .location(savedInvitation.getLocation())
-        .imageIds(
-            savedInvitation.getImages().stream()
-                .map(invImage -> invImage.getUploadImage().getId())
-                .collect(Collectors.toList()))
-        .imageUrls(
-            savedInvitation.getImages().stream()
-                .map(invImage -> invImage.getUploadImage().getUrl())
-                .collect(Collectors.toList()))
-        .participantIds(savedParticipantIds)
-        .build();
+    return toResponse(savedInvitation);
   }
 }

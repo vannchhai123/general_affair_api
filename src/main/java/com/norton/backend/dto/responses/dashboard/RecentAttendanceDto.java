@@ -1,47 +1,48 @@
 package com.norton.backend.dto.responses.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RecentAttendanceDto {
   private Long id;
-
-  @JsonProperty("officerId")
-  private Long officerId;
-
-  @JsonProperty("imageUrl")
-  private String imageUrl;
-
   private String date;
-
-  @JsonProperty("checkIn")
-  private String checkIn;
-
-  @JsonProperty("checkOut")
-  private String checkOut;
-
-  @JsonProperty("totalWorkMin")
-  private Integer totalWorkMin;
-
-  @JsonProperty("totalLateMin")
-  private Integer totalLateMin;
-
   private String status;
 
-  @JsonProperty("firstName")
-  private String firstName;
+  @JsonProperty("total_work_minutes")
+  private Integer totalWorkMinutes;
 
-  @JsonProperty("lastName")
-  private String lastName;
+  @JsonProperty("total_late_minutes")
+  private Integer totalLateMinutes;
 
-  private String department;
+  private OfficerDto officer;
 
-  @JsonProperty("officerCode")
-  private String officerCode;
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class OfficerDto {
+    private Long id;
 
-  private List<RecentAttendanceSessionDto> sessions;
+    @JsonProperty("first_name_kh")
+    private String firstNameKh;
+
+    @JsonProperty("last_name_kh")
+    private String lastNameKh;
+
+    @JsonProperty("first_name_en")
+    private String firstNameEn;
+
+    @JsonProperty("last_name_en")
+    private String lastNameEn;
+
+    private String position;
+    private String department;
+  }
 }
