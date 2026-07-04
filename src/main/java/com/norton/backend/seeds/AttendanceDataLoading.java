@@ -64,7 +64,6 @@ public class AttendanceDataLoading implements CommandLineRunner {
       }
     }
 
-    // Keep this date guaranteed for attendance-session seed compatibility.
     addIfMissing(
         records,
         plannedKeys,
