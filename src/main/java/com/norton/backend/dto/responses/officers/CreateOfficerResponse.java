@@ -20,8 +20,8 @@ public class CreateOfficerResponse {
   @JsonProperty("position_id")
   private Long positionId;
 
-  @JsonProperty("education_level_id")
-  private Long educationLevelId;
+  @JsonProperty("education_level")
+  private String educationLevel;
 
   private String officerCode;
 

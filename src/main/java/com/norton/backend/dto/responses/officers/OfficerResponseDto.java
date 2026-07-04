@@ -17,8 +17,8 @@ public class OfficerResponseDto {
   @JsonProperty("position_id")
   private Long positionId;
 
-  @JsonProperty("education_level_id")
-  private Long educationLevelId;
+  @JsonProperty("education_level")
+  private String educationLevel;
 
   private String uuid;
   private String officerCode;
