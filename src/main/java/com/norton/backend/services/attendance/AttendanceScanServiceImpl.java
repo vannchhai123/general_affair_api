@@ -169,7 +169,10 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
       existingSession.setStatus("COMPLETED");
       attendanceSessionRepository.save(existingSession);
     } else {
-      action = ACTION_ALREADY_COMPLETED;
+      action = ACTION_CHECK_OUT;
+      existingSession.setCheckOut(currentDateTime.toLocalTime());
+      existingSession.setStatus("COMPLETED");
+      attendanceSessionRepository.save(existingSession);
     }
 
     AttendanceModel updatedAttendance = refreshAttendanceSummary(attendance);
