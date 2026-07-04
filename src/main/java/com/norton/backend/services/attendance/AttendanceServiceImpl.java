@@ -988,21 +988,66 @@ public class AttendanceServiceImpl implements AttendanceService {
     String status = attendance.getStatus() != null ? attendance.getStatus().getCode() : "PRESENT";
 
     List<OfficerAttendanceTodayScanInfoResponse.TimelineEntry> timeline = new ArrayList<>();
-    if (checkInTime != null) {
-      timeline.add(
-          OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
-              .time(checkInTime.toString())
-              .title("Check In")
-              .type("check_in")
-              .build());
-    }
-    if (checkOutTime != null) {
-      timeline.add(
-          OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
-              .time(checkOutTime.toString())
-              .title("Check Out")
-              .type("check_out")
-              .build());
+    List<AttendanceSessionModel> sessions =
+        attendanceSessionRepository.findByAttendanceId(attendance.getId());
+
+    DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    if (sessions.isEmpty()) {
+      if (checkInTime != null) {
+        timeline.add(
+            OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
+                .time(checkInTime.format(timeFormatter))
+                .title("Check In")
+                .type("check_in")
+                .shift(checkInTime.isBefore(LocalTime.of(12, 0)) ? "morning" : "afternoon")
+                .build());
+      }
+      if (checkOutTime != null) {
+        timeline.add(
+            OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
+                .time(checkOutTime.format(timeFormatter))
+                .title("Check Out")
+                .type("check_out")
+                .shift(checkOutTime.isBefore(LocalTime.of(13, 0)) ? "morning" : "afternoon")
+                .build());
+      }
+    } else {
+      for (AttendanceSessionModel session : sessions) {
+        String shiftLabel = "morning";
+        if (session.getShift() != null) {
+          String name = session.getShift().getName();
+          if (MORNING_SHIFT_NAMES.contains(name)) {
+            shiftLabel = "morning";
+          } else if (AFTERNOON_SHIFT_NAMES.contains(name)) {
+            shiftLabel = "afternoon";
+          } else if (name != null) {
+            shiftLabel = name.toLowerCase(Locale.ROOT);
+          }
+        }
+
+        if (session.getCheckIn() != null) {
+          timeline.add(
+              OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
+                  .time(session.getCheckIn().format(timeFormatter))
+                  .title("Check In")
+                  .type("check_in")
+                  .shift(shiftLabel)
+                  .build());
+        }
+        if (session.getCheckOut() != null) {
+          timeline.add(
+              OfficerAttendanceTodayScanInfoResponse.TimelineEntry.builder()
+                  .time(session.getCheckOut().format(timeFormatter))
+                  .title("Check Out")
+                  .type("check_out")
+                  .shift(shiftLabel)
+                  .build());
+        }
+      }
+
+      timeline.sort(
+          Comparator.comparing(OfficerAttendanceTodayScanInfoResponse.TimelineEntry::getTime));
     }
 
     return OfficerAttendanceTodayScanInfoResponse.builder()

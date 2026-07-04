@@ -30,5 +30,6 @@ public class OfficerAttendanceTodayScanInfoResponse {
     private String time; // Can be a time or a time range like "09:52" or "11:00 - 11:15"
     private String title; // Check In, Lunch Break, Meeting, etc.
     private String type; // check_in, break, activity, check_out
+    private String shift; // morning, afternoon, etc.
   }
 }
