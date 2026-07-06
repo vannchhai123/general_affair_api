@@ -911,19 +911,59 @@ public class AttendanceServiceImpl implements AttendanceService {
     Integer lateMinutes = attendance.getTotalLateMin() != null ? attendance.getTotalLateMin() : 0;
 
     List<OfficerAttendanceDailyDetailResponse.TimelineEntry> timeline = new ArrayList<>();
-    if (checkInTime != null) {
-      timeline.add(
-          OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
-              .time(checkInTime)
-              .type("check_in")
-              .build());
-    }
-    if (checkOutTime != null) {
-      timeline.add(
-          OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
-              .time(checkOutTime)
-              .type("check_out")
-              .build());
+    List<AttendanceSessionModel> sessions =
+        attendanceSessionRepository.findByAttendanceId(attendance.getId());
+
+    if (sessions.isEmpty()) {
+      if (checkInTime != null) {
+        timeline.add(
+            OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
+                .time(checkInTime)
+                .type("check_in")
+                .shift(checkInTime.isBefore(LocalTime.of(12, 0)) ? "morning" : "afternoon")
+                .build());
+      }
+      if (checkOutTime != null) {
+        timeline.add(
+            OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
+                .time(checkOutTime)
+                .type("check_out")
+                .shift(checkOutTime.isBefore(LocalTime.of(13, 0)) ? "morning" : "afternoon")
+                .build());
+      }
+    } else {
+      for (AttendanceSessionModel session : sessions) {
+        String shiftLabel = "morning";
+        if (session.getShift() != null) {
+          String name = session.getShift().getName();
+          if (MORNING_SHIFT_NAMES.contains(name)) {
+            shiftLabel = "morning";
+          } else if (AFTERNOON_SHIFT_NAMES.contains(name)) {
+            shiftLabel = "afternoon";
+          } else if (name != null) {
+            shiftLabel = name.toLowerCase(Locale.ROOT);
+          }
+        }
+
+        if (session.getCheckIn() != null) {
+          timeline.add(
+              OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
+                  .time(session.getCheckIn().withNano(0))
+                  .type("check_in")
+                  .shift(shiftLabel)
+                  .build());
+        }
+        if (session.getCheckOut() != null) {
+          timeline.add(
+              OfficerAttendanceDailyDetailResponse.TimelineEntry.builder()
+                  .time(session.getCheckOut().withNano(0))
+                  .type("check_out")
+                  .shift(shiftLabel)
+                  .build());
+        }
+      }
+      timeline.sort(
+          Comparator.comparing(OfficerAttendanceDailyDetailResponse.TimelineEntry::getTime));
     }
 
     OfficerAttendanceDailyDetailResponse.OfficeInfo officeInfo = null;

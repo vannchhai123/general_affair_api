@@ -52,5 +52,6 @@ public class OfficerAttendanceDailyDetailResponse {
 
     private LocalTime time;
     private String type; // check_in, check_out
+    private String shift; // morning, afternoon, etc.
   }
 }
