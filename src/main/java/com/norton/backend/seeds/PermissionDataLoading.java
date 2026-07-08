@@ -143,11 +143,11 @@ public class PermissionDataLoading implements CommandLineRunner {
             dashboardView);
 
     createOrUpdateRole(
-        "ROLE_SUPER_ADMIN", "Super Administrator with full system control", superAdminPermissions);
+        "ROLE_ADMIN", "Administrator with full system control", superAdminPermissions);
 
     createOrUpdateRole(
-        "ROLE_ADMIN",
-        "Administrator for daily operations",
+        "ROLE_HEAD_OFFICE",
+        "Head Office for daily operations",
         Set.of(
             officerView,
             officerCreate,

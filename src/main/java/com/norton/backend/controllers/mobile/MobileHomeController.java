@@ -3,6 +3,7 @@ package com.norton.backend.controllers.mobile;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
 import com.norton.backend.dto.responses.mobile.MobileHomeResponse;
 import com.norton.backend.dto.responses.mobile.MobileMeetingCalendarResponse;
+import com.norton.backend.dto.responses.mobile.MobileShiftResponseDto;
 import com.norton.backend.services.mobile.MobileHomeService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -50,5 +51,10 @@ public class MobileHomeController {
     int resolvedYear = (year != null) ? year : now.getYear();
     int resolvedMonth = (month != null) ? month : now.getMonthValue();
     return ResponseEntity.ok(mobileHomeService.getMeetingCalendar(resolvedYear, resolvedMonth));
+  }
+
+  @GetMapping("/shifts/me")
+  public ResponseEntity<MobileShiftResponseDto> getMyShift() {
+    return ResponseEntity.ok(mobileHomeService.getMyShift());
   }
 }

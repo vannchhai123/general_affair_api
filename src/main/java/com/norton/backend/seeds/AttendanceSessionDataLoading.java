@@ -1,12 +1,19 @@
 package com.norton.backend.seeds;
 
+import com.norton.backend.enums.ShiftAssignmentScope;
+import com.norton.backend.enums.ShiftDayOfWeek;
 import com.norton.backend.enums.ShiftStatus;
 import com.norton.backend.models.AttendanceModel;
 import com.norton.backend.models.AttendanceSessionModel;
+import com.norton.backend.models.DepartmentModel;
+import com.norton.backend.models.ShiftAssignmentModel;
 import com.norton.backend.models.ShiftModel;
 import com.norton.backend.repositories.AttendanceRepository;
 import com.norton.backend.repositories.AttendanceSessionRepository;
+import com.norton.backend.repositories.DepartmentRepository;
+import com.norton.backend.repositories.ShiftAssignmentRepository;
 import com.norton.backend.repositories.ShiftRepository;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -33,6 +40,8 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
   private final AttendanceSessionRepository attendanceSessionRepository;
   private final AttendanceRepository attendanceRepository;
   private final ShiftRepository shiftRepository;
+  private final ShiftAssignmentRepository shiftAssignmentRepository;
+  private final DepartmentRepository departmentRepository;
 
   @Override
   public void run(String... args) {
@@ -72,6 +81,42 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
 
     if (!sessionsToInsert.isEmpty()) {
       attendanceSessionRepository.saveAll(sessionsToInsert);
+    }
+
+    // Seed Shift Assignments for all departments if empty
+    if (shiftAssignmentRepository.count() == 0) {
+      List<DepartmentModel> departments = departmentRepository.findAll();
+      List<ShiftAssignmentModel> assignments = new ArrayList<>();
+      for (DepartmentModel dept : departments) {
+        for (ShiftDayOfWeek day :
+            List.of(
+                ShiftDayOfWeek.MON,
+                ShiftDayOfWeek.TUE,
+                ShiftDayOfWeek.WED,
+                ShiftDayOfWeek.THU,
+                ShiftDayOfWeek.FRI)) {
+          assignments.add(
+              ShiftAssignmentModel.builder()
+                  .shift(morningShift)
+                  .scope(ShiftAssignmentScope.DEPARTMENT)
+                  .scopeId(dept.getId())
+                  .scopeName(dept.getName())
+                  .dayOfWeek(day)
+                  .effectiveFrom(LocalDate.of(2026, 1, 1))
+                  .build());
+          assignments.add(
+              ShiftAssignmentModel.builder()
+                  .shift(afternoonShift)
+                  .scope(ShiftAssignmentScope.DEPARTMENT)
+                  .scopeId(dept.getId())
+                  .scopeName(dept.getName())
+                  .dayOfWeek(day)
+                  .effectiveFrom(LocalDate.of(2026, 1, 1))
+                  .build());
+        }
+      }
+      shiftAssignmentRepository.saveAll(assignments);
+      System.out.println("Seeded default shift assignments for departments.");
     }
 
     System.out.println("Attendance sessions seed data inserted/updated successfully.");

@@ -27,7 +27,7 @@ public class ShiftAssignmentController {
 
   @GetMapping
   @PreAuthorize(
-      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_VIEW)")
+      "hasRole('ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_VIEW)")
   public ResponseEntity<List<ShiftAssignmentResponseDto>> listAssignments(
       @RequestParam(required = false) String scope, @RequestParam(required = false) Long id) {
     return ResponseEntity.ok(shiftAssignmentService.listAssignments(scope, id));
@@ -35,7 +35,7 @@ public class ShiftAssignmentController {
 
   @PostMapping
   @PreAuthorize(
-      "hasRole('SUPER_ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_ASSIGN)")
+      "hasRole('ADMIN') and hasAuthority(T(com.norton.backend.security.Permissions).SHIFT_ASSIGN)")
   public ResponseEntity<ShiftAssignmentTemplateResponseDto> saveTemplate(
       @Valid @RequestBody ShiftAssignmentTemplateRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)

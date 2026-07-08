@@ -27,17 +27,17 @@ public class OfficeAccessService {
     return currentUser;
   }
 
-  public boolean isSuperAdmin() {
-    return hasRole("ROLE_SUPER_ADMIN");
-  }
-
   public boolean isAdmin() {
     return hasRole("ROLE_ADMIN");
   }
 
+  public boolean isHeadOffice() {
+    return hasRole("ROLE_HEAD_OFFICE");
+  }
+
   @Transactional(readOnly = true)
   public Long currentOfficeScopeIdOrNull() {
-    if (isSuperAdmin()) {
+    if (isAdmin()) {
       return null;
     }
 

@@ -26,21 +26,21 @@ public class UserDataLoading implements CommandLineRunner {
   @Override
   public void run(String... args) {
 
-    UserRoleModel superAdminRole = createRoleIfNotExists("ROLE_SUPER_ADMIN", "Super Administrator");
     UserRoleModel adminRole = createRoleIfNotExists("ROLE_ADMIN", "System Administrator");
+    UserRoleModel headOfficeRole = createRoleIfNotExists("ROLE_HEAD_OFFICE", "Head Office");
     UserRoleModel managerRole = createRoleIfNotExists("ROLE_MANAGER", "Manager");
     UserRoleModel officerRole = createRoleIfNotExists("ROLE_OFFICER", "Officer user");
 
     createUserIfNotExists(
-        "superadmin",
-        "superadmin@gmail.com",
-        "Super Admin",
-        "superadmin123",
-        superAdminRole,
-        UserStatus.ACTIVE);
+        "admin", "admin@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
 
     createUserIfNotExists(
-        "admin", "jubpigaming@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
+        "headoffice",
+        "headoffice@gmail.com",
+        "Head Office User",
+        "headoffice123",
+        headOfficeRole,
+        UserStatus.ACTIVE);
 
     createUserIfNotExists(
         "manager",
@@ -51,7 +51,12 @@ public class UserDataLoading implements CommandLineRunner {
         UserStatus.ACTIVE);
 
     createUserIfNotExists(
-        "Kelly", "Chhenkelly@gmail.com", "ឈិន ខិលី", "kelly@123", adminRole, UserStatus.ACTIVE);
+        "Kelly",
+        "Chhenkelly@gmail.com",
+        "ឈិន ខិលី",
+        "kelly@123",
+        headOfficeRole,
+        UserStatus.ACTIVE);
 
     createUserIfNotExists(
         "vannchhai",

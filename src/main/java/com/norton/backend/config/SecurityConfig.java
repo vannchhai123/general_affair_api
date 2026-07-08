@@ -67,7 +67,7 @@ public class SecurityConfig {
                     .requestMatchers(
                         org.springframework.http.HttpMethod.POST,
                         AuthController.BASE_URL + "/change-password")
-                    .hasAnyRole("SUPER_ADMIN", "ADMIN", "MANAGER", "OFFICER")
+                    .hasAnyRole("ADMIN", "HEAD_OFFICE", "MANAGER", "OFFICER")
                     .requestMatchers(
                         AuthController.BASE_URL + "/login",
                         AuthController.BASE_URL + "/refresh",
