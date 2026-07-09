@@ -22,6 +22,5 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-
       - name: Check Google Format
         run: mvn fmt:check
