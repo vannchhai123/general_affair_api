@@ -136,4 +136,76 @@ class InvitationServiceImplTest {
 
     verify(invitationRepository).save(invitation);
   }
+
+  @Test
+  void respondToInvitation_approveSuccess() {
+    // Arrange
+    Long invitationId = 1L;
+    OfficerModel officer = new OfficerModel();
+    officer.setId(1L);
+    officer.setUuid("uuid-1");
+    officer.setOfficerCode("OFF-1");
+
+    InvitationModel invitation = new InvitationModel();
+    invitation.setId(invitationId);
+    invitation.setStatus("pending");
+    invitation.addParticipant(officer);
+
+    com.norton.backend.dto.request.invitation.InvitationResponseRequest request =
+        new com.norton.backend.dto.request.invitation.InvitationResponseRequest();
+    request.setOfficerId(1L);
+    request.setStatus("APPROVED");
+
+    when(invitationRepository.findById(invitationId)).thenReturn(Optional.of(invitation));
+    when(officerRepository.findById(1L)).thenReturn(Optional.of(officer));
+    when(invitationRepository.save(any(InvitationModel.class)))
+        .thenAnswer(invocationMock -> invocationMock.getArgument(0));
+
+    // Act
+    var response = invitationService.respondToInvitation(invitationId, request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals("Invitation approved successfully", response.getMessage());
+    assertEquals(invitationId, response.getInvitationId());
+    assertEquals(1L, response.getOfficerId());
+    assertEquals("APPROVED", response.getStatus());
+    assertEquals("completed", invitation.getStatus());
+  }
+
+  @Test
+  void respondToInvitation_rejectSuccess() {
+    // Arrange
+    Long invitationId = 1L;
+    OfficerModel officer = new OfficerModel();
+    officer.setId(1L);
+    officer.setUuid("uuid-1");
+    officer.setOfficerCode("OFF-1");
+
+    InvitationModel invitation = new InvitationModel();
+    invitation.setId(invitationId);
+    invitation.setStatus("pending");
+    invitation.addParticipant(officer);
+
+    com.norton.backend.dto.request.invitation.InvitationResponseRequest request =
+        new com.norton.backend.dto.request.invitation.InvitationResponseRequest();
+    request.setOfficerId(1L);
+    request.setStatus("REJECTED");
+    request.setRejectionReason("Busy");
+
+    when(invitationRepository.findById(invitationId)).thenReturn(Optional.of(invitation));
+    when(officerRepository.findById(1L)).thenReturn(Optional.of(officer));
+    when(invitationRepository.save(any(InvitationModel.class)))
+        .thenAnswer(invocationMock -> invocationMock.getArgument(0));
+
+    // Act
+    var response = invitationService.respondToInvitation(invitationId, request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals("Invitation rejected successfully", response.getMessage());
+    assertEquals("REJECTED", response.getStatus());
+    assertEquals("Busy", response.getRejectionReason());
+    assertEquals("completed", invitation.getStatus());
+  }
 }

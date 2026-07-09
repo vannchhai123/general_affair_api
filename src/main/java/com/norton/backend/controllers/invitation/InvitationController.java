@@ -1,8 +1,10 @@
 package com.norton.backend.controllers.invitation;
 
 import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
+import com.norton.backend.dto.request.invitation.InvitationResponseRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
 import com.norton.backend.dto.responses.invitation.EligibleParticipantsResponse;
+import com.norton.backend.dto.responses.invitation.InvitationResponseDto;
 import com.norton.backend.dto.responses.officers.OfficerResponse;
 import com.norton.backend.services.invitation.InvitationService;
 import com.norton.backend.services.officer.OfficerService;
@@ -114,5 +116,13 @@ public class InvitationController {
   public ResponseEntity<Map<String, String>> deleteInvitation(@PathVariable Long id) {
     invitationService.deleteInvitation(id);
     return ResponseEntity.ok(Map.of("message", "Invitation deleted successfully"));
+  }
+
+  @PostMapping("/{id}/respond")
+  @PreAuthorize(
+      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('OFFICER')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  public ResponseEntity<InvitationResponseDto> respondToInvitation(
+      @PathVariable Long id, @Validated @RequestBody InvitationResponseRequest request) {
+    return ResponseEntity.ok(invitationService.respondToInvitation(id, request));
   }
 }

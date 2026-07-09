@@ -73,5 +73,10 @@ public class CreateInvitationResponse {
 
     @JsonProperty("officerCode")
     private String officerCode;
+
+    private String status;
+
+    @JsonProperty("rejection_reason")
+    private String rejectionReason;
   }
 }

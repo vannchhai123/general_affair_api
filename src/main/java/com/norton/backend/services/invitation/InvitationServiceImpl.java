@@ -1,11 +1,14 @@
 package com.norton.backend.services.invitation;
 
 import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
+import com.norton.backend.dto.request.invitation.InvitationResponseRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
+import com.norton.backend.dto.responses.invitation.InvitationResponseDto;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.InvitationModel;
+import com.norton.backend.models.InvitationParticipantModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.UploadImageModel;
 import com.norton.backend.repositories.InvitationRepository;
@@ -265,6 +268,8 @@ public class InvitationServiceImpl implements InvitationService {
                       .position(
                           officer.getPosition() != null ? officer.getPosition().getName() : null)
                       .officerCode(officer.getOfficerCode())
+                      .status(participant.getStatus())
+                      .rejectionReason(participant.getRejectionReason())
                       .build();
                 })
             .collect(Collectors.toList());
@@ -410,5 +415,76 @@ public class InvitationServiceImpl implements InvitationService {
 
     InvitationModel savedInvitation = invitationRepository.save(invitation);
     return toResponse(savedInvitation);
+  }
+
+  @Override
+  @Transactional
+  public InvitationResponseDto respondToInvitation(Long id, InvitationResponseRequest request) {
+    InvitationModel invitation =
+        invitationRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", id));
+
+    OfficerModel respondingOfficer;
+    if (request.getOfficerId() != null) {
+      respondingOfficer =
+          officerRepository
+              .findById(request.getOfficerId())
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Officer", "id", request.getOfficerId()));
+    } else {
+      Long currentUserId = officeAccessService.currentUser().getId();
+      respondingOfficer =
+          officerRepository
+              .findByUserIdWithPosition(currentUserId)
+              .orElseThrow(() -> new ResourceNotFoundException("Officer", "userId", currentUserId));
+    }
+
+    InvitationParticipantModel participant =
+        invitation.getParticipants().stream()
+            .filter(p -> p.getOfficer().getId().equals(respondingOfficer.getId()))
+            .findFirst()
+            .orElseThrow(
+                () -> new BadRequestException("Officer is not a participant of this invitation"));
+
+    String status = request.getStatus().toUpperCase();
+    if (!"APPROVED".equals(status) && !"REJECTED".equals(status)) {
+      throw new BadRequestException("status must be either APPROVED or REJECTED");
+    }
+
+    if ("REJECTED".equals(status)) {
+      if (request.getRejectionReason() == null || request.getRejectionReason().isBlank()) {
+        throw new BadRequestException("rejectionReason is required when status is REJECTED");
+      }
+      participant.setRejectionReason(request.getRejectionReason());
+    } else {
+      participant.setRejectionReason(null);
+    }
+    participant.setStatus(status);
+
+    boolean allResponded =
+        invitation.getParticipants().stream()
+            .noneMatch(p -> "PENDING".equalsIgnoreCase(p.getStatus()));
+
+    if (allResponded) {
+      invitation.setStatus("completed");
+    } else {
+      invitation.setStatus("pending");
+    }
+
+    invitationRepository.save(invitation);
+
+    String successMessage =
+        "APPROVED".equals(status)
+            ? "Invitation approved successfully"
+            : "Invitation rejected successfully";
+
+    return InvitationResponseDto.builder()
+        .message(successMessage)
+        .invitationId(invitation.getId())
+        .officerId(respondingOfficer.getId())
+        .status(status)
+        .rejectionReason(participant.getRejectionReason())
+        .build();
   }
 }
