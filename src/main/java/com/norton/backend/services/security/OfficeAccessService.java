@@ -37,7 +37,7 @@ public class OfficeAccessService {
 
   @Transactional(readOnly = true)
   public Long currentOfficeScopeIdOrNull() {
-    if (isAdmin()) {
+    if (isAdmin() || isHeadOffice()) {
       return null;
     }
 
@@ -54,6 +54,17 @@ public class OfficeAccessService {
   }
 
   public void assertCanAccessOfficer(OfficerModel officer) {
+    UserModel currentUser = currentUser();
+    String currentRole = currentUser.getRole().getRoleName();
+    if ("ROLE_OFFICER".equals(currentRole)) {
+      OfficerModel self =
+          officerRepository.findByUserIdWithPosition(currentUser.getId()).orElse(null);
+      if (self == null || !self.getId().equals(officer.getId())) {
+        throw new UnauthorizedException("You can only access your own officer details");
+      }
+      return;
+    }
+
     Long scopeOfficeId = currentOfficeScopeIdOrNull();
     if (scopeOfficeId == null) {
       return;

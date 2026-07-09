@@ -119,8 +119,7 @@ public class InvitationController {
   }
 
   @PostMapping("/{id}/respond")
-  @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('OFFICER')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  @PreAuthorize("hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('OFFICER')")
   public ResponseEntity<InvitationResponseDto> respondToInvitation(
       @PathVariable Long id, @Validated @RequestBody InvitationResponseRequest request) {
     return ResponseEntity.ok(invitationService.respondToInvitation(id, request));

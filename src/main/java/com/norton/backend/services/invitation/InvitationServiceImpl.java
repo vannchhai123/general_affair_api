@@ -7,10 +7,12 @@ import com.norton.backend.dto.responses.invitation.InvitationResponseDto;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
+import com.norton.backend.exceptions.UnauthorizedException;
 import com.norton.backend.models.InvitationModel;
 import com.norton.backend.models.InvitationParticipantModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.UploadImageModel;
+import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.InvitationRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.UploadImageRepository;
@@ -425,6 +427,9 @@ public class InvitationServiceImpl implements InvitationService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", id));
 
+    UserModel currentUser = officeAccessService.currentUser();
+    String currentRole = currentUser.getRole().getRoleName();
+
     OfficerModel respondingOfficer;
     if (request.getOfficerId() != null) {
       respondingOfficer =
@@ -432,12 +437,20 @@ public class InvitationServiceImpl implements InvitationService {
               .findById(request.getOfficerId())
               .orElseThrow(
                   () -> new ResourceNotFoundException("Officer", "id", request.getOfficerId()));
+
+      // If the user has ROLE_OFFICER, they can only respond for themselves
+      if ("ROLE_OFFICER".equals(currentRole)) {
+        if (respondingOfficer.getUser() == null
+            || !respondingOfficer.getUser().getId().equals(currentUser.getId())) {
+          throw new UnauthorizedException("You can only respond on behalf of yourself");
+        }
+      }
     } else {
-      Long currentUserId = officeAccessService.currentUser().getId();
       respondingOfficer =
           officerRepository
-              .findByUserIdWithPosition(currentUserId)
-              .orElseThrow(() -> new ResourceNotFoundException("Officer", "userId", currentUserId));
+              .findByUserIdWithPosition(currentUser.getId())
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Officer", "userId", currentUser.getId()));
     }
 
     InvitationParticipantModel participant =

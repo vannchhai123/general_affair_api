@@ -406,7 +406,38 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     String currentRole = officeAccessService.currentUser().getRole().getRoleName();
     if ("ROLE_OFFICER".equals(currentRole)) {
-      throw new UnauthorizedException("Officers cannot access admin-scoped attendance reports");
+      Long currentUserId = officeAccessService.currentUser().getId();
+      OfficerModel selfOfficer =
+          officerRepository.findByUserIdWithPosition(currentUserId).orElse(null);
+
+      if (selfOfficer == null) {
+        return buildAllOfficersReportResponse(Collections.emptyList(), Collections.emptyList());
+      }
+
+      AttendanceModel attendance =
+          attendanceRepository.findByOfficerIdAndDate(selfOfficer.getId(), onDate).orElse(null);
+      boolean isPresent = attendance != null && attendance.getCheckIn() != null;
+
+      AllOfficersReportResponse.AttendanceStaffReportItem item =
+          AllOfficersReportResponse.AttendanceStaffReportItem.builder()
+              .officerId(selfOfficer.getId())
+              .officerUUID(selfOfficer.getUuid())
+              .officerCode(selfOfficer.getOfficerCode())
+              .name(selfOfficer.getFirstNameEn() + " " + selfOfficer.getLastNameEn())
+              .role(selfOfficer.getPosition() != null ? selfOfficer.getPosition().getName() : null)
+              .departmentId(resolveOfficerOfficeId(selfOfficer))
+              .departmentName(resolveOfficerOfficeName(selfOfficer))
+              .isPresent(isPresent)
+              .imageUrl(selfOfficer.getImageUrl())
+              .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
+              .checkOutTime(formatTime(attendance != null ? attendance.getCheckOut() : null))
+              .build();
+
+      DepartmentModel selfOffice = selfOfficer.getOffice();
+      List<DepartmentResponseDto> departmentList =
+          selfOffice != null ? List.of(toDepartmentDto(selfOffice)) : Collections.emptyList();
+
+      return buildAllOfficersReportResponse(Collections.singletonList(item), departmentList);
     }
 
     officeAccessService.assertCanAccessOfficer(adminOfficer);

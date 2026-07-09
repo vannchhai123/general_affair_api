@@ -335,7 +335,7 @@ public class OfficerDataLoading implements CommandLineRunner {
                         .username(seed.username())
                         .email(seed.userEmail())
                         .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
-                        .passwordHash(passwordEncoder.encode("officer123"))
+                        .passwordHash(passwordEncoder.encode("officer@1234"))
                         .role(officerRole)
                         .userStatus(UserStatus.ACTIVE)
                         .build()));
@@ -357,7 +357,7 @@ public class OfficerDataLoading implements CommandLineRunner {
             .username(username)
             .email(email)
             .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
-            .passwordHash(passwordEncoder.encode("officer123"))
+            .passwordHash(passwordEncoder.encode("officer@1234"))
             .role(officerRole)
             .userStatus(UserStatus.ACTIVE)
             .build());
