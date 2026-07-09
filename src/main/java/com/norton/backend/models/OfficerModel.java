@@ -61,12 +61,12 @@ public class OfficerModel extends BaseIdModel {
   @Builder.Default
   @Size(max = 50)
   @Column(name = "nationality", length = 50)
-  private String nationality = "Cambodian";
+  private String nationality = "ខ្មែរ";
 
   @Builder.Default
   @Size(max = 50)
   @Column(name = "ethnicity", length = 50)
-  private String ethnicity = "Cambodian";
+  private String ethnicity = "ខ្មែរ";
 
   @Size(max = 100)
   @Pattern(regexp = "^[0-9+\\-() ]*$", message = "Invalid phone number format")
@@ -125,10 +125,10 @@ public class OfficerModel extends BaseIdModel {
       this.uuid = UUID.randomUUID().toString();
     }
     if (this.nationality == null || this.nationality.isBlank()) {
-      this.nationality = "Cambodian";
+      this.nationality = "ខ្មែរ";
     }
     if (this.ethnicity == null || this.ethnicity.isBlank()) {
-      this.ethnicity = "Cambodian";
+      this.ethnicity = "ខ្មែរ";
     }
     if (this.status == null) {
       this.status = OfficerStatus.ACTIVE;

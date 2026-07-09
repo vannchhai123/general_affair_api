@@ -449,12 +449,12 @@ public class OfficerServiceImpl implements OfficerService {
 
   private String defaultNationality(String nationality) {
     String trimmed = trimToNull(nationality);
-    return trimmed == null ? "Cambodian" : trimmed;
+    return trimmed == null ? "ខ្មែរ" : trimmed;
   }
 
   private String defaultEthnicity(String ethnicity) {
     String trimmed = trimToNull(ethnicity);
-    return trimmed == null ? "Cambodian" : trimmed;
+    return trimmed == null ? "ខ្មែរ" : trimmed;
   }
 
   private String trimToNull(String value) {

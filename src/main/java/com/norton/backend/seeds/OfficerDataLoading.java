@@ -27,11 +27,16 @@ import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.PositionRepository;
 import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.repositories.UserRoleRepository;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,6 +44,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -91,9 +97,11 @@ public class OfficerDataLoading implements CommandLineRunner {
         continue;
       }
 
-      UserModel user = loadOrCreateUser(seed, officerRole);
+      UserRoleModel targetRole =
+          userRoleRepository.findByRoleName(seed.roleName()).orElse(officerRole);
+      UserModel user = loadOrCreateUser(seed, targetRole);
       if (user.getOfficer() != null) {
-        user = createDedicatedUser(seed, officerRole);
+        user = createDedicatedUser(seed, targetRole);
       }
       OfficerModel officer = buildOfficer(seed, position, educationLevel, user);
       officer = officerRepository.save(officer);
@@ -640,228 +648,154 @@ public class OfficerDataLoading implements CommandLineRunner {
     return positions;
   }
 
+  private String mapDepartmentToCode(String csvDeptName) {
+    if (csvDeptName == null) return null;
+    String name = csvDeptName.trim();
+    if (name.contains("គណៈអភិបាល")) return "DEP-01";
+    if (name.contains("គណៈនាយករដ្ឋបាល")) return "DEP-02";
+    if (name.contains("រដ្ឋបាល") && name.contains("បុគ្គលិក")) return "DEP-03";
+    if (name.contains("ផែនការ") && name.contains("ហិរញ្ញវត្ថុ")) return "DEP-04";
+    if (name.contains("លទ្ធកម្ម")) return "DEP-05";
+    if (name.contains("លេខាធិការ") || name.contains("លេខាធិកា")) return "DEP-06";
+    if (name.contains("អប់រំ")) return "DEP-07";
+    if (name.contains("ដែនដី")) return "DEP-08";
+    if (name.contains("សម្រុះសម្រួល") || name.contains("នីតិកម្ម") || name.contains("ច្បាប់"))
+      return "DEP-09";
+    if (name.contains("សាធារណៈការ") || name.contains("សាធារណការ")) return "DEP-10";
+    if (name.contains("សេដ្ឋកិច្ច")) return "DEP-11";
+    if (name.contains("សង្គមកិច្ច")) return "DEP-12";
+    if (name.contains("ច្រកចេញចូល")) return "DEP-13";
+    return null;
+  }
+
+  private String mapPositionToCode(String csvPosName, String deptCode) {
+    if (csvPosName == null || deptCode == null) return null;
+    String name = csvPosName.trim();
+    if ("DEP-01".equals(deptCode)) {
+      if (name.contains("អភិបាលរង")) return "POS-02-DEP-01";
+      if (name.contains("អភិបាល")) return "POS-01-DEP-01";
+    }
+    if ("DEP-02".equals(deptCode)) {
+      if (name.contains("នាយករង")) return "POS-04-DEP-02";
+      if (name.contains("នាយក")) return "POS-03-DEP-02";
+    }
+    if (name.contains("ប្រធាន")) return "POS-05-" + deptCode;
+    if (name.contains("អនុប្រធាន")) return "POS-06-" + deptCode;
+    if (name.contains("មន្ត្រី")) return "POS-07-" + deptCode;
+    return "POS-07-" + deptCode;
+  }
+
+  private String mapRoleName(String csvRole) {
+    if (csvRole == null) return "ROLE_OFFICER";
+    String role = csvRole.trim().toLowerCase();
+    return switch (role) {
+      case "manager" -> "ROLE_MANAGER";
+      case "super admin" -> "ROLE_ADMIN";
+      case "head-office" -> "ROLE_HEAD_OFFICE";
+      default -> "ROLE_OFFICER";
+    };
+  }
+
+  private String mapEducationLevel(String csvEdu) {
+    if (csvEdu == null) return "មធ្យមសិក្សាទុតិយភូមិ";
+    String edu = csvEdu.trim();
+    if (edu.contains("បរិញ្ញាបត្ររង") || edu.contains("បរិញ្ញាប័ត្ររង")) return "បរិញ្ញាបត្ររង";
+    if (edu.contains("បរិញ្ញាបត្រ") || edu.contains("បរិញ្ញាប័ត្រ")) return "បរិញ្ញាបត្រ";
+    if (edu.contains("អនុបណ្ឌិត")) return "អនុបណ្ឌិត";
+    if (edu.contains("បណ្ឌិត")) return "បណ្ឌិត";
+    if (edu.contains("មធ្យមសិក្សា")) return "មធ្យមសិក្សាទុតិយភូមិ";
+    return edu;
+  }
+
   private List<OfficerSeed> buildOfficerSeeds() {
     List<OfficerSeed> seeds = new ArrayList<>();
-    seeds.add(
-        new OfficerSeed(
-            "OFF-001",
-            "admin",
-            "admin.officer@dummy.com",
-            "officer001@dummy.com",
-            "សុខ",
-            "វិរៈ",
-            GenderEnum.MALE,
-            "010000001",
-            "POS-01-DEP-01"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-002",
-            "user",
-            "user.officer@dummy.com",
-            "officer002@dummy.com",
-            "ចាន់",
-            "ស្រីនិត",
-            GenderEnum.FEMALE,
-            "010000002",
-            "POS-02-DEP-01"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-003",
-            "Kelly",
-            "kelly.officer@dummy.com",
-            "officer003@dummy.com",
-            "ឈិន",
-            "គីលី",
-            GenderEnum.MALE,
-            "010000003",
-            "POS-03-DEP-02"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-004",
-            "vannchhai",
-            "vannchhai.officer@dummy.com",
-            "officer004@dummy.com",
-            "វណ្ណឆៃ",
-            "ចាន់",
-            GenderEnum.MALE,
-            "010000004",
-            "POS-04-DEP-02"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-005",
-            "officer005",
-            "officer005@dummy.com",
-            "officer005@dummy.com",
-            "ស្រីពៅ",
-            "លីណា",
-            GenderEnum.FEMALE,
-            "010000005",
-            "POS-05-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-006",
-            "officer006",
-            "officer006@dummy.com",
-            "officer006@dummy.com",
-            "ដារ៉ា",
-            "សុភក្ត្រ",
-            GenderEnum.MALE,
-            "010000006",
-            "POS-06-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-007",
-            "officer007",
-            "officer007@dummy.com",
-            "officer007@dummy.com",
-            "មាលា",
-            "រីណា",
-            GenderEnum.FEMALE,
-            "010000007",
-            "POS-07-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-008",
-            "officer008",
-            "officer008@dummy.com",
-            "officer008@dummy.com",
-            "សុវណ្ណ",
-            "មុនី",
-            GenderEnum.MALE,
-            "010000008",
-            "POS-08-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-009",
-            "officer009",
-            "officer009@dummy.com",
-            "officer009@dummy.com",
-            "គន្ធា",
-            "ចរិយា",
-            GenderEnum.FEMALE,
-            "010000009",
-            "POS-09-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-010",
-            "officer010",
-            "officer010@dummy.com",
-            "officer010@dummy.com",
-            "ប៊ុនថន",
-            "ពេជ្រ",
-            GenderEnum.MALE,
-            "010000010",
-            "POS-10-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-011",
-            "officer011",
-            "officer011@dummy.com",
-            "officer011@dummy.com",
-            "សុភា",
-            "វណ្ណា",
-            GenderEnum.FEMALE,
-            "010000011",
-            "POS-01-DEP-01"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-012",
-            "officer012",
-            "officer012@dummy.com",
-            "officer012@dummy.com",
-            "រ័ត្ន",
-            "វិសាល",
-            GenderEnum.MALE,
-            "010000012",
-            "POS-02-DEP-01"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-013",
-            "officer013",
-            "officer013@dummy.com",
-            "officer013@dummy.com",
-            "ស្រីល័ក្ខ",
-            "នារី",
-            GenderEnum.FEMALE,
-            "010000013",
-            "POS-03-DEP-02"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-014",
-            "officer014",
-            "officer014@dummy.com",
-            "officer014@dummy.com",
-            "ពិសី",
-            "កក្កដា",
-            GenderEnum.MALE,
-            "010000014",
-            "POS-04-DEP-02"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-015",
-            "officer015",
-            "officer015@dummy.com",
-            "officer015@dummy.com",
-            "មុនីរ័ត្ន",
-            "សុធា",
-            GenderEnum.FEMALE,
-            "010000015",
-            "POS-05-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-016",
-            "officer016",
-            "officer016@dummy.com",
-            "officer016@dummy.com",
-            "សុភ័ក្រ",
-            "រតនា",
-            GenderEnum.MALE,
-            "010000016",
-            "POS-06-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-017",
-            "officer017",
-            "officer017@dummy.com",
-            "officer017@dummy.com",
-            "ច័ន្ទរត្ន",
-            "ស្រីមុំ",
-            GenderEnum.FEMALE,
-            "010000017",
-            "POS-07-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-018",
-            "officer018",
-            "officer018@dummy.com",
-            "officer018@dummy.com",
-            "វិជ្ជា",
-            "ថាវី",
-            GenderEnum.MALE,
-            "010000018",
-            "POS-08-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-019",
-            "officer019",
-            "officer019@dummy.com",
-            "officer019@dummy.com",
-            "ស្រីនាង",
-            "ធីតា",
-            GenderEnum.FEMALE,
-            "010000019",
-            "POS-09-DEP-03"));
-    seeds.add(
-        new OfficerSeed(
-            "OFF-020",
-            "officer020",
-            "officer020@dummy.com",
-            "officer020@dummy.com",
-            "ជ័យ",
-            "សុផល",
-            GenderEnum.MALE,
-            "010000020",
-            "POS-10-DEP-03"));
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
+
+    try (BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(
+                new ClassPathResource("តារាងបញ្ចូលទិន្នន័យមន្ត្រី.csv").getInputStream(),
+                StandardCharsets.UTF_8))) {
+
+      String line = reader.readLine(); // read header
+      while ((line = reader.readLine()) != null) {
+        if (line.trim().isEmpty()) {
+          continue;
+        }
+        String[] parts = line.split(",", -1);
+        if (parts.length < 15) {
+          continue;
+        }
+
+        String officerCodeRaw = parts[1].trim();
+        if (officerCodeRaw.isEmpty() || !officerCodeRaw.matches("\\d+")) {
+          continue;
+        }
+        String lastNameKh = parts[2].trim();
+        String firstNameKh = parts[3].trim();
+        String lastNameEn = parts[4].trim();
+        String firstNameEn = parts[5].trim();
+        String genderStr = parts[6].trim();
+        String dobStr = parts[7].trim();
+        String departmentName = parts[10].trim();
+        String positionName = parts[11].trim();
+        String eduLevelRaw = parts[12].trim();
+        String hireDateStr = parts[13].trim();
+        String csvRole = parts[14].trim();
+
+        int number = Integer.parseInt(officerCodeRaw);
+        String officerCode = "OFF-" + String.format("%03d", number);
+
+        String username = parts[15].trim();
+        if (username.isEmpty()) {
+          username = (firstNameEn + lastNameEn).replaceAll("\\s+", "").toLowerCase();
+        }
+        String userEmail = username + "@dummy.com";
+        String officerEmail = username + ".officer@dummy.com";
+
+        GenderEnum gender = "ប្រុស".equals(genderStr) ? GenderEnum.MALE : GenderEnum.FEMALE;
+        String phone = String.format("010%06d", number);
+
+        LocalDate dateOfBirth;
+        try {
+          dateOfBirth = LocalDate.parse(dobStr, formatter);
+        } catch (Exception e) {
+          dateOfBirth = LocalDate.of(1980, 1, 1);
+        }
+
+        LocalDate hireDate;
+        try {
+          hireDate = LocalDate.parse(hireDateStr, formatter);
+        } catch (Exception e) {
+          hireDate = LocalDate.of(2010, 7, 7);
+        }
+
+        String deptCode = mapDepartmentToCode(departmentName);
+        String positionCode = mapPositionToCode(positionName, deptCode);
+        String roleName = mapRoleName(csvRole);
+        String eduLevel = mapEducationLevel(eduLevelRaw);
+
+        seeds.add(
+            new OfficerSeed(
+                officerCode,
+                username,
+                userEmail,
+                officerEmail,
+                firstNameKh,
+                lastNameKh,
+                gender,
+                phone,
+                positionCode,
+                roleName,
+                firstNameEn,
+                lastNameEn,
+                dateOfBirth,
+                hireDate,
+                eduLevel));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
     return seeds;
   }
 
@@ -906,69 +840,55 @@ public class OfficerDataLoading implements CommandLineRunner {
       String lastName,
       GenderEnum gender,
       String phone,
-      String positionCode) {
+      String positionCode,
+      String roleName,
+      String firstNameEn,
+      String lastNameEn,
+      LocalDate dateOfBirth,
+      LocalDate hireDate,
+      String educationLevelName) {
 
-    String firstNameEn() {
-      return "Officer";
+    public String firstNameEn() {
+      return firstNameEn;
     }
 
-    String lastNameEn() {
-      return String.format("Seed %03d", seedNumber());
+    public String lastNameEn() {
+      return lastNameEn;
     }
 
-    String firstNameKh() {
+    public String firstNameKh() {
       return firstName;
     }
 
-    String lastNameKh() {
+    public String lastNameKh() {
       return lastName;
     }
 
-    LocalDate dateOfBirth() {
-      int number = seedNumber();
-      return LocalDate.of(1984 + (number % 16), 1 + (number % 12), 1 + (number % 27));
-    }
-
-    String nationalId() {
+    public String nationalId() {
       return String.format("KH%09d", seedNumber());
     }
 
-    String nationality() {
+    public String nationality() {
       return "Cambodian";
     }
 
-    String ethnicity() {
+    public String ethnicity() {
       return "Cambodian";
     }
 
-    String educationLevelName() {
-      return switch (seedNumber() % 5) {
-        case 0 -> "អនុបណ្ឌិត";
-        case 1 -> "បរិញ្ញាបត្រ";
-        case 2 -> "បរិញ្ញាបត្ររង";
-        case 3 -> "មធ្យមសិក្សាទុតិយភូមិ";
-        default -> "បណ្ឌិត";
-      };
-    }
-
-    LocalDate hireDate() {
-      int number = seedNumber();
-      return LocalDate.of(2018 + (number % 7), 1 + (number % 12), 1 + (number % 27));
-    }
-
-    String contractType() {
-      return seedNumber() % 4 == 0 ? "Contract" : "Permanent";
-    }
-
-    boolean invitationPriority() {
+    public boolean invitationPriority() {
       return java.util.List.of(
               "OFF-001", "OFF-002", "OFF-003", "OFF-004", "OFF-005", "OFF-006", "OFF-007")
-          .contains(officerCode());
+          .contains(officerCode);
     }
 
-    int seedNumber() {
+    public int seedNumber() {
       String digits = officerCode.replaceAll("\\D", "");
       return digits.isBlank() ? 1 : Integer.parseInt(digits);
+    }
+
+    public String contractType() {
+      return "Permanent";
     }
   }
 }
