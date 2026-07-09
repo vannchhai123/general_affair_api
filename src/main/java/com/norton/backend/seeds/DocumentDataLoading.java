@@ -21,7 +21,6 @@ public class DocumentDataLoading implements CommandLineRunner {
   private final OrganizationRepository organizationRepository;
   private final DocumentRepository documentRepository;
   private final DocumentFileRepository documentFileRepository;
-  private final DocumentTagRepository documentTagRepository;
   private final DocumentLogRepository documentLogRepository;
   private final OfficerRepository officerRepository;
   private final UploadImageRepository uploadImageRepository;
@@ -47,37 +46,93 @@ public class DocumentDataLoading implements CommandLineRunner {
     types.add(
         documentTypeRepository.save(
             DocumentTypeModel.builder()
-                .name("Official Letter")
-                .code("OFF_LTR")
-                .description("Standard official communication")
+                .name("លិខិតស្នើ")
+                .code("REQ_LTR")
+                .description("លិខិតស្នើ (Request Letter)")
                 .build()));
     types.add(
         documentTypeRepository.save(
             DocumentTypeModel.builder()
-                .name("Circular")
-                .code("CIR")
-                .description("Directives sent to multiple recipients")
+                .name("សេចក្តីជូនដំណឹង")
+                .code("NOTICE")
+                .description("សេចក្តីជូនដំណឹង (Notice / Announcement)")
                 .build()));
     types.add(
         documentTypeRepository.save(
             DocumentTypeModel.builder()
-                .name("Memo")
-                .code("MEMO")
-                .description("Internal departmental memo")
+                .name("លិខិតអញ្ជើញ")
+                .code("INV_LTR")
+                .description("លិខិតអញ្ជើញ (Invitation Letter)")
                 .build()));
     types.add(
         documentTypeRepository.save(
             DocumentTypeModel.builder()
-                .name("Directive")
-                .code("DIR")
-                .description("Mandatory instructions from leadership")
+                .name("លិខិតបញ្ជាបេសកកម្ម")
+                .code("MSN_ORD")
+                .description("លិខិតបញ្ជាបេសកកម្ម (Mission Order)")
                 .build()));
     types.add(
         documentTypeRepository.save(
             DocumentTypeModel.builder()
-                .name("Report")
-                .code("RPT")
-                .description("Periodical or project reports")
+                .name("លិខិតចុះទិដ្ឋាការធ្វើដំណើរ")
+                .code("TRV_VISA")
+                .description("លិខិតចុះទិដ្ឋាការធ្វើដំណើរ (Travel Visa/Permit)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("លិខិតផ្ទេរសិទ្ធិ")
+                .code("DEL_AUTH")
+                .description("លិខិតផ្ទេរសិទ្ធិ (Delegation of Authority)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("លិខិតប្រគល់សិទ្ធិចុះហត្ថលេខា")
+                .code("POA_SIGN")
+                .description("លិខិតប្រគល់សិទ្ធិចុះហត្ថលេខា (Power of Attorney to Sign)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("ដីកាអម")
+                .code("COV_LTR")
+                .description("ដីកាអម (Covering Letter)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("លិខិតអនុញ្ញាតច្បាប់ឈប់សម្រាក")
+                .code("LV_PERM")
+                .description("លិខិតអនុញ្ញាតច្បាប់ឈប់សម្រាក (Leave Permission)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("កំណត់បង្ហាញរឿង")
+                .code("CASE_MEMO")
+                .description("កំណត់បង្ហាញរឿង (Case Presentation)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("របាយការណ៍")
+                .code("REPORT")
+                .description("របាយការណ៍ (Report)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("កំណត់ហេតុ")
+                .code("MINUTES")
+                .description("កំណត់ហេតុ (Minutes / Record)")
+                .build()));
+    types.add(
+        documentTypeRepository.save(
+            DocumentTypeModel.builder()
+                .name("លិខិតបញ្ជាក់")
+                .code("CERT_LTR")
+                .description("លិខិតបញ្ជាក់ (Certification Letter)")
                 .build()));
 
     // 2. Seed Organizations
@@ -131,14 +186,6 @@ public class DocumentDataLoading implements CommandLineRunner {
                 .status("ACTIVE")
                 .build()));
 
-    // 3. Seed Document Tags
-    List<DocumentTagModel> tags = new ArrayList<>();
-    tags.add(documentTagRepository.save(DocumentTagModel.builder().name("Urgent").build()));
-    tags.add(documentTagRepository.save(DocumentTagModel.builder().name("Confidential").build()));
-    tags.add(documentTagRepository.save(DocumentTagModel.builder().name("Finance").build()));
-    tags.add(documentTagRepository.save(DocumentTagModel.builder().name("Education").build()));
-    tags.add(documentTagRepository.save(DocumentTagModel.builder().name("Internal").build()));
-
     // 4. Seed Upload Image for files association
     UploadImageModel dummyImage =
         uploadImageRepository.save(
@@ -169,8 +216,6 @@ public class DocumentDataLoading implements CommandLineRunner {
             .remarks("Assigned to IT Admin for coordination")
             .createdBy(adminOfficer)
             .build();
-    doc1.getTags().add(tags.get(0)); // Urgent
-    doc1.getTags().add(tags.get(3)); // Education
     doc1 = documentRepository.save(doc1);
 
     // Save File for Doc 1
@@ -214,8 +259,6 @@ public class DocumentDataLoading implements CommandLineRunner {
             .createdBy(adminOfficer)
             .updatedBy(otherOfficer)
             .build();
-    doc2.getTags().add(tags.get(3)); // Education
-    doc2.getTags().add(tags.get(4)); // Internal
     doc2 = documentRepository.save(doc2);
 
     // Save File for Doc 2
@@ -266,8 +309,6 @@ public class DocumentDataLoading implements CommandLineRunner {
             .remarks("Requires review by executive committee")
             .createdBy(otherOfficer)
             .build();
-    doc3.getTags().add(tags.get(1)); // Confidential
-    doc3.getTags().add(tags.get(2)); // Finance
     doc3 = documentRepository.save(doc3);
 
     // Save Logs for Doc 3

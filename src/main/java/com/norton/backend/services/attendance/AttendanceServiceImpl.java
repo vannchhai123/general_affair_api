@@ -315,7 +315,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 
       AllOfficersReportResponse.AttendanceStaffReportItem item =
           AllOfficersReportResponse.AttendanceStaffReportItem.builder()
-              .officerId(selfOfficer.getUuid())
+              .officerId(selfOfficer.getId())
+              .officerUUID(selfOfficer.getUuid())
+              .officerCode(selfOfficer.getOfficerCode())
               .name(selfOfficer.getFirstNameEn() + " " + selfOfficer.getLastNameEn())
               .role(selfOfficer.getPosition() != null ? selfOfficer.getPosition().getName() : null)
               .departmentId(
@@ -364,7 +366,9 @@ public class AttendanceServiceImpl implements AttendanceService {
                   boolean isPresent = attendance != null && attendance.getCheckIn() != null;
 
                   return AllOfficersReportResponse.AttendanceStaffReportItem.builder()
-                      .officerId(officer.getUuid())
+                      .officerId(officer.getId())
+                      .officerUUID(officer.getUuid())
+                      .officerCode(officer.getOfficerCode())
                       .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
                       .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
                       .departmentId(
@@ -431,7 +435,9 @@ public class AttendanceServiceImpl implements AttendanceService {
                   boolean isPresent = attendance != null && attendance.getCheckIn() != null;
 
                   return AllOfficersReportResponse.AttendanceStaffReportItem.builder()
-                      .officerId(officer.getUuid())
+                      .officerId(officer.getId())
+                      .officerUUID(officer.getUuid())
+                      .officerCode(officer.getOfficerCode())
                       .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
                       .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
                       .departmentId(resolveOfficerOfficeId(officer))

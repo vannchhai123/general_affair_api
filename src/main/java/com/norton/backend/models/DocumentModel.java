@@ -111,14 +111,6 @@ public class DocumentModel extends BaseIdModel {
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
 
-  @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "document_tag_mapping",
-      joinColumns = @JoinColumn(name = "document_id"),
-      inverseJoinColumns = @JoinColumn(name = "tag_id"))
-  @Builder.Default
-  private List<DocumentTagModel> tags = new ArrayList<>();
-
   @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<DocumentFileModel> files = new ArrayList<>();

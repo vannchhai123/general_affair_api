@@ -39,7 +39,9 @@ public class AllOfficersReportResponse {
   @AllArgsConstructor
   public static class AttendanceStaffReportItem {
 
-    private String officerId;
+    private Long officerId;
+    private String officerUUID;
+    private String officerCode;
     private String name;
     private String role;
     private Long departmentId;
