@@ -14,7 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("userRoleDataLoading")
+@DependsOn("permissionDataLoading")
 @RequiredArgsConstructor
 @Order(value = 3)
 public class UserDataLoading implements CommandLineRunner {

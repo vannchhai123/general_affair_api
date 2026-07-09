@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Order(value = 2)
+@Order(1)
 public class UserRoleDataLoading implements CommandLineRunner {
 
   private final UserRoleRepository roleRepository;

@@ -9,12 +9,14 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@DependsOn("userRoleDataLoading")
 @RequiredArgsConstructor
-@Order(1)
+@Order(2)
 @Transactional
 public class PermissionDataLoading implements CommandLineRunner {
 
