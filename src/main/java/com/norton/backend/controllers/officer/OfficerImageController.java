@@ -3,7 +3,9 @@ package com.norton.backend.controllers.officer;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.OfficerModel;
+import com.norton.backend.models.UserModel;
 import com.norton.backend.repositories.OfficerRepository;
+import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.services.file.FileStorageService;
 import com.norton.backend.services.security.OfficeAccessService;
 import java.util.Map;
@@ -27,6 +29,7 @@ public class OfficerImageController {
   private final OfficerRepository officerRepository;
   private final FileStorageService fileStorageService;
   private final OfficeAccessService officeAccessService;
+  private final UserRepository userRepository;
 
   @GetMapping("/{id}/image")
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
@@ -63,5 +66,32 @@ public class OfficerImageController {
 
     return ResponseEntity.ok(
         Map.of("message", "Image uploaded successfully", "imageUrl", imageUrl));
+  }
+
+  @PostMapping(value = "/me/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<Map<String, String>> uploadMyImage(
+      @RequestParam("file") MultipartFile file) {
+
+    String username =
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getName();
+    UserModel currentUser =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+    OfficerModel officer = currentUser.getOfficer();
+    if (officer == null) {
+      throw new BadRequestException("Current user is not associated with an officer profile");
+    }
+
+    String imageUrl = fileStorageService.storeImage(file);
+    officer.setImageUrl(imageUrl);
+    officerRepository.save(officer);
+
+    return ResponseEntity.ok(
+        Map.of("message", "Profile image uploaded successfully", "imageUrl", imageUrl));
   }
 }
