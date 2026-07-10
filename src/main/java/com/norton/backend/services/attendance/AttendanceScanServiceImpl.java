@@ -145,6 +145,34 @@ public class AttendanceScanServiceImpl implements AttendanceScanService {
       }
       action = ACTION_CHECK_IN;
       createShiftSession(attendance, shift, officer, currentDateTime);
+    } else if (existingSession.getCheckIn() == null) {
+      if (!shiftResolutionService.isCheckInAllowed(currentDateTime, window)) {
+        saveScanAudit(
+            session,
+            officer,
+            request.getDeviceId(),
+            currentDateTime,
+            ACTION_INVALID_TIME,
+            "invalid-time");
+        return buildResponse(
+            false,
+            "Check-in window closed for this shift",
+            attendance,
+            session,
+            officer,
+            currentTimestamp,
+            ACTION_INVALID_TIME,
+            shiftLabel);
+      }
+      action = ACTION_CHECK_IN;
+      String status =
+          shiftResolutionService.calculateLateMinutes(currentDateTime, shift) > 0
+              ? "LATE"
+              : "PRESENT";
+      existingSession.setCheckIn(currentDateTime.toLocalTime());
+      existingSession.setStatus(status);
+      existingSession.setCreatedBy(officer);
+      attendanceSessionRepository.save(existingSession);
     } else if (existingSession.getCheckOut() == null) {
       if (!currentDateTime.isAfter(sessionCheckInDateTime(attendance, existingSession))) {
         saveScanAudit(
