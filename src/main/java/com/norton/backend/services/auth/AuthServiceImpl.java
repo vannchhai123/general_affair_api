@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class AuthServiceImpl implements AuthService {
 
   private static final String FORGOT_PASSWORD_GENERIC_MESSAGE =

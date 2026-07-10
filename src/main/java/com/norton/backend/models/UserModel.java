@@ -66,29 +66,35 @@ public class UserModel extends BaseIdModel implements UserDetails {
     }
   }
 
+  @Transient private Collection<? extends GrantedAuthority> authorities;
+
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
+    if (this.authorities == null) {
+      List<GrantedAuthority> list = new ArrayList<>();
+      if (role != null) {
+        list.add(new SimpleGrantedAuthority(role.getRoleName()));
+        if (role.getPermissions() != null) {
+          role.getPermissions()
+              .forEach(
+                  permission ->
+                      list.add(new SimpleGrantedAuthority(permission.getPermissionName())));
+        }
+      }
 
-    List<GrantedAuthority> authorities = new ArrayList<>();
-    authorities.add(new SimpleGrantedAuthority(role.getRoleName()));
-
-    role.getPermissions()
-        .forEach(
-            permission ->
-                authorities.add(new SimpleGrantedAuthority(permission.getPermissionName())));
-
-    if (officer != null && officer.getOfficerPermissions() != null) {
-      officer
-          .getOfficerPermissions()
-          .forEach(
-              op -> {
-                if (op.getPermission() != null) {
-                  authorities.add(
-                      new SimpleGrantedAuthority(op.getPermission().getPermissionName()));
-                }
-              });
+      if (officer != null && officer.getOfficerPermissions() != null) {
+        officer
+            .getOfficerPermissions()
+            .forEach(
+                op -> {
+                  if (op.getPermission() != null) {
+                    list.add(new SimpleGrantedAuthority(op.getPermission().getPermissionName()));
+                  }
+                });
+      }
+      this.authorities = list;
     }
-    return authorities;
+    return this.authorities;
   }
 
   @Override

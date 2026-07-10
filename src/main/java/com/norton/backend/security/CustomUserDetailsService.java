@@ -14,10 +14,17 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final UserRepository userRepository;
 
   @Override
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-    return userRepository
-        .findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    com.norton.backend.models.UserModel user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+
+    // Initialize lazy fields into transient cache while session is open
+    user.getAuthorities();
+
+    return user;
   }
 }
