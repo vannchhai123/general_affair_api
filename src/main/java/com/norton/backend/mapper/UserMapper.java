@@ -12,11 +12,22 @@ import org.mapstruct.Mapping;
 public interface UserMapper {
 
   @Mapping(target = "role", source = "role.roleName")
+  @Mapping(target = "permissions", expression = "java(mapAuthorities(user))")
   UserDto toDto(UserModel user);
 
   @Mapping(target = "uuid", expression = "java(user.getUuid().toString())")
   @Mapping(target = "role", source = "role.roleName")
   @Mapping(target = "officerId", source = "officer.id")
   @Mapping(target = "officer", source = "officer")
+  @Mapping(target = "permissions", expression = "java(mapAuthorities(user))")
   MeResponse toMeResponse(UserModel user);
+
+  default java.util.List<java.lang.String> mapAuthorities(UserModel user) {
+    if (user == null) {
+      return java.util.Collections.emptyList();
+    }
+    return user.getAuthorities().stream()
+        .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+        .toList();
+  }
 }

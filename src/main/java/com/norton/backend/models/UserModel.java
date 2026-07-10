@@ -76,6 +76,18 @@ public class UserModel extends BaseIdModel implements UserDetails {
         .forEach(
             permission ->
                 authorities.add(new SimpleGrantedAuthority(permission.getPermissionName())));
+
+    if (officer != null && officer.getOfficerPermissions() != null) {
+      officer
+          .getOfficerPermissions()
+          .forEach(
+              op -> {
+                if (op.getPermission() != null) {
+                  authorities.add(
+                      new SimpleGrantedAuthority(op.getPermission().getPermissionName()));
+                }
+              });
+    }
     return authorities;
   }
 

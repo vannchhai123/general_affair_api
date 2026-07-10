@@ -12,4 +12,5 @@ public class MeResponse {
   private Long officerId;
 
   private OfficerResponse officer;
+  private java.util.List<String> permissions;
 }
