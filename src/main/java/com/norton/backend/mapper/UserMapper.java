@@ -13,6 +13,10 @@ public interface UserMapper {
 
   @Mapping(target = "role", source = "role.roleName")
   @Mapping(target = "permissions", expression = "java(mapAuthorities(user))")
+  @Mapping(
+      target = "imageUrl",
+      expression =
+          "java(user.getOfficer() != null ? user.getOfficer().getImageUrl() : user.getImageUrl())")
   UserDto toDto(UserModel user);
 
   @Mapping(target = "uuid", expression = "java(user.getUuid().toString())")

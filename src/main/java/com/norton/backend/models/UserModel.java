@@ -56,6 +56,9 @@ public class UserModel extends BaseIdModel implements UserDetails {
   @OneToOne(mappedBy = "user")
   private OfficerModel officer;
 
+  @Column(name = "image_url", nullable = true)
+  private String imageUrl;
+
   @Column(nullable = false, unique = true, updatable = false)
   private UUID uuid;
 

@@ -82,14 +82,15 @@ public class OfficerImageController {
             .findByUsername(username)
             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
 
-    OfficerModel officer = currentUser.getOfficer();
-    if (officer == null) {
-      throw new BadRequestException("Current user is not associated with an officer profile");
-    }
-
     String imageUrl = fileStorageService.storeImage(file);
-    officer.setImageUrl(imageUrl);
-    officerRepository.save(officer);
+    currentUser.setImageUrl(imageUrl);
+    userRepository.save(currentUser);
+
+    OfficerModel officer = currentUser.getOfficer();
+    if (officer != null) {
+      officer.setImageUrl(imageUrl);
+      officerRepository.save(officer);
+    }
 
     return ResponseEntity.ok(
         Map.of("message", "Profile image uploaded successfully", "imageUrl", imageUrl));
