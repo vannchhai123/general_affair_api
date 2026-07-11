@@ -439,8 +439,8 @@ public class InvitationServiceImpl implements InvitationService {
               .orElseThrow(
                   () -> new ResourceNotFoundException("Officer", "id", request.getOfficerId()));
 
-      // If the user has ROLE_OFFICER, they can only respond for themselves
-      if ("ROLE_OFFICER".equals(currentRole)) {
+      // If the user has ROLE_OFFICER or ROLE_MANAGER, they can only respond for themselves
+      if ("ROLE_OFFICER".equals(currentRole) || "ROLE_MANAGER".equals(currentRole)) {
         if (respondingOfficer.getUser() == null
             || !respondingOfficer.getUser().getId().equals(currentUser.getId())) {
           throw new UnauthorizedException("You can only respond on behalf of yourself");

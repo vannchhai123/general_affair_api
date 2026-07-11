@@ -120,7 +120,8 @@ public class InvitationController {
   }
 
   @PostMapping("/{id}/respond")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('OFFICER')")
+  @PreAuthorize(
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
   public ResponseEntity<InvitationResponseDto> respondToInvitation(
       @PathVariable Long id, @Validated @RequestBody InvitationResponseRequest request) {
     return ResponseEntity.ok(invitationService.respondToInvitation(id, request));
