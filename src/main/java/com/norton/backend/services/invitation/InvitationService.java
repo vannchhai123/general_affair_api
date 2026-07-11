@@ -3,6 +3,7 @@ package com.norton.backend.services.invitation;
 import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
 import com.norton.backend.dto.request.invitation.InvitationResponseRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
+import com.norton.backend.dto.responses.invitation.DisplayInvitationResponse;
 import com.norton.backend.dto.responses.invitation.InvitationResponseDto;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -33,4 +34,7 @@ public interface InvitationService {
   void deleteInvitation(Long id);
 
   InvitationResponseDto respondToInvitation(Long id, InvitationResponseRequest request);
+
+  List<DisplayInvitationResponse> getInvitationsByParticipantAndMonth(
+      Long participantId, String yearMonth);
 }

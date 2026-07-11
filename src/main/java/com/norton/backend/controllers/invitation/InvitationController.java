@@ -3,6 +3,7 @@ package com.norton.backend.controllers.invitation;
 import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
 import com.norton.backend.dto.request.invitation.InvitationResponseRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
+import com.norton.backend.dto.responses.invitation.DisplayInvitationResponse;
 import com.norton.backend.dto.responses.invitation.EligibleParticipantsResponse;
 import com.norton.backend.dto.responses.invitation.InvitationResponseDto;
 import com.norton.backend.dto.responses.officers.OfficerResponse;
@@ -123,5 +124,14 @@ public class InvitationController {
   public ResponseEntity<InvitationResponseDto> respondToInvitation(
       @PathVariable Long id, @Validated @RequestBody InvitationResponseRequest request) {
     return ResponseEntity.ok(invitationService.respondToInvitation(id, request));
+  }
+
+  @GetMapping("/display/{participantId}/{yearMonth}")
+  @PreAuthorize(
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  public ResponseEntity<List<DisplayInvitationResponse>> getInvitationsByParticipantAndMonth(
+      @PathVariable Long participantId, @PathVariable String yearMonth) {
+    return ResponseEntity.ok(
+        invitationService.getInvitationsByParticipantAndMonth(participantId, yearMonth));
   }
 }

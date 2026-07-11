@@ -3,6 +3,7 @@ package com.norton.backend.services.invitation;
 import com.norton.backend.dto.request.invitation.CreateInvitationRequest;
 import com.norton.backend.dto.request.invitation.InvitationResponseRequest;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
+import com.norton.backend.dto.responses.invitation.DisplayInvitationResponse;
 import com.norton.backend.dto.responses.invitation.InvitationResponseDto;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.exceptions.BadRequestException;
@@ -499,5 +500,80 @@ public class InvitationServiceImpl implements InvitationService {
         .status(status)
         .rejectionReason(participant.getRejectionReason())
         .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<DisplayInvitationResponse> getInvitationsByParticipantAndMonth(
+      Long participantId, String yearMonth) {
+
+    if (!officerRepository.existsById(participantId)) {
+      throw new ResourceNotFoundException("Officer", "id", participantId);
+    }
+
+    LocalDate startDate;
+    LocalDate endDate;
+    try {
+      java.time.YearMonth ym = java.time.YearMonth.parse(yearMonth.trim());
+      startDate = ym.atDay(1);
+      endDate = ym.atEndOfMonth();
+    } catch (Exception ex) {
+      throw new BadRequestException("Invalid yearMonth format. Expected YYYY-MM (e.g. 2026-02)");
+    }
+
+    List<InvitationModel> invitations =
+        invitationRepository.findByParticipantIdAndEventDateBetween(
+            participantId, startDate, endDate);
+
+    return invitations.stream()
+        .map(
+            invitation -> {
+              InvitationParticipantModel participant =
+                  invitation.getParticipants().stream()
+                      .filter(p -> p.getOfficer().getId().equals(participantId))
+                      .findFirst()
+                      .orElse(null);
+
+              DisplayInvitationResponse.ParticipantResponseDto myResponse = null;
+              if (participant != null) {
+                myResponse =
+                    DisplayInvitationResponse.ParticipantResponseDto.builder()
+                        .status(participant.getStatus())
+                        .rejectionReason(participant.getRejectionReason())
+                        .build();
+              }
+
+              return DisplayInvitationResponse.builder()
+                  .id(invitation.getId())
+                  .title(invitation.getTitle())
+                  .description(invitation.getDescription())
+                  .presidedBy(invitation.getPresidedBy())
+                  .eventDate(
+                      invitation.getEventDate() != null
+                          ? invitation.getEventDate().toString()
+                          : null)
+                  .eventTime(
+                      invitation.getEventTime() != null
+                          ? invitation.getEventTime().toString()
+                          : null)
+                  .location(invitation.getLocation())
+                  .imageUrls(
+                      invitation.getImages().stream()
+                          .map(img -> img.getUploadImage().getUrl())
+                          .collect(Collectors.toList()))
+                  .type(invitation.getType())
+                  .status(invitation.getStatus())
+                  .myResponse(myResponse)
+                  .createdAt(
+                      invitation.getCreatedAt() != null
+                          ? invitation.getCreatedAt().toString()
+                          : null)
+                  .updatedAt(
+                      invitation.getUpdatedAt() != null
+                          ? invitation.getUpdatedAt().toString()
+                          : null)
+                  .build();
+            })
+        .collect(Collectors.toList());
   }
 }
