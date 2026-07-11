@@ -31,6 +31,9 @@ class MobileHomeServiceImplTest {
 
   @Test
   void getHomeData_returnsSummaryStatisticsAndRecentMeetingsForCurrentUser() {
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        mobileHomeService, "scanTimezone", java.time.ZoneId.systemDefault().toString());
+
     when(securityUtils.getCurrentUserId()).thenReturn(7L);
     when(meetingRepository.countByAssigneeId(7L)).thenReturn(12L);
     when(meetingRepository.countByAssigneeIdAndMeetingDate(7L, LocalDate.now())).thenReturn(5L);

@@ -38,11 +38,14 @@ public class MobileHomeServiceImpl implements MobileHomeService {
   private final OfficerRepository officerRepository;
   private final ShiftAssignmentRepository shiftAssignmentRepository;
 
+  @org.springframework.beans.factory.annotation.Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
+  private String scanTimezone;
+
   @Override
   @Transactional(readOnly = true)
   public MobileHomeResponse getHomeData() {
     Long currentUserId = securityUtils.getCurrentUserId();
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(resolveZoneId());
 
     long totalMeetings = meetingRepository.countByAssigneeId(currentUserId);
     long todayMeetings = meetingRepository.countByAssigneeIdAndMeetingDate(currentUserId, today);
@@ -126,7 +129,7 @@ public class MobileHomeServiceImpl implements MobileHomeService {
             .findByUserIdWithPosition(currentUserId)
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "userId", currentUserId));
 
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(resolveZoneId());
 
     Long positionId = officer.getPosition() != null ? officer.getPosition().getId() : null;
     Long departmentId =
@@ -241,5 +244,13 @@ public class MobileHomeServiceImpl implements MobileHomeService {
       case POSITION -> 1;
       case DEPARTMENT -> 2;
     };
+  }
+
+  private java.time.ZoneId resolveZoneId() {
+    try {
+      return java.time.ZoneId.of(scanTimezone);
+    } catch (Exception ex) {
+      return java.time.ZoneId.of("Asia/Phnom_Penh");
+    }
   }
 }
