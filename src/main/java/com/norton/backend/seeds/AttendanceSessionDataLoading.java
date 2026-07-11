@@ -83,41 +83,34 @@ public class AttendanceSessionDataLoading implements CommandLineRunner {
       attendanceSessionRepository.saveAll(sessionsToInsert);
     }
 
-    // Seed Shift Assignments for all departments if empty
-    if (shiftAssignmentRepository.count() == 0) {
-      List<DepartmentModel> departments = departmentRepository.findAll();
-      List<ShiftAssignmentModel> assignments = new ArrayList<>();
-      for (DepartmentModel dept : departments) {
-        for (ShiftDayOfWeek day :
-            List.of(
-                ShiftDayOfWeek.MON,
-                ShiftDayOfWeek.TUE,
-                ShiftDayOfWeek.WED,
-                ShiftDayOfWeek.THU,
-                ShiftDayOfWeek.FRI)) {
-          assignments.add(
-              ShiftAssignmentModel.builder()
-                  .shift(morningShift)
-                  .scope(ShiftAssignmentScope.DEPARTMENT)
-                  .scopeId(dept.getId())
-                  .scopeName(dept.getName())
-                  .dayOfWeek(day)
-                  .effectiveFrom(LocalDate.of(2026, 1, 1))
-                  .build());
-          assignments.add(
-              ShiftAssignmentModel.builder()
-                  .shift(afternoonShift)
-                  .scope(ShiftAssignmentScope.DEPARTMENT)
-                  .scopeId(dept.getId())
-                  .scopeName(dept.getName())
-                  .dayOfWeek(day)
-                  .effectiveFrom(LocalDate.of(2026, 1, 1))
-                  .build());
-        }
+    // Seed Shift Assignments for all departments
+    shiftAssignmentRepository.deleteAll();
+    List<DepartmentModel> departments = departmentRepository.findAll();
+    List<ShiftAssignmentModel> assignments = new ArrayList<>();
+    for (DepartmentModel dept : departments) {
+      for (ShiftDayOfWeek day : ShiftDayOfWeek.values()) {
+        assignments.add(
+            ShiftAssignmentModel.builder()
+                .shift(morningShift)
+                .scope(ShiftAssignmentScope.DEPARTMENT)
+                .scopeId(dept.getId())
+                .scopeName(dept.getName())
+                .dayOfWeek(day)
+                .effectiveFrom(LocalDate.of(2026, 1, 1))
+                .build());
+        assignments.add(
+            ShiftAssignmentModel.builder()
+                .shift(afternoonShift)
+                .scope(ShiftAssignmentScope.DEPARTMENT)
+                .scopeId(dept.getId())
+                .scopeName(dept.getName())
+                .dayOfWeek(day)
+                .effectiveFrom(LocalDate.of(2026, 1, 1))
+                .build());
       }
-      shiftAssignmentRepository.saveAll(assignments);
-      System.out.println("Seeded default shift assignments for departments.");
     }
+    shiftAssignmentRepository.saveAll(assignments);
+    System.out.println("Seeded default shift assignments for departments.");
 
     System.out.println("Attendance sessions seed data inserted/updated successfully.");
   }

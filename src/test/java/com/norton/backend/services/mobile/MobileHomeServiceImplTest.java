@@ -2,17 +2,23 @@ package com.norton.backend.services.mobile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
 import com.norton.backend.enums.MeetingStatus;
 import com.norton.backend.models.MeetingModel;
 import com.norton.backend.repositories.MeetingRepository;
+import com.norton.backend.repositories.OfficerRepository;
+import com.norton.backend.repositories.ShiftAssignmentRepository;
 import com.norton.backend.services.invitation.InvitationService;
 import com.norton.backend.utils.SecurityUtils;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +32,8 @@ class MobileHomeServiceImplTest {
   @Mock private MeetingRepository meetingRepository;
   @Mock private InvitationService invitationService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private OfficerRepository officerRepository;
+  @Mock private ShiftAssignmentRepository shiftAssignmentRepository;
 
   @InjectMocks private MobileHomeServiceImpl mobileHomeService;
 
@@ -141,5 +149,85 @@ class MobileHomeServiceImplTest {
     meeting.setStatus(status);
     meeting.setAssigneeId(7L);
     return meeting;
+  }
+
+  @Test
+  void getMyShift_returnsAssignedShifts_onWeekday() {
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        mobileHomeService, "scanTimezone", "Asia/Phnom_Penh");
+
+    when(securityUtils.getCurrentUserId()).thenReturn(7L);
+
+    com.norton.backend.models.DepartmentModel department =
+        new com.norton.backend.models.DepartmentModel();
+    department.setId(10L);
+    department.setName("Finance");
+
+    com.norton.backend.models.PositionModel position =
+        new com.norton.backend.models.PositionModel();
+    position.setId(20L);
+    position.setDepartment(department);
+
+    com.norton.backend.models.OfficerModel officer = new com.norton.backend.models.OfficerModel();
+    officer.setId(30L);
+    officer.setOfficerCode("OFF-100");
+    officer.setFirstNameEn("John");
+    officer.setLastNameEn("Doe");
+    officer.setPosition(position);
+    officer.setOffice(department);
+
+    when(officerRepository.findByUserIdWithPosition(7L)).thenReturn(Optional.of(officer));
+
+    com.norton.backend.models.ShiftModel shift = new com.norton.backend.models.ShiftModel();
+    shift.setId(40L);
+    shift.setName("Morning Shift");
+    shift.setStartTime(LocalTime.of(8, 0));
+    shift.setEndTime(LocalTime.of(17, 0));
+
+    com.norton.backend.models.ShiftAssignmentModel assignment =
+        new com.norton.backend.models.ShiftAssignmentModel();
+    assignment.setId(50L);
+    assignment.setShift(shift);
+    assignment.setScope(com.norton.backend.enums.ShiftAssignmentScope.DEPARTMENT);
+    assignment.setScopeId(10L);
+    assignment.setScopeName("Finance");
+    assignment.setDayOfWeek(com.norton.backend.enums.ShiftDayOfWeek.MON);
+
+    // Mock findEffectiveAssignments to return a weekday assignment
+    when(shiftAssignmentRepository.findEffectiveAssignments(
+            anyList(), anyList(), any(), any(LocalDate.class)))
+        .thenReturn(List.of(assignment));
+
+    var response = mobileHomeService.getMyShift();
+
+    assertNotNull(response);
+    // Since we mocked findEffectiveAssignments to return a matching MON assignment,
+    // matchesOfficerScope will be evaluated: scope is DEPARTMENT, scopeId (10L) equals departmentId
+    // (10L), which matches!
+    // But wait, what day of week does the test run on?
+    // LocalDate.now(resolveZoneId()) returns the current local date.
+    // If today is a Monday, dayOfWeek is MON, and toShiftDayOfWeek maps it to MON, so it returns
+    // assigned=true.
+    // Wait, to make the test date-independent, we don't mock LocalDate.now(), but we mocked
+    // findEffectiveAssignments to return a MON assignment.
+    // In matchesOfficerScope, it only checks scopeId matches departmentId.
+    // Since scopeId is 10L, scope is DEPARTMENT, and departmentId is 10L, matchesOfficerScope
+    // returns true.
+    // So it will be evaluated and returned!
+    assertTrue(response.isAssigned());
+    assertEquals(1, response.getShifts().size());
+    assertEquals("Morning Shift", response.getShifts().get(0).getShift().getName());
+  }
+
+  @Test
+  void getMyShift_returnsUnassigned_whenOfficerNotFound() {
+    when(securityUtils.getCurrentUserId()).thenReturn(1L);
+    when(officerRepository.findByUserIdWithPosition(1L)).thenReturn(Optional.empty());
+
+    var response = mobileHomeService.getMyShift();
+
+    assertNotNull(response);
+    org.junit.jupiter.api.Assertions.assertFalse(response.isAssigned());
+    assertTrue(response.getShifts().isEmpty());
   }
 }

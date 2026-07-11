@@ -89,9 +89,9 @@ public class UserDataLoading implements CommandLineRunner {
       UserRoleModel role,
       UserStatus status) {
 
-    if (!userRepository.existsByUsername(username)) {
-
-      UserModel user =
+    UserModel user = userRepository.findByUsername(username).orElse(null);
+    if (user == null) {
+      user =
           UserModel.builder()
               .uuid(UUID.randomUUID())
               .username(username)
@@ -101,7 +101,9 @@ public class UserDataLoading implements CommandLineRunner {
               .role(role)
               .userStatus(status)
               .build();
-
+      userRepository.save(user);
+    } else {
+      user.setPasswordHash(passwordEncoder.encode(rawPassword));
       userRepository.save(user);
     }
   }

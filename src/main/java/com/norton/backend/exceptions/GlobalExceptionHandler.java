@@ -5,10 +5,11 @@ import com.norton.backend.dto.responses.attendances.AttendanceScanErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
-import javax.naming.AuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -136,5 +137,15 @@ public class GlobalExceptionHandler {
             HttpStatus.UNAUTHORIZED, "Invalid username or password", request.getRequestURI());
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDenied(
+      AccessDeniedException ex, HttpServletRequest request) {
+
+    ErrorResponse response =
+        ErrorResponse.of(HttpStatus.FORBIDDEN, "Access denied", request.getRequestURI());
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
   }
 }

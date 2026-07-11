@@ -110,6 +110,44 @@ public class OfficerDataLoading implements CommandLineRunner {
 
     removeStaleOrganizationSeeds();
 
+    // Link an officer profile to vannchhai
+    userRepository
+        .findByUsername("vannchhai")
+        .ifPresent(
+            user -> {
+              OfficerModel officer =
+                  officerRepository.findByUserIdWithPosition(user.getId()).orElse(null);
+              PositionModel position =
+                  positionRepository.findAll().stream().findFirst().orElse(null);
+              if (position != null) {
+                if (officer == null) {
+                  officer =
+                      OfficerModel.builder().uuid(UUID.randomUUID().toString()).user(user).build();
+                }
+                officer.setOfficerCode("OFF-999");
+                officer.setFirstNameEn("Vannchhai");
+                officer.setLastNameEn("Developer");
+                officer.setFirstNameKh("វណ្ណឆៃ");
+                officer.setLastNameKh("អ្នកអភិវឌ្ឍន៍");
+                officer.setGender(GenderEnum.MALE);
+                officer.setDateOfBirth(LocalDate.of(1995, 1, 1));
+                officer.setNationalId("999999999");
+                officer.setNationality("Khmer");
+                officer.setEthnicity("Khmer");
+                officer.setPhone("012345678");
+                officer.setEmail("vannchhai@gmail.com");
+                officer.setOffice(position.getDepartment());
+                officer.setPosition(position);
+                officer.setEducationLevel(
+                    educationLevelRepository.findAll().stream().findFirst().orElse(null));
+                officer.setHireDate(LocalDate.of(2020, 1, 1));
+                officer.setStatus(OfficerStatus.ACTIVE);
+
+                officerRepository.save(officer);
+                System.out.println("✅ Seeded/Updated officer profile for user vannchhai.");
+              }
+            });
+
     System.out.println("Officer Khmer seed data inserted/updated successfully.");
   }
 
@@ -325,20 +363,27 @@ public class OfficerDataLoading implements CommandLineRunner {
   }
 
   private UserModel loadOrCreateUser(OfficerSeed seed, UserRoleModel officerRole) {
-    return userRepository
-        .findByUsername(seed.username())
-        .orElseGet(
-            () ->
-                userRepository.save(
-                    UserModel.builder()
-                        .uuid(UUID.randomUUID())
-                        .username(seed.username())
-                        .email(seed.userEmail())
-                        .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
-                        .passwordHash(passwordEncoder.encode("officer@1234"))
-                        .role(officerRole)
-                        .userStatus(UserStatus.ACTIVE)
-                        .build()));
+    UserModel user = userRepository.findByUsername(seed.username()).orElse(null);
+    if (user == null) {
+      user =
+          UserModel.builder()
+              .uuid(UUID.randomUUID())
+              .username(seed.username())
+              .email(seed.userEmail())
+              .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
+              .passwordHash(passwordEncoder.encode("officer@1234"))
+              .role(officerRole)
+              .userStatus(UserStatus.ACTIVE)
+              .build();
+      user = userRepository.save(user);
+    } else {
+      user.setPasswordHash(passwordEncoder.encode("officer@1234"));
+      user.setRole(officerRole);
+      user.setFullName(seed.firstNameEn() + " " + seed.lastNameEn());
+      user.setEmail(seed.userEmail());
+      user = userRepository.save(user);
+    }
+    return user;
   }
 
   private UserModel createDedicatedUser(OfficerSeed seed, UserRoleModel officerRole) {

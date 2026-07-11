@@ -11,7 +11,6 @@ import com.norton.backend.dto.responses.mobile.RecentMeetingDto;
 import com.norton.backend.enums.MeetingStatus;
 import com.norton.backend.enums.ShiftAssignmentScope;
 import com.norton.backend.enums.ShiftDayOfWeek;
-import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.ShiftAssignmentModel;
 import com.norton.backend.models.ShiftModel;
@@ -23,6 +22,7 @@ import com.norton.backend.utils.SecurityUtils;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -124,10 +124,11 @@ public class MobileHomeServiceImpl implements MobileHomeService {
   @Transactional(readOnly = true)
   public MobileShiftResponseDto getMyShift() {
     Long currentUserId = securityUtils.getCurrentUserId();
-    OfficerModel officer =
-        officerRepository
-            .findByUserIdWithPosition(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Officer", "userId", currentUserId));
+    Optional<OfficerModel> officerOpt = officerRepository.findByUserIdWithPosition(currentUserId);
+    if (officerOpt.isEmpty()) {
+      return MobileShiftResponseDto.builder().assigned(false).shifts(new ArrayList<>()).build();
+    }
+    OfficerModel officer = officerOpt.get();
 
     LocalDate today = LocalDate.now(resolveZoneId());
 
