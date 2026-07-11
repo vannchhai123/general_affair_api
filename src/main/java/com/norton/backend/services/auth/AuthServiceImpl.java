@@ -44,7 +44,6 @@ public class AuthServiceImpl implements AuthService {
 
   private static final String FORGOT_PASSWORD_GENERIC_MESSAGE =
       "If an account exists for that email, password reset instructions have been sent.";
-
   private final UserMapper userMapper;
   private final UserRepository userRepository;
   private final PasswordResetOtpRepository passwordResetOtpRepository;
