@@ -320,6 +320,143 @@ public class DocumentDataLoading implements CommandLineRunner {
             .description("Confidential IT memo draft created by Officer.")
             .build());
 
+    // Document 4: Internal Audit Guidelines 2026
+    DocumentModel doc4 =
+        DocumentModel.builder()
+            .direction("INTERNAL")
+            .documentType(types.size() > 9 ? types.get(9) : types.get(0))
+            .senderOrganization(orgs.get(2))
+            .receiverOrganization(orgs.get(2))
+            .documentNumber("NU-AUD-2026-001")
+            .documentDate(LocalDate.of(2026, 7, 2))
+            .subject("Internal Audit Guidelines 2026")
+            .summary(
+                "Detailed steps, schedule, and checklist for the upcoming internal quality control audit.")
+            .confidentiality("NORMAL")
+            .priority("HIGH")
+            .status("APPROVED")
+            .remarks("For internal distribution to department heads")
+            .createdBy(adminOfficer)
+            .build();
+    doc4 = documentRepository.save(doc4);
+
+    documentLogRepository.save(
+        DocumentLogModel.builder()
+            .document(doc4)
+            .officer(adminOfficer)
+            .action("CREATE")
+            .description("Audit guidelines drafted and approved.")
+            .build());
+
+    // Document 5: Q3 Academic Syllabus Modification
+    DocumentModel doc5 =
+        DocumentModel.builder()
+            .direction("INTERNAL")
+            .documentType(types.size() > 1 ? types.get(1) : types.get(0))
+            .senderOrganization(orgs.get(2))
+            .receiverOrganization(orgs.get(2))
+            .documentNumber("NU-ACA-2026-012")
+            .documentDate(LocalDate.of(2026, 7, 5))
+            .subject("Q3 Academic Syllabus Modification")
+            .summary("Approved amendments to the computing syllabus for third-year students.")
+            .confidentiality("NORMAL")
+            .priority("NORMAL")
+            .status("SENT")
+            .remarks("Syllabus modifications communicated to instructors")
+            .createdBy(otherOfficer)
+            .build();
+    doc5 = documentRepository.save(doc5);
+
+    documentLogRepository.save(
+        DocumentLogModel.builder()
+            .document(doc5)
+            .officer(otherOfficer)
+            .action("CREATE")
+            .description("Syllabus update submitted.")
+            .build());
+
+    // Document 6: HR Policy Update on Work Hours
+    DocumentModel doc6 =
+        DocumentModel.builder()
+            .direction("INTERNAL")
+            .documentType(types.size() > 8 ? types.get(8) : types.get(0))
+            .senderOrganization(orgs.get(2))
+            .receiverOrganization(orgs.get(2))
+            .documentNumber("NU-HR-2026-045")
+            .documentDate(LocalDate.of(2026, 6, 15))
+            .subject("HR Policy Update on Work Hours")
+            .summary(
+                "Official guidelines regarding remote working arrangements and flexible timing policies.")
+            .confidentiality("NORMAL")
+            .priority("HIGH")
+            .status("RELEASED")
+            .remarks("Sent via employee internal newsletter")
+            .createdBy(adminOfficer)
+            .build();
+    doc6 = documentRepository.save(doc6);
+
+    documentLogRepository.save(
+        DocumentLogModel.builder()
+            .document(doc6)
+            .officer(adminOfficer)
+            .action("CREATE")
+            .description("HR guidelines updated and released.")
+            .build());
+
+    // Document 7: Norton University Annual Sports Meet Setup
+    DocumentModel doc7 =
+        DocumentModel.builder()
+            .direction("INTERNAL")
+            .documentType(types.size() > 1 ? types.get(1) : types.get(0))
+            .senderOrganization(orgs.get(2))
+            .receiverOrganization(orgs.get(2))
+            .documentNumber("NU-EVT-2026-009")
+            .documentDate(LocalDate.of(2026, 6, 28))
+            .subject("Norton University Annual Sports Meet Setup")
+            .summary("Logistical and resource plan mapping for the Norton Sports Meet 2026.")
+            .confidentiality("NORMAL")
+            .priority("NORMAL")
+            .status("PENDING")
+            .remarks("Requires committee sign-off on budget")
+            .createdBy(otherOfficer)
+            .build();
+    doc7 = documentRepository.save(doc7);
+
+    documentLogRepository.save(
+        DocumentLogModel.builder()
+            .document(doc7)
+            .officer(otherOfficer)
+            .action("CREATE")
+            .description("Draft event setup guidelines logged.")
+            .build());
+
+    // Document 8: Campus Wi-Fi Upgrade Phase 2 Allocation
+    DocumentModel doc8 =
+        DocumentModel.builder()
+            .direction("INTERNAL")
+            .documentType(types.size() > 2 ? types.get(2) : types.get(0))
+            .senderOrganization(orgs.get(2))
+            .receiverOrganization(orgs.get(2))
+            .documentNumber("NU-MEMO-IT-005")
+            .documentDate(today)
+            .subject("Campus Wi-Fi Upgrade Phase 2 Allocation")
+            .summary("Allocation details for building-wide hardware access point installation.")
+            .confidentiality("NORMAL")
+            .priority("CRITICAL")
+            .status("IN_PROGRESS")
+            .remarks("Contractor scheduled for weekend setup")
+            .createdBy(otherOfficer)
+            .build();
+    doc8 = documentRepository.save(doc8);
+
+    documentLogRepository.save(
+        DocumentLogModel.builder()
+            .document(doc8)
+            .officer(otherOfficer)
+            .action("CREATE")
+            .description("Wi-Fi upgrade project allocation initialized.")
+            .build());
+
     System.out.println("✅ Document Management seed data loaded successfully!");
   }
 }
