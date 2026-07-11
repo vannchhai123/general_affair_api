@@ -35,7 +35,66 @@ public class InvitationDataLoading implements CommandLineRunner {
       return;
     }
 
-    // 1. Annual General Assembly 2026 (ACCEPTED)
+    // --- JANUARY 2026 SEEDS ---
+
+    // 1. New Year Strategy Sync (ACCEPTED)
+    InvitationModel strategySync =
+        InvitationModel.builder()
+            .title("New Year Strategy Sync")
+            .description(
+                "Strategic session to align all department heads on key directives for 2026.")
+            .presidedBy("Director General")
+            .eventDate(LocalDate.of(2026, 1, 8))
+            .eventTime(LocalTime.of(10, 0))
+            .location("Boardroom A")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(strategySync, officer, "ACCEPTED", null);
+    }
+    invitationRepository.save(strategySync);
+
+    // 2. Q1 Budget Planning Kickoff (ACCEPTED)
+    InvitationModel budgetKickoff =
+        InvitationModel.builder()
+            .title("Q1 Budget Planning Kickoff")
+            .description(
+                "Collaborative workshop to allocate Q1 resources and review budget templates.")
+            .presidedBy("Finance Chairman")
+            .eventDate(LocalDate.of(2026, 1, 15))
+            .eventTime(LocalTime.of(13, 30))
+            .location("Room 102")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(budgetKickoff, officer, "ACCEPTED", null);
+    }
+    invitationRepository.save(budgetKickoff);
+
+    // 3. Internal Audit Preparation (REJECTED)
+    InvitationModel auditPrep =
+        InvitationModel.builder()
+            .title("Internal Audit Preparation")
+            .description(
+                "Briefing on documentation and compliance guidelines for the upcoming internal audit.")
+            .presidedBy("Chief Auditor")
+            .eventDate(LocalDate.of(2026, 1, 22))
+            .eventTime(LocalTime.of(9, 30))
+            .location("Auditor Office")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(
+          auditPrep, officer, "REJECTED", "Scheduled leave for family matters.");
+    }
+    invitationRepository.save(auditPrep);
+
+    // --- FEBRUARY 2026 SEEDS ---
+
+    // 4. Annual General Assembly 2026 (ACCEPTED)
     InvitationModel assembly =
         InvitationModel.builder()
             .title("Annual General Assembly 2026")
@@ -52,7 +111,7 @@ public class InvitationDataLoading implements CommandLineRunner {
     }
     invitationRepository.save(assembly);
 
-    // 2. Emergency Security Alignment Meeting (PENDING)
+    // 5. Emergency Security Alignment Meeting (PENDING)
     InvitationModel securityMeeting =
         InvitationModel.builder()
             .title("Emergency Security Alignment Meeting")
@@ -69,7 +128,7 @@ public class InvitationDataLoading implements CommandLineRunner {
     }
     invitationRepository.save(securityMeeting);
 
-    // 3. Cross-Department Budget Workshop (REJECTED)
+    // 6. Cross-Department Budget Workshop (REJECTED)
     InvitationModel budgetWorkshop =
         InvitationModel.builder()
             .title("Cross-Department Budget Workshop")
@@ -90,7 +149,7 @@ public class InvitationDataLoading implements CommandLineRunner {
     }
     invitationRepository.save(budgetWorkshop);
 
-    // 4. Digital Transformation Seminar (PENDING)
+    // 7. Digital Transformation Seminar (PENDING)
     InvitationModel transformationSeminar =
         InvitationModel.builder()
             .title("Digital Transformation Seminar")
@@ -107,6 +166,180 @@ public class InvitationDataLoading implements CommandLineRunner {
       addParticipantToInvitation(transformationSeminar, officer, "PENDING", null);
     }
     invitationRepository.save(transformationSeminar);
+
+    // --- MARCH 2026 SEEDS ---
+
+    // 8. Spring Clean Energy Initiative (PENDING)
+    InvitationModel energyInitiative =
+        InvitationModel.builder()
+            .title("Spring Clean Energy Initiative")
+            .description(
+                "Introduction of green practices and energy-saving measures in the administrative building.")
+            .presidedBy("Environment Officer")
+            .eventDate(LocalDate.of(2026, 3, 4))
+            .eventTime(LocalTime.of(11, 0))
+            .location("Main Auditorium")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(energyInitiative, officer, "PENDING", null);
+    }
+    invitationRepository.save(energyInitiative);
+
+    // 9. Staff Performance Alignment Review (ACCEPTED)
+    InvitationModel performanceReview =
+        InvitationModel.builder()
+            .title("Staff Performance Alignment Review")
+            .description(
+                "HR briefing to explain the new annual performance metrics and appraisal standards.")
+            .presidedBy("HR Director")
+            .eventDate(LocalDate.of(2026, 3, 12))
+            .eventTime(LocalTime.of(15, 0))
+            .location("HR Interview Room")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(performanceReview, officer, "ACCEPTED", null);
+    }
+    invitationRepository.save(performanceReview);
+
+    // 10. Procurement Standards Update (PENDING)
+    InvitationModel procurementUpdate =
+        InvitationModel.builder()
+            .title("Procurement Standards Update")
+            .description(
+                "Training on standard procurement bidding protocols and supplier registration guidelines.")
+            .presidedBy("Head of Procurement")
+            .eventDate(LocalDate.of(2026, 3, 24))
+            .eventTime(LocalTime.of(9, 0))
+            .location("Conference Room B")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(procurementUpdate, officer, "PENDING", null);
+    }
+    invitationRepository.save(procurementUpdate);
+
+    // --- JUNE 2026 SEEDS ---
+
+    // 11. Mid-Year Progress Evaluation (ACCEPTED)
+    InvitationModel progressEval =
+        InvitationModel.builder()
+            .title("Mid-Year Progress Evaluation")
+            .description(
+                "Reviewing performance metrics and progress updates for the first half of 2026.")
+            .presidedBy("Director of Administration")
+            .eventDate(LocalDate.of(2026, 6, 10))
+            .eventTime(LocalTime.of(10, 0))
+            .location("Conference Hall B")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(progressEval, officer, "ACCEPTED", null);
+    }
+    invitationRepository.save(progressEval);
+
+    // 12. General IT Infrastructure Upgrade Briefing (PENDING)
+    InvitationModel itBriefing =
+        InvitationModel.builder()
+            .title("General IT Infrastructure Upgrade Briefing")
+            .description(
+                "Introduction of security enhancements and system downtime schedules for database migration.")
+            .presidedBy("IT Manager")
+            .eventDate(LocalDate.of(2026, 6, 25))
+            .eventTime(LocalTime.of(14, 0))
+            .location("IT Training Room")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(itBriefing, officer, "PENDING", null);
+    }
+    invitationRepository.save(itBriefing);
+
+    // --- JULY 2026 SEEDS ---
+
+    // 13. Public Relations Workshop (ACCEPTED)
+    InvitationModel prWorkshop =
+        InvitationModel.builder()
+            .title("Public Relations Workshop")
+            .description(
+                "Practical session on handling public inquiries and media relations for press officers.")
+            .presidedBy("PR Department Head")
+            .eventDate(LocalDate.of(2026, 7, 8))
+            .eventTime(LocalTime.of(9, 30))
+            .location("Press Room")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(prWorkshop, officer, "ACCEPTED", null);
+    }
+    invitationRepository.save(prWorkshop);
+
+    // 14. Anti-Corruption & Compliance Seminar (REJECTED)
+    InvitationModel complianceSeminar =
+        InvitationModel.builder()
+            .title("Anti-Corruption & Compliance Seminar")
+            .description(
+                "Required annual briefing on ethical practices and legal compliance updates.")
+            .presidedBy("Compliance Director")
+            .eventDate(LocalDate.of(2026, 7, 22))
+            .eventTime(LocalTime.of(14, 0))
+            .location("Main Auditorium")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(
+          complianceSeminar,
+          officer,
+          "REJECTED",
+          "Already attending the national administrative conference.");
+    }
+    invitationRepository.save(complianceSeminar);
+
+    // --- AUGUST 2026 SEEDS ---
+
+    // 15. Disaster Management Prep Sync (PENDING)
+    InvitationModel disasterSync =
+        InvitationModel.builder()
+            .title("Disaster Management Prep Sync")
+            .description(
+                "Emergency coordination meeting on seasonal flood response plans and logistics.")
+            .presidedBy("Public Health Officer")
+            .eventDate(LocalDate.of(2026, 8, 11))
+            .eventTime(LocalTime.of(10, 30))
+            .location("Emergency Operation Center")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(disasterSync, officer, "PENDING", null);
+    }
+    invitationRepository.save(disasterSync);
+
+    // 16. New Employee Orientation Welcoming (ACCEPTED)
+    InvitationModel orientationWelcome =
+        InvitationModel.builder()
+            .title("New Employee Orientation Welcoming")
+            .description(
+                "Official welcome ceremony and orientation briefing for newly joined administrative staff.")
+            .presidedBy("Deputy Governor")
+            .eventDate(LocalDate.of(2026, 8, 20))
+            .eventTime(LocalTime.of(9, 0))
+            .location("Main Lobby Area")
+            .type("incoming")
+            .status("pending")
+            .build();
+    for (OfficerModel officer : officers) {
+      addParticipantToInvitation(orientationWelcome, officer, "ACCEPTED", null);
+    }
+    invitationRepository.save(orientationWelcome);
 
     System.out.println("✅ Invitation seed data loaded successfully!");
   }
