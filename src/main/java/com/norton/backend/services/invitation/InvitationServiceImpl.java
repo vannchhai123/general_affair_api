@@ -49,7 +49,8 @@ public class InvitationServiceImpl implements InvitationService {
     if (image != null && !image.isEmpty()) {
       imageUrl = fileStorageService.storeImage(image);
     }
-    return createInvitation(title, null, null, null, null, null, imageId, participantIds, imageUrl);
+    return createInvitation(
+        title, null, null, null, null, null, imageId, participantIds, imageUrl, null, null);
   }
 
   @Override
@@ -62,7 +63,9 @@ public class InvitationServiceImpl implements InvitationService {
       LocalTime eventTime,
       String location,
       List<Long> imageIds,
-      List<Long> participantIds) {
+      List<Long> participantIds,
+      String type,
+      String status) {
     List<String> imageUrls = null;
     List<UploadImageModel> uploadImages = null;
     if (imageIds != null && !imageIds.isEmpty()) {
@@ -94,7 +97,9 @@ public class InvitationServiceImpl implements InvitationService {
         imageIds,
         participantIds,
         uploadImages,
-        imageUrls);
+        imageUrls,
+        type,
+        status);
   }
 
   @Override
@@ -121,104 +126,117 @@ public class InvitationServiceImpl implements InvitationService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Invitation", "id", id));
 
-    if (request.getTitle() == null || request.getTitle().isBlank()) {
-      throw new BadRequestException("title is required");
-    }
-    if (request.getDescription() == null || request.getDescription().isBlank()) {
-      throw new BadRequestException("description is required");
-    }
-    if (request.getPresidedBy() == null || request.getPresidedBy().isBlank()) {
-      throw new BadRequestException("presidedBy is required");
-    }
-    if (request.getEventDate() == null) {
-      throw new BadRequestException("eventDate is required");
-    }
-    if (request.getEventTime() == null) {
-      throw new BadRequestException("eventTime is required");
-    }
-    if (request.getLocation() == null || request.getLocation().isBlank()) {
-      throw new BadRequestException("location is required");
-    }
-
-    Set<Long> uniqueParticipantIds = new LinkedHashSet<>(request.getParticipantIds());
-    uniqueParticipantIds.removeIf(participantId -> participantId == null);
-    if (uniqueParticipantIds.isEmpty()) {
-      throw new BadRequestException("participant_ids must contain at least one valid id");
-    }
-
-    List<OfficerModel> officers = officerRepository.findAllById(uniqueParticipantIds);
-    Set<Long> foundParticipantIds =
-        officers.stream().map(OfficerModel::getId).collect(Collectors.toSet());
-    if (foundParticipantIds.size() != uniqueParticipantIds.size()) {
-      Set<Long> missingIds =
-          uniqueParticipantIds.stream()
-              .filter(participantId -> !foundParticipantIds.contains(participantId))
-              .collect(Collectors.toCollection(LinkedHashSet::new));
-      throw new BadRequestException("Officers not found for ids: " + missingIds);
-    }
-
-    for (OfficerModel officer : officers) {
-      if (officer.getStatus() != OfficerStatus.ACTIVE || !officer.isInvitationPriority()) {
-        throw new BadRequestException(
-            "Officer with id " + officer.getId() + " is not eligible for invitations");
+    if (request.getTitle() != null) {
+      if (request.getTitle().isBlank()) {
+        throw new BadRequestException("title cannot be blank");
       }
+      invitation.setTitle(request.getTitle().trim());
+    }
+    if (request.getDescription() != null) {
+      invitation.setDescription(request.getDescription());
+    }
+    if (request.getPresidedBy() != null) {
+      if (request.getPresidedBy().isBlank()) {
+        throw new BadRequestException("presidedBy cannot be blank");
+      }
+      invitation.setPresidedBy(request.getPresidedBy());
+    }
+    if (request.getEventDate() != null) {
+      invitation.setEventDate(request.getEventDate());
+    }
+    if (request.getEventTime() != null) {
+      invitation.setEventTime(request.getEventTime());
+    }
+    if (request.getLocation() != null) {
+      if (request.getLocation().isBlank()) {
+        throw new BadRequestException("location cannot be blank");
+      }
+      invitation.setLocation(request.getLocation());
+    }
+    if (request.getType() != null) {
+      invitation.setType(request.getType());
+    }
+    if (request.getStatus() != null) {
+      invitation.setStatus(request.getStatus());
     }
 
-    List<String> imageUrls = null;
-    List<UploadImageModel> uploadImages = null;
-    if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
-      Set<Long> uniqueImageIds = new LinkedHashSet<>(request.getImageIds());
-      uniqueImageIds.removeIf(imageId -> imageId == null);
-      if (uniqueImageIds.isEmpty()) {
-        throw new BadRequestException("imageIds must contain at least one valid id");
+    if (request.getParticipantIds() != null) {
+      Set<Long> originalParticipantIds =
+          invitation.getParticipants().stream()
+              .map(participant -> participant.getOfficer().getId())
+              .collect(Collectors.toSet());
+
+      Set<Long> uniqueParticipantIds = new LinkedHashSet<>(request.getParticipantIds());
+      uniqueParticipantIds.removeIf(participantId -> participantId == null);
+      if (uniqueParticipantIds.isEmpty()) {
+        throw new BadRequestException("participant_ids must contain at least one valid id");
       }
 
-      uploadImages = uploadImageRepository.findAllById(uniqueImageIds);
-      Set<Long> foundImageIds =
-          uploadImages.stream().map(UploadImageModel::getId).collect(Collectors.toSet());
-      if (foundImageIds.size() != uniqueImageIds.size()) {
+      List<OfficerModel> officers = officerRepository.findAllById(uniqueParticipantIds);
+      Set<Long> foundParticipantIds =
+          officers.stream().map(OfficerModel::getId).collect(Collectors.toSet());
+      if (foundParticipantIds.size() != uniqueParticipantIds.size()) {
         Set<Long> missingIds =
-            uniqueImageIds.stream()
-                .filter(imageId -> !foundImageIds.contains(imageId))
+            uniqueParticipantIds.stream()
+                .filter(participantId -> !foundParticipantIds.contains(participantId))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        throw new BadRequestException("Upload images not found for ids: " + missingIds);
+        throw new BadRequestException("Officers not found for ids: " + missingIds);
       }
-      imageUrls = uploadImages.stream().map(UploadImageModel::getUrl).collect(Collectors.toList());
+
+      for (OfficerModel officer : officers) {
+        if (!originalParticipantIds.contains(officer.getId())) {
+          if (officer.getStatus() != OfficerStatus.ACTIVE || !officer.isInvitationPriority()) {
+            throw new BadRequestException(
+                "Officer with id " + officer.getId() + " is not eligible for invitations");
+          }
+        }
+      }
+
+      Set<Long> newParticipantIds =
+          officers.stream().map(OfficerModel::getId).collect(Collectors.toSet());
+
+      invitation
+          .getParticipants()
+          .removeIf(participant -> !newParticipantIds.contains(participant.getOfficer().getId()));
+
+      Set<Long> existingParticipantIds =
+          invitation.getParticipants().stream()
+              .map(participant -> participant.getOfficer().getId())
+              .collect(Collectors.toSet());
+
+      officers.stream()
+          .filter(officer -> !existingParticipantIds.contains(officer.getId()))
+          .forEach(invitation::addParticipant);
     }
-
-    invitation.setTitle(request.getTitle().trim());
-    invitation.setDescription(request.getDescription());
-    invitation.setPresidedBy(request.getPresidedBy());
-    invitation.setEventDate(request.getEventDate());
-    invitation.setEventTime(request.getEventTime());
-    invitation.setLocation(request.getLocation());
-    invitation.setImageId(
-        request.getImageIds() != null && !request.getImageIds().isEmpty()
-            ? request.getImageIds().get(0)
-            : null);
-    invitation.setImageUrl(imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null);
-
-    // Update participants in-place to avoid unique constraint violations on (invitation_id,
-    // officer_id)
-    Set<Long> newParticipantIds =
-        officers.stream().map(OfficerModel::getId).collect(Collectors.toSet());
-
-    invitation
-        .getParticipants()
-        .removeIf(participant -> !newParticipantIds.contains(participant.getOfficer().getId()));
-
-    Set<Long> existingParticipantIds =
-        invitation.getParticipants().stream()
-            .map(participant -> participant.getOfficer().getId())
-            .collect(Collectors.toSet());
-
-    officers.stream()
-        .filter(officer -> !existingParticipantIds.contains(officer.getId()))
-        .forEach(invitation::addParticipant);
 
     if (request.getImageIds() != null) {
-      // Update images in-place to avoid unique constraint violations on (invitation_id,
-      // upload_image_id)
+      List<UploadImageModel> uploadImages = null;
+      List<String> imageUrls = null;
+      if (!request.getImageIds().isEmpty()) {
+        Set<Long> uniqueImageIds = new LinkedHashSet<>(request.getImageIds());
+        uniqueImageIds.removeIf(imageId -> imageId == null);
+        if (!uniqueImageIds.isEmpty()) {
+          uploadImages = uploadImageRepository.findAllById(uniqueImageIds);
+          Set<Long> foundImageIds =
+              uploadImages.stream().map(UploadImageModel::getId).collect(Collectors.toSet());
+          if (foundImageIds.size() != uniqueImageIds.size()) {
+            Set<Long> missingIds =
+                uniqueImageIds.stream()
+                    .filter(imageId -> !foundImageIds.contains(imageId))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            throw new BadRequestException("Upload images not found for ids: " + missingIds);
+          }
+          imageUrls =
+              uploadImages.stream().map(UploadImageModel::getUrl).collect(Collectors.toList());
+        }
+      }
+
+      invitation.setImageId(
+          request.getImageIds() != null && !request.getImageIds().isEmpty()
+              ? request.getImageIds().get(0)
+              : null);
+      invitation.setImageUrl(imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null);
+
       Set<Long> newImageIds =
           uploadImages != null
               ? uploadImages.stream().map(UploadImageModel::getId).collect(Collectors.toSet())
@@ -327,7 +345,9 @@ public class InvitationServiceImpl implements InvitationService {
       String location,
       Long imageId,
       List<Long> participantIds,
-      String imageUrl) {
+      String imageUrl,
+      String type,
+      String status) {
     return createInvitation(
         title,
         description,
@@ -338,7 +358,9 @@ public class InvitationServiceImpl implements InvitationService {
         imageId != null ? List.of(imageId) : null,
         participantIds,
         null,
-        imageUrl != null ? List.of(imageUrl) : null);
+        imageUrl != null ? List.of(imageUrl) : null,
+        type,
+        status);
   }
 
   @Transactional
@@ -352,7 +374,9 @@ public class InvitationServiceImpl implements InvitationService {
       List<Long> imageIds,
       List<Long> participantIds,
       List<UploadImageModel> uploadImages,
-      List<String> imageUrls) {
+      List<String> imageUrls,
+      String type,
+      String status) {
     if (title == null || title.isBlank()) {
       throw new BadRequestException("title is required");
     }
@@ -369,9 +393,6 @@ public class InvitationServiceImpl implements InvitationService {
     }
     if (eventDate == null) {
       throw new BadRequestException("eventDate is required");
-    }
-    if (eventTime == null) {
-      throw new BadRequestException("eventTime is required");
     }
     if (location == null || location.isBlank()) {
       throw new BadRequestException("location is required");
@@ -410,6 +431,8 @@ public class InvitationServiceImpl implements InvitationService {
             .location(location)
             .imageId(imageIds != null && !imageIds.isEmpty() ? imageIds.get(0) : null)
             .imageUrl(imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null)
+            .type(type != null && !type.isBlank() ? type.trim() : "incoming")
+            .status(status != null && !status.isBlank() ? status.trim() : "pending")
             .build();
     officers.forEach(invitation::addParticipant);
     if (uploadImages != null) {

@@ -23,7 +23,9 @@ public interface InvitationService {
       LocalTime eventTime,
       String location,
       List<Long> imageIds,
-      List<Long> participantIds);
+      List<Long> participantIds,
+      String type,
+      String status);
 
   List<CreateInvitationResponse> getInvitations();
 

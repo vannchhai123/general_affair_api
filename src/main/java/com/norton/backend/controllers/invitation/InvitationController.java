@@ -40,7 +40,7 @@ public class InvitationController {
 
   @GetMapping("/eligible-participants")
   @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
   public ResponseEntity<EligibleParticipantsResponse> getEligibleParticipants(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Integer limit) {
@@ -85,7 +85,9 @@ public class InvitationController {
             request.getEventTime(),
             request.getLocation(),
             request.getImageIds(),
-            request.getParticipantIds());
+            request.getParticipantIds(),
+            request.getType(),
+            request.getStatus());
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
