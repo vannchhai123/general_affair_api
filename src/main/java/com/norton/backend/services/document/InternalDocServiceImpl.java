@@ -1,13 +1,24 @@
 package com.norton.backend.services.document;
 
+import com.norton.backend.dto.request.document.CreateInternalDocRequest;
 import com.norton.backend.dto.responses.PageResponse;
 import com.norton.backend.dto.responses.document.InternalDocDetailsResponse;
 import com.norton.backend.dto.responses.document.InternalDocResponse;
 import com.norton.backend.exceptions.ResourceNotFoundException;
+import com.norton.backend.models.DocumentFileModel;
 import com.norton.backend.models.DocumentModel;
 import com.norton.backend.models.DocumentTypeModel;
+import com.norton.backend.models.OfficerModel;
+import com.norton.backend.models.OrganizationModel;
+import com.norton.backend.models.UploadImageModel;
+import com.norton.backend.models.UserModel;
+import com.norton.backend.repositories.DocumentFileRepository;
 import com.norton.backend.repositories.DocumentRepository;
 import com.norton.backend.repositories.DocumentTypeRepository;
+import com.norton.backend.repositories.OrganizationRepository;
+import com.norton.backend.repositories.UploadImageRepository;
+import com.norton.backend.repositories.UserRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +35,10 @@ public class InternalDocServiceImpl implements InternalDocService {
 
   private final DocumentTypeRepository documentTypeRepository;
   private final DocumentRepository documentRepository;
+  private final UserRepository userRepository;
+  private final OrganizationRepository organizationRepository;
+  private final UploadImageRepository uploadImageRepository;
+  private final DocumentFileRepository documentFileRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -232,5 +247,113 @@ public class InternalDocServiceImpl implements InternalDocService {
         .createdBy(creatorDto)
         .files(filesDto)
         .build();
+  }
+
+  @Override
+  @Transactional
+  public InternalDocDetailsResponse createInternalDocument(
+      CreateInternalDocRequest request, String currentUsername) {
+    UserModel user =
+        userRepository
+            .findByUsername(currentUsername)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername));
+
+    OfficerModel creator = user.getOfficer();
+    if (creator == null) {
+      throw new com.norton.backend.exceptions.BadRequestException(
+          "Authenticated user is not associated with an officer profile");
+    }
+
+    DocumentTypeModel docType =
+        documentTypeRepository
+            .findById(request.getDocumentTypeId())
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "DocumentType", "id", request.getDocumentTypeId()));
+
+    OrganizationModel senderOrg = null;
+    if (request.getSenderOrganizationId() != null) {
+      senderOrg =
+          organizationRepository
+              .findById(request.getSenderOrganizationId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Organization", "id", request.getSenderOrganizationId()));
+    }
+
+    OrganizationModel receiverOrg = null;
+    if (request.getReceiverOrganizationId() != null) {
+      receiverOrg =
+          organizationRepository
+              .findById(request.getReceiverOrganizationId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Organization", "id", request.getReceiverOrganizationId()));
+    }
+
+    // Check if document number is unique
+    if (documentRepository.findByDocumentNumber(request.getDocumentNumber()).isPresent()) {
+      throw new com.norton.backend.exceptions.BadRequestException(
+          "Document number already exists: " + request.getDocumentNumber());
+    }
+
+    DocumentModel doc =
+        DocumentModel.builder()
+            .direction("INTERNAL")
+            .documentType(docType)
+            .senderOrganization(senderOrg)
+            .receiverOrganization(receiverOrg)
+            .documentNumber(request.getDocumentNumber())
+            .documentDate(request.getDocumentDate())
+            .subject(request.getSubject())
+            .summary(request.getSummary())
+            .confidentiality(request.getConfidentiality())
+            .priority(request.getPriority())
+            .status(request.getStatus())
+            .remarks(request.getRemarks())
+            .createdBy(creator)
+            .files(new ArrayList<>())
+            .build();
+
+    doc = documentRepository.save(doc);
+
+    if (request.getFileIds() != null && !request.getFileIds().isEmpty()) {
+      for (int i = 0; i < request.getFileIds().size(); i++) {
+        Long fileId = request.getFileIds().get(i);
+        UploadImageModel uploadImage =
+            uploadImageRepository
+                .findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("UploadImage", "id", fileId));
+
+        DocumentFileModel docFile =
+            DocumentFileModel.builder()
+                .document(doc)
+                .uploadImage(uploadImage)
+                .fileName(uploadImage.getFileName())
+                .filePath(uploadImage.getUrl())
+                .mimeType(extractMimeType(uploadImage.getFileName()))
+                .isPrimary(i == 0)
+                .uploadedBy(creator)
+                .build();
+
+        docFile = documentFileRepository.save(docFile);
+        doc.getFiles().add(docFile);
+      }
+    }
+
+    return getInternalDocumentDetails(doc.getId());
+  }
+
+  private String extractMimeType(String fileName) {
+    if (fileName == null) return "application/octet-stream";
+    String lower = fileName.toLowerCase();
+    if (lower.endsWith(".pdf")) return "application/pdf";
+    if (lower.endsWith(".png")) return "image/png";
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+    if (lower.endsWith(".webp")) return "image/webp";
+    return "application/octet-stream";
   }
 }

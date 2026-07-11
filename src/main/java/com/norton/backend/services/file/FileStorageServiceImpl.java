@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileStorageServiceImpl implements FileStorageService {
 
   private static final Set<String> ALLOWED_CONTENT_TYPES =
-      Set.of("image/jpeg", "image/png", "image/jpg", "image/webp");
+      Set.of("image/jpeg", "image/png", "image/jpg", "image/webp", "application/pdf");
 
   private final FileStorageProperties fileStorageProperties;
   private Path uploadPath;
@@ -108,7 +108,7 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     String contentType = file.getContentType();
     if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
-      throw new BadRequestException("Only jpeg, jpg, png, and webp images are allowed");
+      throw new BadRequestException("Only jpeg, jpg, png, webp, and pdf files are allowed");
     }
   }
 

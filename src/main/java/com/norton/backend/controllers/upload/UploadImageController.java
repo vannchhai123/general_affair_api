@@ -38,6 +38,31 @@ public class UploadImageController {
   private final InvitationRepository invitationRepository;
   private final InvitationImageRepository invitationImageRepository;
 
+  @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE', 'MANAGER', 'OFFICER')")
+  public ResponseEntity<UploadImageDataResponse> uploadStandaloneImage(
+      @RequestParam("file") MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+      throw new IllegalArgumentException("File is required");
+    }
+
+    String imageUrl = fileStorageService.storeImage(file);
+    String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "image";
+
+    UploadImageModel uploadImage =
+        UploadImageModel.builder().fileName(fileName).url(imageUrl).build();
+    UploadImageModel saved = uploadImageRepository.save(uploadImage);
+
+    UploadImageDataResponse response =
+        UploadImageDataResponse.builder()
+            .id(saved.getId())
+            .fileName(saved.getFileName())
+            .url(saved.getUrl())
+            .build();
+
+    return ResponseEntity.ok(response);
+  }
+
   @PostMapping(value = "/{inviteId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE')")
   public ResponseEntity<UploadImagesResponse> uploadImages(

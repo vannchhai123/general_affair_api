@@ -100,7 +100,7 @@ public class InvitationController {
 
   @GetMapping("/{id}")
   @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
   public ResponseEntity<CreateInvitationResponse> getInvitationById(@PathVariable Long id) {
     return ResponseEntity.ok(invitationService.getInvitationById(id));
   }

@@ -1,5 +1,6 @@
 package com.norton.backend.controllers.document;
 
+import com.norton.backend.dto.request.document.CreateInternalDocRequest;
 import com.norton.backend.dto.responses.PageResponse;
 import com.norton.backend.dto.responses.document.InternalDocDetailsResponse;
 import com.norton.backend.dto.responses.document.InternalDocResponse;
@@ -8,8 +9,12 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -66,5 +71,15 @@ public class InternalDocController {
   public ResponseEntity<InternalDocDetailsResponse> getInternalDocumentDetails(
       @PathVariable Long id) {
     return ResponseEntity.ok(internalDocService.getInternalDocumentDetails(id));
+  }
+
+  @PostMapping
+  @PreAuthorize(
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  public ResponseEntity<InternalDocDetailsResponse> createInternalDocument(
+      @Validated @RequestBody CreateInternalDocRequest request) {
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+        .body(internalDocService.createInternalDocument(request, username));
   }
 }
