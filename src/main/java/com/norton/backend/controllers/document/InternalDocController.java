@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -86,5 +87,13 @@ public class InternalDocController {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
     return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
         .body(internalDocService.createInternalDocument(request, username));
+  }
+
+  @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_UPDATE)")
+  public ResponseEntity<InternalDocDetailsResponse> updateInternalDocument(
+      @PathVariable Long id, @Validated @RequestBody CreateInternalDocRequest request) {
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    return ResponseEntity.ok(internalDocService.updateInternalDocument(id, request, username));
   }
 }

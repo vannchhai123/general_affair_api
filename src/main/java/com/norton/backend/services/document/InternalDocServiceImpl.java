@@ -20,6 +20,7 @@ import com.norton.backend.repositories.UploadImageRepository;
 import com.norton.backend.repositories.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -404,5 +405,125 @@ public class InternalDocServiceImpl implements InternalDocService {
       return "image/webp";
     }
     return "application/octet-stream";
+  }
+
+  @Override
+  @Transactional
+  public InternalDocDetailsResponse updateInternalDocument(
+      Long id, CreateInternalDocRequest request, String currentUsername) {
+    DocumentModel doc =
+        documentRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Document", "id", id));
+
+    if (!"INTERNAL".equals(doc.getDirection())) {
+      throw new com.norton.backend.exceptions.BadRequestException(
+          "Document is not an internal document");
+    }
+
+    UserModel user =
+        userRepository
+            .findByUsername(currentUsername)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername));
+    OfficerModel creator = user.getOfficer();
+    if (creator == null) {
+      throw new com.norton.backend.exceptions.BadRequestException(
+          "Authenticated user is not associated with an officer profile");
+    }
+
+    // Check if document number is unique for this document type (excluding this document)
+    if (request.getDocumentNumber() != null && !request.getDocumentNumber().isBlank()) {
+      Optional<DocumentModel> existingDoc =
+          documentRepository.findByDocumentNumberAndDocumentTypeId(
+              request.getDocumentNumber(), request.getDocumentTypeId());
+      if (existingDoc.isPresent() && !existingDoc.get().getId().equals(id)) {
+        throw new com.norton.backend.exceptions.BadRequestException(
+            "Document number already exists for this document type: "
+                + request.getDocumentNumber());
+      }
+    }
+
+    doc.setDocumentNumber(request.getDocumentNumber());
+    doc.setDocumentDate(request.getDocumentDate());
+    doc.setSubject(request.getSubject());
+    doc.setSummary(request.getSummary());
+    doc.setConfidentiality(request.getConfidentiality());
+    doc.setPriority(request.getPriority());
+    doc.setStatus(request.getStatus());
+    doc.setRemarks(request.getRemarks());
+
+    if (request.getDocumentTypeId() != null) {
+      DocumentTypeModel type =
+          documentTypeRepository
+              .findById(request.getDocumentTypeId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "DocumentType", "id", request.getDocumentTypeId()));
+      doc.setDocumentType(type);
+    }
+
+    if (request.getSenderOrganizationId() != null) {
+      OrganizationModel senderOrg =
+          organizationRepository
+              .findById(request.getSenderOrganizationId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Organization", "id", request.getSenderOrganizationId()));
+      doc.setSenderOrganization(senderOrg);
+    } else {
+      doc.setSenderOrganization(null);
+    }
+
+    if (request.getReceiverOrganizationId() != null) {
+      OrganizationModel receiverOrg =
+          organizationRepository
+              .findById(request.getReceiverOrganizationId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Organization", "id", request.getReceiverOrganizationId()));
+      doc.setReceiverOrganization(receiverOrg);
+    } else {
+      doc.setReceiverOrganization(null);
+    }
+
+    if (request.getFileIds() != null && !request.getFileIds().isEmpty()) {
+      for (int i = 0; i < request.getFileIds().size(); i++) {
+        Long fileId = request.getFileIds().get(i);
+        UploadImageModel uploadImage =
+            uploadImageRepository
+                .findById(fileId)
+                .orElseThrow(() -> new ResourceNotFoundException("UploadImage", "id", fileId));
+
+        boolean alreadyExists =
+            doc.getFiles().stream()
+                .anyMatch(
+                    file ->
+                        file.getUploadImage() != null
+                            && file.getUploadImage().getId().equals(fileId));
+
+        if (!alreadyExists) {
+          DocumentFileModel docFile =
+              DocumentFileModel.builder()
+                  .document(doc)
+                  .uploadImage(uploadImage)
+                  .fileName(uploadImage.getFileName())
+                  .filePath(uploadImage.getUrl())
+                  .mimeType(extractMimeType(uploadImage.getFileName()))
+                  .isPrimary(doc.getFiles().isEmpty() && i == 0)
+                  .uploadedBy(creator)
+                  .build();
+
+          docFile = documentFileRepository.save(docFile);
+          doc.getFiles().add(docFile);
+        }
+      }
+    }
+
+    doc = documentRepository.save(doc);
+
+    return getInternalDocumentDetails(doc.getId());
   }
 }

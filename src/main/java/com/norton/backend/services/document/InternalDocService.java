@@ -24,4 +24,7 @@ public interface InternalDocService {
 
   InternalDocDetailsResponse createInternalDocument(
       CreateInternalDocRequest request, String currentUsername);
+
+  InternalDocDetailsResponse updateInternalDocument(
+      Long id, CreateInternalDocRequest request, String currentUsername);
 }
