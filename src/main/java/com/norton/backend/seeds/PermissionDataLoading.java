@@ -104,6 +104,23 @@ public class PermissionDataLoading implements CommandLineRunner {
     PermissionModel dashboardView =
         createPermission("DASHBOARD_VIEW", "View dashboard", "Dashboard");
 
+    PermissionModel invitationView =
+        createPermission("INVITATION_VIEW", "View invitations", "Invitation");
+    PermissionModel invitationCreate =
+        createPermission("INVITATION_CREATE", "Create invitations", "Invitation");
+    PermissionModel invitationUpdate =
+        createPermission("INVITATION_UPDATE", "Update invitations", "Invitation");
+    PermissionModel invitationDelete =
+        createPermission("INVITATION_DELETE", "Delete invitations", "Invitation");
+
+    PermissionModel documentView = createPermission("DOCUMENT_VIEW", "View documents", "Document");
+    PermissionModel documentCreate =
+        createPermission("DOCUMENT_CREATE", "Create documents", "Document");
+    PermissionModel documentUpdate =
+        createPermission("DOCUMENT_UPDATE", "Update documents", "Document");
+    PermissionModel documentDelete =
+        createPermission("DOCUMENT_DELETE", "Delete documents", "Document");
+
     Set<PermissionModel> superAdminPermissions =
         Set.of(
             permissionView,
@@ -142,7 +159,15 @@ public class PermissionDataLoading implements CommandLineRunner {
             qrUpdate,
             qrEnd,
             qrCheckin,
-            dashboardView);
+            dashboardView,
+            invitationView,
+            invitationCreate,
+            invitationUpdate,
+            invitationDelete,
+            documentView,
+            documentCreate,
+            documentUpdate,
+            documentDelete);
 
     createOrUpdateRole(
         "ROLE_ADMIN", "Administrator with full system control", superAdminPermissions);
@@ -173,7 +198,15 @@ public class PermissionDataLoading implements CommandLineRunner {
             qrUpdate,
             qrEnd,
             qrCheckin,
-            dashboardView));
+            dashboardView,
+            invitationView,
+            invitationCreate,
+            invitationUpdate,
+            invitationDelete,
+            documentView,
+            documentCreate,
+            documentUpdate,
+            documentDelete));
 
     createOrUpdateRole(
         "ROLE_MANAGER",
@@ -187,12 +220,24 @@ public class PermissionDataLoading implements CommandLineRunner {
             organizationView,
             qrView,
             qrCheckin,
-            dashboardView));
+            dashboardView,
+            invitationView,
+            documentView,
+            documentCreate,
+            documentUpdate,
+            documentDelete));
 
     createOrUpdateRole(
         "ROLE_OFFICER",
         "Officer with self-service access",
-        Set.of(attendanceView, attendanceScan, qrView, qrCheckin, dashboardView));
+        Set.of(
+            attendanceView,
+            attendanceScan,
+            qrView,
+            qrCheckin,
+            dashboardView,
+            invitationView,
+            documentView));
   }
 
   private PermissionModel createPermission(String name, String description, String category) {

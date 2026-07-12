@@ -330,10 +330,13 @@ public class InternalDocServiceImpl implements InternalDocService {
                           "Organization", "id", request.getReceiverOrganizationId()));
     }
 
-    // Check if document number is unique
-    if (documentRepository.findByDocumentNumber(request.getDocumentNumber()).isPresent()) {
+    // Check if document number is unique for this document type
+    if (documentRepository
+        .findByDocumentNumberAndDocumentTypeId(
+            request.getDocumentNumber(), request.getDocumentTypeId())
+        .isPresent()) {
       throw new com.norton.backend.exceptions.BadRequestException(
-          "Document number already exists: " + request.getDocumentNumber());
+          "Document number already exists for this document type: " + request.getDocumentNumber());
     }
 
     DocumentModel doc =

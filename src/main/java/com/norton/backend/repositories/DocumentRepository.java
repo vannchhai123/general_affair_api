@@ -15,7 +15,13 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
 
   Optional<DocumentModel> findByDocumentNumber(String documentNumber);
 
+  Optional<DocumentModel> findByDocumentNumberAndDocumentTypeId(
+      String documentNumber, Long documentTypeId);
+
   Page<DocumentModel> findByDirection(String direction, Pageable pageable);
+
+  java.util.List<DocumentModel> findByStatus(
+      String status, org.springframework.data.domain.Sort sort);
 
   @org.springframework.data.jpa.repository.Query(
       """

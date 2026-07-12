@@ -60,8 +60,7 @@ public class InvitationController {
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_CREATE)")
   public ResponseEntity<CreateInvitationResponse> createInvitationMultipart(
       @RequestParam("title") String title,
       @RequestParam("participant_ids") List<Long> participantIds,
@@ -72,8 +71,7 @@ public class InvitationController {
   }
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-  @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_CREATE)")
   public ResponseEntity<CreateInvitationResponse> createInvitationJson(
       @Validated @RequestBody CreateInvitationRequest request) {
     CreateInvitationResponse response =
@@ -92,30 +90,26 @@ public class InvitationController {
   }
 
   @GetMapping
-  @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_VIEW)")
   public ResponseEntity<List<CreateInvitationResponse>> getInvitations() {
     return ResponseEntity.ok(invitationService.getInvitations());
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_VIEW)")
   public ResponseEntity<CreateInvitationResponse> getInvitationById(@PathVariable Long id) {
     return ResponseEntity.ok(invitationService.getInvitationById(id));
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_UPDATE)")
   public ResponseEntity<CreateInvitationResponse> updateInvitation(
       @PathVariable Long id, @Validated @RequestBody CreateInvitationRequest request) {
     return ResponseEntity.ok(invitationService.updateInvitation(id, request));
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize(
-      "(hasRole('ADMIN') or hasRole('HEAD_OFFICE')) and hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW)")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_DELETE)")
   public ResponseEntity<Map<String, String>> deleteInvitation(@PathVariable Long id) {
     invitationService.deleteInvitation(id);
     return ResponseEntity.ok(Map.of("message", "Invitation deleted successfully"));

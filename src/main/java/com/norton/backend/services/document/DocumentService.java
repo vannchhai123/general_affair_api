@@ -10,7 +10,7 @@ public interface DocumentService {
 
   java.util.List<DocumentDetailsResponse.DocTypeDto> getDocumentTypes();
 
-  java.util.List<DocumentDetailsResponse> getAllDocuments();
+  java.util.List<DocumentDetailsResponse> getAllDocuments(String status);
 
   void deleteDocument(Long id);
 

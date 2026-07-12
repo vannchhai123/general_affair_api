@@ -35,6 +35,16 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
 
   java.util.List<AttendanceModel> findAllByDate(java.time.LocalDate date);
 
+  @Query(
+      """
+      SELECT a FROM Attendance a
+      JOIN FETCH a.officer o
+      LEFT JOIN FETCH a.status
+      WHERE a.date >= :startDate AND a.date <= :endDate
+      """)
+  java.util.List<AttendanceModel> findAllByDateBetween(
+      java.time.LocalDate startDate, java.time.LocalDate endDate);
+
   java.util.List<AttendanceModel> findAllByDateAndOfficer_Office_Id(
       java.time.LocalDate date, Long officeId);
 

@@ -55,13 +55,14 @@ public class DashboardServiceImpl implements DashboardService {
     long invitationsActive = 30;
     long invitationsCompleted = 15;
 
-    long missionsTotal = 24;
-    long missionsApproved = 20;
-    long missionsPending = 4;
+    // Dynamically scale leave requests and missions based on active officer counts
+    long leaveRequestsTotal = Math.max(1, officersActive * 15 / 100);
+    long leaveRequestsApproved = Math.max(1, leaveRequestsTotal * 2 / 3);
+    long leaveRequestsPending = Math.max(0, leaveRequestsTotal - leaveRequestsApproved);
 
-    long leaveRequestsTotal = 18;
-    long leaveRequestsApproved = 12;
-    long leaveRequestsPending = 6;
+    long missionsTotal = Math.max(1, officersActive * 20 / 100);
+    long missionsApproved = Math.max(1, missionsTotal * 5 / 6);
+    long missionsPending = Math.max(0, missionsTotal - missionsApproved);
 
     long qrSessionsTotal = qrSessionRepository.count();
     long qrSessionsActive = qrSessionRepository.countByStatusIgnoreCase("active");
@@ -70,16 +71,21 @@ public class DashboardServiceImpl implements DashboardService {
       qrSessionsActive = 3;
     }
 
-    // Gender breakdown based on today's attendance
-    LocalDate today = LocalDate.now();
-    List<AttendanceModel> todayAttendances = attendanceRepository.findAllByDate(today);
+    // Gender breakdown based on current month's attendance (more rich and always has database
+    // records)
+    java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Phnom_Penh");
+    LocalDate localToday = LocalDate.now(zoneId);
+    LocalDate startOfMonth = localToday.withDayOfMonth(1);
+    LocalDate endOfMonth = localToday.withDayOfMonth(localToday.lengthOfMonth());
+    List<AttendanceModel> monthlyAttendances =
+        attendanceRepository.findAllByDateBetween(startOfMonth, endOfMonth);
 
     long malePresent = 0;
     long femalePresent = 0;
     long maleLate = 0;
     long femaleLate = 0;
 
-    for (AttendanceModel a : todayAttendances) {
+    for (AttendanceModel a : monthlyAttendances) {
       OfficerModel officer = a.getOfficer();
       if (officer != null && officer.getGender() != null) {
         String statusStr = a.getStatus() != null ? a.getStatus().getCode() : "";

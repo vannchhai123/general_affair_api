@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,36 +29,33 @@ public class DocumentController {
   private final DocumentService documentService;
 
   @GetMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<DocumentDetailsResponse> getDocumentDetails(@PathVariable Long id) {
     return ResponseEntity.ok(documentService.getDocumentDetails(id));
   }
 
   @GetMapping
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
-  public ResponseEntity<List<DocumentDetailsResponse>> getAllDocuments() {
-    return ResponseEntity.ok(documentService.getAllDocuments());
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
+  public ResponseEntity<List<DocumentDetailsResponse>> getAllDocuments(
+      @RequestParam(required = false) String status) {
+    return ResponseEntity.ok(documentService.getAllDocuments(status));
   }
 
   @GetMapping("/types")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<List<DocumentDetailsResponse.DocTypeDto>> getDocumentTypes() {
     return ResponseEntity.ok(documentService.getDocumentTypes());
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_DELETE)")
   public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
     documentService.deleteDocument(id);
     return ResponseEntity.noContent().build();
   }
 
   @PostMapping
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_CREATE)")
   public ResponseEntity<DocumentDetailsResponse> createDocument(
       @Validated @RequestBody CreateDocumentRequest request) {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -66,8 +64,7 @@ public class DocumentController {
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_UPDATE)")
   public ResponseEntity<DocumentDetailsResponse> updateDocument(
       @PathVariable Long id, @Validated @RequestBody CreateDocumentRequest request) {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();

@@ -19,9 +19,14 @@ import lombok.*;
 @Builder
 @Table(
     name = "documents",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uq_docs_number_type",
+          columnNames = {"document_number", "document_type_id"})
+    },
     indexes = {
       @Index(name = "idx_docs_uuid", columnList = "uuid"),
-      @Index(name = "idx_docs_doc_number", columnList = "document_number", unique = true),
+      @Index(name = "idx_docs_doc_number", columnList = "document_number"),
       @Index(name = "idx_docs_direction", columnList = "direction"),
       @Index(name = "idx_docs_doc_type", columnList = "document_type_id"),
       @Index(name = "idx_docs_sender_org", columnList = "sender_organization_id"),
@@ -62,7 +67,7 @@ public class DocumentModel extends BaseIdModel {
   private OrganizationModel receiverOrganization;
 
   @Size(max = 100, message = "Document number must not exceed 100 characters")
-  @Column(name = "document_number", length = 100, unique = true)
+  @Column(name = "document_number", length = 100)
   private String documentNumber;
 
   @NotNull(message = "Document date is required")

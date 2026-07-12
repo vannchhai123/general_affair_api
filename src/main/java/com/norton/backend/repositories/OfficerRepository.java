@@ -138,4 +138,45 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
   long countByPosition_Id(Long positionId);
 
   long countByPositionIsNotNull();
+
+  @EntityGraph(
+      attributePaths = {"user", "office", "position", "position.department", "educationLevel"})
+  @Query(
+      """
+      SELECT o FROM OfficerModel o
+      LEFT JOIN o.user u
+      WHERE LOWER(o.officerCode) LIKE LOWER(:searchPattern)
+         OR LOWER(o.firstNameEn) LIKE LOWER(:searchPattern)
+         OR LOWER(o.lastNameEn) LIKE LOWER(:searchPattern)
+         OR LOWER(o.firstNameKh) LIKE LOWER(:searchPattern)
+         OR LOWER(o.lastNameKh) LIKE LOWER(:searchPattern)
+         OR LOWER(COALESCE(o.email, '')) LIKE LOWER(:searchPattern)
+         OR LOWER(COALESCE(o.phone, '')) LIKE LOWER(:searchPattern)
+         OR (u IS NOT NULL AND LOWER(u.fullName) LIKE LOWER(:searchPattern))
+      """)
+  Page<OfficerModel> searchOfficers(
+      @Param("searchPattern") String searchPattern, Pageable pageable);
+
+  @EntityGraph(
+      attributePaths = {"user", "office", "position", "position.department", "educationLevel"})
+  @Query(
+      """
+      SELECT o FROM OfficerModel o
+      LEFT JOIN o.user u
+      WHERE o.office.id = :officeId
+        AND (
+           LOWER(o.officerCode) LIKE LOWER(:searchPattern)
+           OR LOWER(o.firstNameEn) LIKE LOWER(:searchPattern)
+           OR LOWER(o.lastNameEn) LIKE LOWER(:searchPattern)
+           OR LOWER(o.firstNameKh) LIKE LOWER(:searchPattern)
+           OR LOWER(o.lastNameKh) LIKE LOWER(:searchPattern)
+           OR LOWER(COALESCE(o.email, '')) LIKE LOWER(:searchPattern)
+           OR LOWER(COALESCE(o.phone, '')) LIKE LOWER(:searchPattern)
+           OR (u IS NOT NULL AND LOWER(u.fullName) LIKE LOWER(:searchPattern))
+        )
+      """)
+  Page<OfficerModel> searchOfficersInOffice(
+      @Param("searchPattern") String searchPattern,
+      @Param("officeId") Long officeId,
+      Pageable pageable);
 }

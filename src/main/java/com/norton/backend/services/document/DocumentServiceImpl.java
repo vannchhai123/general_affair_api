@@ -21,6 +21,7 @@ import com.norton.backend.repositories.UploadImageRepository;
 import com.norton.backend.repositories.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -223,11 +224,15 @@ public class DocumentServiceImpl implements DocumentService {
                   });
     }
 
-    // Check if document number is unique
+    // Check if document number is unique for this document type
     if (request.getDocumentNumber() != null && !request.getDocumentNumber().isBlank()) {
-      if (documentRepository.findByDocumentNumber(request.getDocumentNumber()).isPresent()) {
+      if (documentRepository
+          .findByDocumentNumberAndDocumentTypeId(
+              request.getDocumentNumber(), request.getDocumentTypeId())
+          .isPresent()) {
         throw new com.norton.backend.exceptions.BadRequestException(
-            "Document number already exists: " + request.getDocumentNumber());
+            "Document number already exists for this document type: "
+                + request.getDocumentNumber());
       }
     }
 
@@ -304,10 +309,14 @@ public class DocumentServiceImpl implements DocumentService {
 
   @Override
   @Transactional(readOnly = true)
-  public List<DocumentDetailsResponse> getAllDocuments() {
-    return documentRepository.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
-        .map(this::convertToResponse)
-        .collect(Collectors.toList());
+  public List<DocumentDetailsResponse> getAllDocuments(String status) {
+    List<DocumentModel> docs;
+    if (status != null && !status.isBlank()) {
+      docs = documentRepository.findByStatus(status, Sort.by(Sort.Direction.DESC, "id"));
+    } else {
+      docs = documentRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+    }
+    return docs.stream().map(this::convertToResponse).collect(Collectors.toList());
   }
 
   @Override
@@ -341,6 +350,18 @@ public class DocumentServiceImpl implements DocumentService {
       } else {
         throw new com.norton.backend.exceptions.BadRequestException(
             "No officer profiles exist in the database.");
+      }
+    }
+
+    // Check if document number is unique for this document type (excluding this document)
+    if (request.getDocumentNumber() != null && !request.getDocumentNumber().isBlank()) {
+      Optional<DocumentModel> existingDoc =
+          documentRepository.findByDocumentNumberAndDocumentTypeId(
+              request.getDocumentNumber(), request.getDocumentTypeId());
+      if (existingDoc.isPresent() && !existingDoc.get().getId().equals(id)) {
+        throw new com.norton.backend.exceptions.BadRequestException(
+            "Document number already exists for this document type: "
+                + request.getDocumentNumber());
       }
     }
 

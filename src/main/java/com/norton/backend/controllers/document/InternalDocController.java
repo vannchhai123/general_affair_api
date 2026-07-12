@@ -29,23 +29,20 @@ public class InternalDocController {
   private final InternalDocService internalDocService;
 
   @GetMapping("/getDocType")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<List<String>> getDocType() {
     return ResponseEntity.ok(internalDocService.getDocTypeNames());
   }
 
   @GetMapping("/DocType/get")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<PageResponse<InternalDocResponse>> getDocTypes(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
     return ResponseEntity.ok(internalDocService.getInternalDocuments(page, size));
   }
 
   @GetMapping("/search")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<PageResponse<InternalDocResponse>> searchInternalDocuments(
       @RequestParam String query,
       @RequestParam(defaultValue = "0") int page,
@@ -54,8 +51,7 @@ public class InternalDocController {
   }
 
   @GetMapping("/{docType}/search")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<PageResponse<InternalDocResponse>> searchInternalDocumentsByType(
       @PathVariable String docType,
       @RequestParam(required = false) String query,
@@ -66,8 +62,7 @@ public class InternalDocController {
   }
 
   @GetMapping("/filter/date/{startDate}/{endDate}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<PageResponse<InternalDocResponse>> getDocByDateRange(
       @PathVariable String startDate,
       @PathVariable String endDate,
@@ -78,16 +73,14 @@ public class InternalDocController {
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<InternalDocDetailsResponse> getInternalDocumentDetails(
       @PathVariable Long id) {
     return ResponseEntity.ok(internalDocService.getInternalDocumentDetails(id));
   }
 
   @PostMapping
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_CREATE)")
   public ResponseEntity<InternalDocDetailsResponse> createInternalDocument(
       @Validated @RequestBody CreateInternalDocRequest request) {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();

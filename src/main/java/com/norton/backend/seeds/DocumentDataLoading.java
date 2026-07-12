@@ -212,7 +212,7 @@ public class DocumentDataLoading implements CommandLineRunner {
                 "Invitation for Norton University representatives to attend the national security workshop next month.")
             .confidentiality("NORMAL")
             .priority("HIGH")
-            .status("RECEIVED")
+            .status("LOGGED")
             .remarks("Assigned to IT Admin for coordination")
             .createdBy(adminOfficer)
             .build();
@@ -254,7 +254,7 @@ public class DocumentDataLoading implements CommandLineRunner {
                 "Circular informing MoEYS about the implementation and compliance to online academic guidelines.")
             .confidentiality("NORMAL")
             .priority("NORMAL")
-            .status("SENT")
+            .status("LOGGED")
             .remarks("Delivered via email and hardcopy")
             .createdBy(adminOfficer)
             .updatedBy(otherOfficer)
@@ -305,7 +305,7 @@ public class DocumentDataLoading implements CommandLineRunner {
                 "Budget allocation proposal and hardware specifications details for server migration.")
             .confidentiality("CONFIDENTIAL")
             .priority("CRITICAL")
-            .status("DRAFT")
+            .status("PENDING")
             .remarks("Requires review by executive committee")
             .createdBy(otherOfficer)
             .build();
@@ -334,7 +334,7 @@ public class DocumentDataLoading implements CommandLineRunner {
                 "Detailed steps, schedule, and checklist for the upcoming internal quality control audit.")
             .confidentiality("NORMAL")
             .priority("HIGH")
-            .status("APPROVED")
+            .status("LOGGED")
             .remarks("For internal distribution to department heads")
             .createdBy(adminOfficer)
             .build();
@@ -361,7 +361,7 @@ public class DocumentDataLoading implements CommandLineRunner {
             .summary("Approved amendments to the computing syllabus for third-year students.")
             .confidentiality("NORMAL")
             .priority("NORMAL")
-            .status("SENT")
+            .status("LOGGED")
             .remarks("Syllabus modifications communicated to instructors")
             .createdBy(otherOfficer)
             .build();
@@ -389,7 +389,7 @@ public class DocumentDataLoading implements CommandLineRunner {
                 "Official guidelines regarding remote working arrangements and flexible timing policies.")
             .confidentiality("NORMAL")
             .priority("HIGH")
-            .status("RELEASED")
+            .status("LOGGED")
             .remarks("Sent via employee internal newsletter")
             .createdBy(adminOfficer)
             .build();
@@ -443,7 +443,7 @@ public class DocumentDataLoading implements CommandLineRunner {
             .summary("Allocation details for building-wide hardware access point installation.")
             .confidentiality("NORMAL")
             .priority("CRITICAL")
-            .status("IN_PROGRESS")
+            .status("PENDING")
             .remarks("Contractor scheduled for weekend setup")
             .createdBy(otherOfficer)
             .build();

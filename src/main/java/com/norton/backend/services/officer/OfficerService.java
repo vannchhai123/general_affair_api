@@ -18,7 +18,7 @@ public interface OfficerService {
 
   OfficerResponseDto getOfficerById(Long id);
 
-  PageResponse<OfficerResponseDto> getAllOfficers(Pageable pageable);
+  PageResponse<OfficerResponseDto> getAllOfficers(String search, Pageable pageable);
 
   java.util.List<com.norton.backend.dto.responses.officers.OfficerResponse>
       getEligibleInvitationParticipants(String keyword, Integer limit);

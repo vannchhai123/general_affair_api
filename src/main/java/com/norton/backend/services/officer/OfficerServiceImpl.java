@@ -279,13 +279,28 @@ public class OfficerServiceImpl implements OfficerService {
   }
 
   @Override
-  public PageResponse<OfficerResponseDto> getAllOfficers(Pageable pageable) {
+  public PageResponse<OfficerResponseDto> getAllOfficers(String search, Pageable pageable) {
 
     Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
-    Page<OfficerModel> officer =
-        officeId == null
-            ? officerRepository.findAll(pageable)
-            : officerRepository.findByOffice_Id(officeId, pageable);
+    String keyword = search != null ? search.trim() : null;
+    if (keyword != null && keyword.isEmpty()) {
+      keyword = null;
+    }
+
+    Page<OfficerModel> officer;
+    if (keyword != null) {
+      String searchPattern = "%" + keyword + "%";
+      officer =
+          officeId == null
+              ? officerRepository.searchOfficers(searchPattern, pageable)
+              : officerRepository.searchOfficersInOffice(searchPattern, officeId, pageable);
+    } else {
+      officer =
+          officeId == null
+              ? officerRepository.findAll(pageable)
+              : officerRepository.findByOffice_Id(officeId, pageable);
+    }
+
     List<OfficerResponseDto> content =
         officer.getContent().stream().map(officerMapper::toResponse).toList();
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -60,8 +61,9 @@ public class OfficerController {
   @GetMapping
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
   public ResponseEntity<PageResponse<OfficerResponseDto>> getAllOfficers(
+      @RequestParam(required = false) String search,
       @PageableDefault(size = 20, sort = "id") Pageable request) {
-    return ResponseEntity.ok(officerService.getAllOfficers(request));
+    return ResponseEntity.ok(officerService.getAllOfficers(search, request));
   }
 
   @GetMapping("/stats")

@@ -50,4 +50,14 @@ public final class Permissions {
   public static final String QR_SESSION_CHECKIN = "QR_SESSION_CHECKIN";
 
   public static final String DASHBOARD_VIEW = "DASHBOARD_VIEW";
+
+  public static final String INVITATION_VIEW = "INVITATION_VIEW";
+  public static final String INVITATION_CREATE = "INVITATION_CREATE";
+  public static final String INVITATION_UPDATE = "INVITATION_UPDATE";
+  public static final String INVITATION_DELETE = "INVITATION_DELETE";
+
+  public static final String DOCUMENT_VIEW = "DOCUMENT_VIEW";
+  public static final String DOCUMENT_CREATE = "DOCUMENT_CREATE";
+  public static final String DOCUMENT_UPDATE = "DOCUMENT_UPDATE";
+  public static final String DOCUMENT_DELETE = "DOCUMENT_DELETE";
 }
