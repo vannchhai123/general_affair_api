@@ -110,9 +110,9 @@ public class InvitationController {
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_DELETE)")
-  public ResponseEntity<Map<String, String>> deleteInvitation(@PathVariable Long id) {
+  public ResponseEntity<Map<String, Object>> deleteInvitation(@PathVariable Long id) {
     invitationService.deleteInvitation(id);
-    return ResponseEntity.ok(Map.of("message", "Invitation deleted successfully"));
+    return ResponseEntity.ok(Map.of("success", true, "message", "Invitation deleted successfully"));
   }
 
   @PostMapping("/{id}/respond")
