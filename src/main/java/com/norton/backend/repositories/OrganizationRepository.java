@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface OrganizationRepository extends JpaRepository<OrganizationModel, Long> {
   Optional<OrganizationModel> findByUuid(UUID uuid);
+
+  Optional<OrganizationModel> findByName(String name);
 }

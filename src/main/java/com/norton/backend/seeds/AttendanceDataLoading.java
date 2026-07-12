@@ -96,10 +96,11 @@ public class AttendanceDataLoading implements CommandLineRunner {
       attendanceRepository.saveAll(records);
     }
 
-    // Additionally seed December 2026 so sample dates (e.g., 2026-12-01..2026-12-31) exist for
-    // testing
-    YearMonth dec2026 = YearMonth.of(2026, 12);
-    seedMonthIfMissing(officers, dec2026, present, late, approved, absent);
+    // Additionally seed all months of 2026 so sample dates exist for testing and dashboard visuals
+    for (int m = 1; m <= 12; m++) {
+      YearMonth yearMonth = YearMonth.of(2026, m);
+      seedMonthIfMissing(officers, yearMonth, present, late, approved, absent);
+    }
 
     // Ensure today's attendance exists for officers in the planning & finance office (seeded in
     // Khmer)
