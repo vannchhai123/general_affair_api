@@ -116,6 +116,42 @@ public class InternalDocServiceImpl implements InternalDocService {
 
   @Override
   @Transactional(readOnly = true)
+  public PageResponse<InternalDocResponse> searchInternalDocumentsByType(
+      String docType, String query, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+    String normalizedDocType = docType != null ? docType.trim() : "";
+    String searchTerm = query != null ? query.trim() : "";
+    Page<DocumentModel> documentPage =
+        documentRepository.searchInternalDocsByType(normalizedDocType, searchTerm, pageable);
+
+    List<InternalDocResponse> content =
+        documentPage.getContent().stream()
+            .map(
+                doc ->
+                    InternalDocResponse.builder()
+                        .id(doc.getId())
+                        .title(doc.getSubject())
+                        .documentNumber(doc.getDocumentNumber())
+                        .description(doc.getSummary())
+                        .documentDate(
+                            doc.getDocumentDate() != null ? doc.getDocumentDate().toString() : null)
+                        .type(
+                            doc.getDocumentType() != null ? doc.getDocumentType().getName() : null)
+                        .build())
+            .collect(Collectors.toList());
+
+    return PageResponse.<InternalDocResponse>builder()
+        .content(content)
+        .page(documentPage.getNumber())
+        .size(documentPage.getSize())
+        .totalElements(documentPage.getTotalElements())
+        .totalPages(documentPage.getTotalPages())
+        .last(documentPage.isLast())
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public PageResponse<InternalDocResponse> getInternalDocumentsByDateRange(
       String startDate, String endDate, int page, int size) {
 
@@ -348,12 +384,22 @@ public class InternalDocServiceImpl implements InternalDocService {
   }
 
   private String extractMimeType(String fileName) {
-    if (fileName == null) return "application/octet-stream";
+    if (fileName == null) {
+      return "application/octet-stream";
+    }
     String lower = fileName.toLowerCase();
-    if (lower.endsWith(".pdf")) return "application/pdf";
-    if (lower.endsWith(".png")) return "image/png";
-    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-    if (lower.endsWith(".webp")) return "image/webp";
+    if (lower.endsWith(".pdf")) {
+      return "application/pdf";
+    }
+    if (lower.endsWith(".png")) {
+      return "image/png";
+    }
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+      return "image/jpeg";
+    }
+    if (lower.endsWith(".webp")) {
+      return "image/webp";
+    }
     return "application/octet-stream";
   }
 }

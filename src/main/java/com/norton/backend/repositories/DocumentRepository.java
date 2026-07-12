@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
+
   Optional<DocumentModel> findByUuid(UUID uuid);
 
   Optional<DocumentModel> findByDocumentNumber(String documentNumber);
@@ -21,10 +22,28 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
       select d from DocumentModel d
       where d.direction = 'INTERNAL'
         and (lower(d.documentNumber) like lower(concat(:query, '%'))
-             or lower(d.subject) like lower(concat('%', :query, '%')))
+             or lower(d.subject) like lower(concat('%', :query, '%'))
+             or lower(d.summary) like lower(concat('%', :query, '%')))
       """)
   Page<DocumentModel> searchInternalDocs(
       @org.springframework.data.repository.query.Param("query") String query, Pageable pageable);
+
+  @org.springframework.data.jpa.repository.Query(
+      """
+      select d from DocumentModel d
+      join d.documentType dt
+      where d.direction = 'INTERNAL'
+        and (lower(d.documentNumber) like lower(concat(:query, '%'))
+             or lower(d.subject) like lower(concat('%', :query, '%'))
+             or lower(d.summary) like lower(concat('%', :query, '%')))
+        and (lower(dt.name) = lower(:docType)
+             or lower(dt.code) = lower(:docType)
+             or lower(dt.name) like lower(concat('%', :docType, '%')))
+      """)
+  Page<DocumentModel> searchInternalDocsByType(
+      @org.springframework.data.repository.query.Param("docType") String docType,
+      @org.springframework.data.repository.query.Param("query") String query,
+      Pageable pageable);
 
   @org.springframework.data.jpa.repository.Query(
       """

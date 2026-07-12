@@ -53,6 +53,18 @@ public class InternalDocController {
     return ResponseEntity.ok(internalDocService.searchInternalDocuments(query, page, size));
   }
 
+  @GetMapping("/{docType}/search")
+  @PreAuthorize(
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  public ResponseEntity<PageResponse<InternalDocResponse>> searchInternalDocumentsByType(
+      @PathVariable String docType,
+      @RequestParam(required = false) String query,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    return ResponseEntity.ok(
+        internalDocService.searchInternalDocumentsByType(docType, query, page, size));
+  }
+
   @GetMapping("/filter/date/{startDate}/{endDate}")
   @PreAuthorize(
       "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
