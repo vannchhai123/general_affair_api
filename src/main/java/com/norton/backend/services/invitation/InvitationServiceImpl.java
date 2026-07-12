@@ -385,9 +385,6 @@ public class InvitationServiceImpl implements InvitationService {
       throw new BadRequestException("participant_ids is required and must not be empty");
     }
 
-    if (description == null || description.isBlank()) {
-      throw new BadRequestException("description is required");
-    }
     if (presidedBy == null || presidedBy.isBlank()) {
       throw new BadRequestException("presidedBy is required");
     }
