@@ -114,14 +114,15 @@ public class DashboardServiceImpl implements DashboardService {
 
     // Recent Attendance List
     List<RecentAttendanceDto> recentAttendance =
-        attendanceRepository.findAll().stream()
-            .sorted(
-                (a1, a2) -> {
-                  int cmp = a2.getDate().compareTo(a1.getDate());
-                  if (cmp != 0) return cmp;
-                  return a2.getId().compareTo(a1.getId());
-                })
-            .limit(10)
+        attendanceRepository
+            .findAll(
+                org.springframework.data.domain.PageRequest.of(
+                    0,
+                    500,
+                    org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.DESC, "date", "id")))
+            .getContent()
+            .stream()
             .map(
                 a -> {
                   OfficerModel officer = a.getOfficer();
