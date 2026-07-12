@@ -1,5 +1,6 @@
 package com.norton.backend.seeds;
 
+import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.models.InvitationModel;
 import com.norton.backend.models.InvitationParticipantModel;
 import com.norton.backend.models.OfficerModel;
@@ -30,13 +31,14 @@ public class InvitationDataLoading implements CommandLineRunner {
       return;
     }
 
-    List<OfficerModel> officers = officerRepository.findAll();
-    if (officers.isEmpty()) {
+    List<OfficerModel> eligibleOfficers =
+        filterEligibleInvitationOfficers(officerRepository.findAll());
+    if (eligibleOfficers.isEmpty()) {
+      System.out.println("No eligible invitation officers found for seed data.");
       return;
     }
 
     // --- JANUARY 2026 SEEDS ---
-
     // 1. New Year Strategy Sync (ACCEPTED)
     InvitationModel strategySync =
         InvitationModel.builder()
@@ -50,7 +52,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(strategySync, officer, "ACCEPTED", null);
     }
     invitationRepository.save(strategySync);
@@ -68,7 +70,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(budgetKickoff, officer, "ACCEPTED", null);
     }
     invitationRepository.save(budgetKickoff);
@@ -86,14 +88,13 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(
           auditPrep, officer, "REJECTED", "Scheduled leave for family matters.");
     }
     invitationRepository.save(auditPrep);
 
     // --- FEBRUARY 2026 SEEDS ---
-
     // 4. Annual General Assembly 2026 (ACCEPTED)
     InvitationModel assembly =
         InvitationModel.builder()
@@ -106,7 +107,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(assembly, officer, "ACCEPTED", null);
     }
     invitationRepository.save(assembly);
@@ -123,7 +124,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(securityMeeting, officer, "PENDING", null);
     }
     invitationRepository.save(securityMeeting);
@@ -140,7 +141,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(
           budgetWorkshop,
           officer,
@@ -162,13 +163,12 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(transformationSeminar, officer, "PENDING", null);
     }
     invitationRepository.save(transformationSeminar);
 
     // --- MARCH 2026 SEEDS ---
-
     // 8. Spring Clean Energy Initiative (PENDING)
     InvitationModel energyInitiative =
         InvitationModel.builder()
@@ -182,7 +182,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(energyInitiative, officer, "PENDING", null);
     }
     invitationRepository.save(energyInitiative);
@@ -200,7 +200,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(performanceReview, officer, "ACCEPTED", null);
     }
     invitationRepository.save(performanceReview);
@@ -218,13 +218,12 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(procurementUpdate, officer, "PENDING", null);
     }
     invitationRepository.save(procurementUpdate);
 
     // --- JUNE 2026 SEEDS ---
-
     // 11. Mid-Year Progress Evaluation (ACCEPTED)
     InvitationModel progressEval =
         InvitationModel.builder()
@@ -238,7 +237,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(progressEval, officer, "ACCEPTED", null);
     }
     invitationRepository.save(progressEval);
@@ -256,13 +255,12 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(itBriefing, officer, "PENDING", null);
     }
     invitationRepository.save(itBriefing);
 
     // --- JULY 2026 SEEDS ---
-
     // 13. Public Relations Workshop (ACCEPTED)
     InvitationModel prWorkshop =
         InvitationModel.builder()
@@ -276,7 +274,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(prWorkshop, officer, "ACCEPTED", null);
     }
     invitationRepository.save(prWorkshop);
@@ -294,7 +292,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(
           complianceSeminar,
           officer,
@@ -304,7 +302,6 @@ public class InvitationDataLoading implements CommandLineRunner {
     invitationRepository.save(complianceSeminar);
 
     // --- AUGUST 2026 SEEDS ---
-
     // 15. Disaster Management Prep Sync (PENDING)
     InvitationModel disasterSync =
         InvitationModel.builder()
@@ -318,7 +315,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(disasterSync, officer, "PENDING", null);
     }
     invitationRepository.save(disasterSync);
@@ -336,12 +333,26 @@ public class InvitationDataLoading implements CommandLineRunner {
             .type("incoming")
             .status("pending")
             .build();
-    for (OfficerModel officer : officers) {
+    for (OfficerModel officer : eligibleOfficers) {
       addParticipantToInvitation(orientationWelcome, officer, "ACCEPTED", null);
     }
     invitationRepository.save(orientationWelcome);
 
     System.out.println("✅ Invitation seed data loaded successfully!");
+  }
+
+  static List<OfficerModel> filterEligibleInvitationOfficers(List<OfficerModel> officers) {
+    if (officers == null) {
+      return List.of();
+    }
+
+    return officers.stream()
+        .filter(
+            officer ->
+                officer != null
+                    && officer.getStatus() == OfficerStatus.ACTIVE
+                    && Boolean.TRUE.equals(officer.isInvitationPriority()))
+        .toList();
   }
 
   private void addParticipantToInvitation(
