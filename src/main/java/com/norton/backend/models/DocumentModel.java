@@ -120,6 +120,10 @@ public class DocumentModel extends BaseIdModel {
   @Builder.Default
   private List<DocumentFileModel> files = new ArrayList<>();
 
+  @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<DocumentLogModel> logs = new ArrayList<>();
+
   @PrePersist
   public void generateUuid() {
     if (this.uuid == null) {
