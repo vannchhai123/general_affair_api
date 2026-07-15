@@ -1,5 +1,6 @@
 package com.norton.backend.seeds;
 
+import com.norton.backend.config.FileStorageProperties;
 import com.norton.backend.models.*;
 import com.norton.backend.repositories.*;
 import java.time.LocalDate;
@@ -24,6 +25,7 @@ public class DocumentDataLoading implements CommandLineRunner {
   private final DocumentLogRepository documentLogRepository;
   private final OfficerRepository officerRepository;
   private final UploadImageRepository uploadImageRepository;
+  private final FileStorageProperties fileStorageProperties;
 
   @Override
   public void run(String... args) {
@@ -202,10 +204,15 @@ public class DocumentDataLoading implements CommandLineRunner {
           uploadImageRepository.save(
               UploadImageModel.builder()
                   .fileName("official_document_sample.pdf")
-                  .url("https://example.com/storage/official_document_sample.pdf")
+                  .url(fileStorageProperties.getBaseUrl() + "/official_document_sample.pdf")
                   .build());
     } else {
       dummyImage = images.get(0);
+      // Let's ensure the dummy image has the correct URL in dev
+      if (dummyImage.getUrl().contains("example.com")) {
+        dummyImage.setUrl(fileStorageProperties.getBaseUrl() + "/official_document_sample.pdf");
+        dummyImage = uploadImageRepository.save(dummyImage);
+      }
     }
 
     // Check if documents are already seeded

@@ -12,6 +12,8 @@ public class OfficerResponse {
   private String officerCode;
   private String firstName;
   private String lastName;
+  private String firstNameKh;
+  private String lastNameKh;
   private GenderEnum gender;
   private String phone;
   private String email;

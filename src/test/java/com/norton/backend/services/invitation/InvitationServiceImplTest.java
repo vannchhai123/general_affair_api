@@ -12,6 +12,8 @@ import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.models.InvitationModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.UploadImageModel;
+import com.norton.backend.models.UserModel;
+import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.InvitationRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.UploadImageRepository;
@@ -156,6 +158,14 @@ class InvitationServiceImplTest {
     request.setOfficerId(1L);
     request.setStatus("APPROVED");
 
+    UserRoleModel role = new UserRoleModel();
+    role.setRoleName("ROLE_OFFICER");
+    UserModel currentUser = new UserModel();
+    currentUser.setId(10L);
+    currentUser.setRole(role);
+    officer.setUser(currentUser);
+
+    when(officeAccessService.currentUser()).thenReturn(currentUser);
     when(invitationRepository.findById(invitationId)).thenReturn(Optional.of(invitation));
     when(officerRepository.findById(1L)).thenReturn(Optional.of(officer));
     when(invitationRepository.save(any(InvitationModel.class)))
@@ -193,6 +203,14 @@ class InvitationServiceImplTest {
     request.setStatus("REJECTED");
     request.setRejectionReason("Busy");
 
+    UserRoleModel role = new UserRoleModel();
+    role.setRoleName("ROLE_OFFICER");
+    UserModel currentUser = new UserModel();
+    currentUser.setId(10L);
+    currentUser.setRole(role);
+    officer.setUser(currentUser);
+
+    when(officeAccessService.currentUser()).thenReturn(currentUser);
     when(invitationRepository.findById(invitationId)).thenReturn(Optional.of(invitation));
     when(officerRepository.findById(1L)).thenReturn(Optional.of(officer));
     when(invitationRepository.save(any(InvitationModel.class)))
