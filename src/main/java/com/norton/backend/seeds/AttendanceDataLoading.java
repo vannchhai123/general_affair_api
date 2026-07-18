@@ -64,33 +64,35 @@ public class AttendanceDataLoading implements CommandLineRunner {
       }
     }
 
-    addIfMissing(
-        records,
-        plannedKeys,
-        "OFF-001",
-        LocalDate.of(2026, 4, 14),
-        present,
-        late,
-        approved,
-        absent);
-    addIfMissing(
-        records,
-        plannedKeys,
-        "OFF-002",
-        LocalDate.of(2026, 4, 14),
-        present,
-        late,
-        approved,
-        absent);
-    addIfMissing(
-        records,
-        plannedKeys,
-        "OFF-005",
-        LocalDate.of(2026, 4, 14),
-        present,
-        late,
-        approved,
-        absent);
+    if (officers.size() >= 5) {
+      addIfMissing(
+          records,
+          plannedKeys,
+          officers.get(0).getOfficerCode(),
+          LocalDate.of(2026, 4, 14),
+          present,
+          late,
+          approved,
+          absent);
+      addIfMissing(
+          records,
+          plannedKeys,
+          officers.get(1).getOfficerCode(),
+          LocalDate.of(2026, 4, 14),
+          present,
+          late,
+          approved,
+          absent);
+      addIfMissing(
+          records,
+          plannedKeys,
+          officers.get(4).getOfficerCode(),
+          LocalDate.of(2026, 4, 14),
+          present,
+          late,
+          approved,
+          absent);
+    }
 
     if (!records.isEmpty()) {
       attendanceRepository.saveAll(records);

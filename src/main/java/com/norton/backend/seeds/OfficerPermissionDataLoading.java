@@ -31,15 +31,12 @@ public class OfficerPermissionDataLoading implements CommandLineRunner {
       return;
     }
 
-    OfficerModel officer1 =
-        officerRepository
-            .findByOfficerCode("OFF-001")
-            .orElseThrow(() -> new RuntimeException("Officer OFF-001 not found"));
-
-    OfficerModel officer2 =
-        officerRepository
-            .findByOfficerCode("OFF-002")
-            .orElseThrow(() -> new RuntimeException("Officer OFF-002 not found"));
+    List<OfficerModel> officers = officerRepository.findAll();
+    if (officers.size() < 2) {
+      throw new RuntimeException("Need at least 2 officers to seed permissions");
+    }
+    OfficerModel officer1 = officers.get(0);
+    OfficerModel officer2 = officers.get(1);
 
     PermissionModel view =
         permissionRepository

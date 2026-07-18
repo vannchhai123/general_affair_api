@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -45,6 +44,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -66,9 +66,51 @@ public class OfficerDataLoading implements CommandLineRunner {
   private final UserRepository userRepository;
   private final UserRoleRepository userRoleRepository;
   private final PasswordEncoder passwordEncoder;
+  private final JdbcTemplate jdbcTemplate;
 
   @Override
   public void run(String... args) {
+    // Clean up existing officers and non-default users in a database-agnostic way
+    try {
+      // Try PostgreSQL/MySQL style truncate cascade
+      jdbcTemplate.execute("TRUNCATE TABLE officers CASCADE");
+    } catch (Exception e) {
+      // Fallback to H2 style truncate / set referential integrity false
+      try {
+        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
+        jdbcTemplate.execute("TRUNCATE TABLE qr_session_checkins");
+        jdbcTemplate.execute("TRUNCATE TABLE qr_session_logs");
+        jdbcTemplate.execute("TRUNCATE TABLE qr_sessions");
+        jdbcTemplate.execute("TRUNCATE TABLE attendance_sessions");
+        jdbcTemplate.execute("TRUNCATE TABLE attendance");
+        jdbcTemplate.execute("TRUNCATE TABLE document_logs");
+        jdbcTemplate.execute("TRUNCATE TABLE document_files");
+        jdbcTemplate.execute("TRUNCATE TABLE documents");
+        jdbcTemplate.execute("TRUNCATE TABLE invitation_participants");
+        jdbcTemplate.execute("TRUNCATE TABLE officer_permissions");
+        jdbcTemplate.execute("TRUNCATE TABLE officer_addresses");
+        jdbcTemplate.execute("TRUNCATE TABLE officers");
+        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+      } catch (Exception ex) {
+        // Fallback to sequential deletes in case referential integrity cannot be set
+        jdbcTemplate.execute("DELETE FROM qr_session_checkins");
+        jdbcTemplate.execute("DELETE FROM qr_session_logs");
+        jdbcTemplate.execute("DELETE FROM qr_sessions");
+        jdbcTemplate.execute("DELETE FROM attendance_sessions");
+        jdbcTemplate.execute("DELETE FROM attendance");
+        jdbcTemplate.execute("DELETE FROM document_logs");
+        jdbcTemplate.execute("DELETE FROM document_files");
+        jdbcTemplate.execute("DELETE FROM documents");
+        jdbcTemplate.execute("DELETE FROM invitation_participants");
+        jdbcTemplate.execute("DELETE FROM officer_permissions");
+        jdbcTemplate.execute("DELETE FROM officer_addresses");
+        jdbcTemplate.execute("DELETE FROM officers");
+      }
+    }
+
+    jdbcTemplate.execute(
+        "DELETE FROM users WHERE LOWER(username) NOT IN ('admin', 'headoffice', 'manager', 'kelly', 'vannchhai', 'banned')");
+
     Map<String, DepartmentModel> departmentsByCode = loadOrCreateDepartments();
     Map<String, PositionModel> positionsByCode = loadOrCreatePositions(departmentsByCode);
     Map<String, EducationLevelModel> educationLevelsByName = loadOrCreateEducationLevels();
@@ -683,12 +725,18 @@ public class OfficerDataLoading implements CommandLineRunner {
 
     List<PositionSeed> positions = new ArrayList<>();
     for (DepartmentSeed department : buildDepartmentSeeds()) {
-      List<PositionNameSeed> positionNames =
-          switch (department.code()) {
-            case "DEP-01" -> governorPositions;
-            case "DEP-02" -> managementPositions;
-            default -> officePositions;
-          };
+      List<PositionNameSeed> positionNames = new ArrayList<>();
+      switch (department.code()) {
+        case "DEP-01" -> {
+          positionNames.addAll(governorPositions);
+          positionNames.addAll(officePositions);
+        }
+        case "DEP-02" -> {
+          positionNames.addAll(managementPositions);
+          positionNames.addAll(officePositions);
+        }
+        default -> positionNames.addAll(officePositions);
+      }
       for (PositionNameSeed position : positionNames) {
         positions.add(
             new PositionSeed(
@@ -762,12 +810,12 @@ public class OfficerDataLoading implements CommandLineRunner {
 
   private List<OfficerSeed> buildOfficerSeeds() {
     List<OfficerSeed> seeds = new ArrayList<>();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     try (BufferedReader reader =
         new BufferedReader(
             new InputStreamReader(
-                new ClassPathResource("តារាងបញ្ចូលទិន្នន័យមន្ត្រី.csv").getInputStream(),
+                new ClassPathResource("employees_final_184.csv").getInputStream(),
                 StandardCharsets.UTF_8))) {
 
       String line = reader.readLine(); // read header
@@ -776,11 +824,11 @@ public class OfficerDataLoading implements CommandLineRunner {
           continue;
         }
         String[] parts = line.split(",", -1);
-        if (parts.length < 15) {
+        if (parts.length < 16) {
           continue;
         }
 
-        String officerCodeRaw = parts[1].trim();
+        String officerCodeRaw = parts[0].trim();
         if (officerCodeRaw.isEmpty() || !officerCodeRaw.matches("\\d+")) {
           continue;
         }
@@ -807,7 +855,7 @@ public class OfficerDataLoading implements CommandLineRunner {
         String officerEmail = username + ".officer@dummy.com";
 
         GenderEnum gender = "ប្រុស".equals(genderStr) ? GenderEnum.MALE : GenderEnum.FEMALE;
-        String phone = String.format("010%06d", number);
+        String phone = "09" + String.format("%08d", number % 100000000);
 
         LocalDate dateOfBirth;
         try {
