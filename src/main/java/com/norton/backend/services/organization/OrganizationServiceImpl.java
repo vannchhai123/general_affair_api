@@ -46,6 +46,7 @@ public class OrganizationServiceImpl implements OrganizationService {
               (root, query, cb) ->
                   cb.or(
                       cb.like(cb.lower(root.get("name")), keyword),
+                      cb.like(cb.lower(root.get("nameKh")), keyword),
                       cb.like(cb.lower(root.get("description")), keyword)));
     }
 
@@ -78,6 +79,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     DepartmentModel department =
         DepartmentModel.builder()
             .name(request.getName().trim())
+            .nameKh(trimToNull(request.getNameKh()))
             .status(parseDepartmentStatusRequired(request.getStatus()))
             .description(trimToNull(request.getDescription()))
             .build();
@@ -119,6 +121,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     department.setName(request.getName().trim());
+    department.setNameKh(trimToNull(request.getNameKh()));
     department.setStatus(parseDepartmentStatusRequired(request.getStatus()));
     department.setDescription(trimToNull(request.getDescription()));
 
@@ -282,6 +285,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         .id(department.getId())
         .uuid(department.getUuid())
         .name(department.getName())
+        .nameKh(department.getNameKh())
         .officerCount(officerRepository.countByOffice_Id(department.getId()))
         .status(toLower(department.getStatus()))
         .description(department.getDescription())

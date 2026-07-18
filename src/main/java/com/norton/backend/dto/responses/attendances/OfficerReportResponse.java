@@ -1,5 +1,6 @@
 package com.norton.backend.dto.responses.attendances;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +14,17 @@ import lombok.NoArgsConstructor;
 public class OfficerReportResponse {
   private String officerId;
   private String name;
+
+  @JsonProperty("name_kh")
+  private String nameKh;
+
   private String role;
   private Long departmentId;
   private String departmentName;
+
+  @JsonProperty("department_name_kh")
+  private String departmentNameKh;
+
   private String imageUrl;
   private String phone;
   private String email;

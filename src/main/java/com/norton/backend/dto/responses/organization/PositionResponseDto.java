@@ -1,11 +1,13 @@
 package com.norton.backend.dto.responses.organization;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PositionResponseDto {
   private Long id;
   private String uuid;

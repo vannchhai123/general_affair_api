@@ -319,11 +319,14 @@ public class AttendanceServiceImpl implements AttendanceService {
               .officerUUID(selfOfficer.getUuid())
               .officerCode(selfOfficer.getOfficerCode())
               .name(selfOfficer.getFirstNameEn() + " " + selfOfficer.getLastNameEn())
+              .nameKh(selfOfficer.getFirstNameKh() + " " + selfOfficer.getLastNameKh())
               .role(selfOfficer.getPosition() != null ? selfOfficer.getPosition().getName() : null)
               .departmentId(
                   selfOfficer.getOffice() != null ? selfOfficer.getOffice().getId() : null)
               .departmentName(
                   selfOfficer.getOffice() != null ? selfOfficer.getOffice().getName() : null)
+              .departmentNameKh(
+                  selfOfficer.getOffice() != null ? selfOfficer.getOffice().getNameKh() : null)
               .isPresent(isPresent)
               .imageUrl(selfOfficer.getImageUrl())
               .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
@@ -370,11 +373,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                       .officerUUID(officer.getUuid())
                       .officerCode(officer.getOfficerCode())
                       .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
+                      .nameKh(officer.getFirstNameKh() + " " + officer.getLastNameKh())
                       .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
                       .departmentId(
                           officer.getOffice() != null ? officer.getOffice().getId() : null)
                       .departmentName(
                           officer.getOffice() != null ? officer.getOffice().getName() : null)
+                      .departmentNameKh(
+                          officer.getOffice() != null ? officer.getOffice().getNameKh() : null)
                       .isPresent(isPresent)
                       .imageUrl(officer.getImageUrl())
                       .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
@@ -424,9 +430,12 @@ public class AttendanceServiceImpl implements AttendanceService {
               .officerUUID(selfOfficer.getUuid())
               .officerCode(selfOfficer.getOfficerCode())
               .name(selfOfficer.getFirstNameEn() + " " + selfOfficer.getLastNameEn())
+              .nameKh(selfOfficer.getFirstNameKh() + " " + selfOfficer.getLastNameKh())
               .role(selfOfficer.getPosition() != null ? selfOfficer.getPosition().getName() : null)
               .departmentId(resolveOfficerOfficeId(selfOfficer))
               .departmentName(resolveOfficerOfficeName(selfOfficer))
+              .departmentNameKh(
+                  selfOfficer.getOffice() != null ? selfOfficer.getOffice().getNameKh() : null)
               .isPresent(isPresent)
               .imageUrl(selfOfficer.getImageUrl())
               .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
@@ -470,9 +479,12 @@ public class AttendanceServiceImpl implements AttendanceService {
                       .officerUUID(officer.getUuid())
                       .officerCode(officer.getOfficerCode())
                       .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
+                      .nameKh(officer.getFirstNameKh() + " " + officer.getLastNameKh())
                       .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
                       .departmentId(resolveOfficerOfficeId(officer))
                       .departmentName(resolveOfficerOfficeName(officer))
+                      .departmentNameKh(
+                          officer.getOffice() != null ? officer.getOffice().getNameKh() : null)
                       .isPresent(isPresent)
                       .imageUrl(officer.getImageUrl())
                       .checkInTime(formatTime(attendance != null ? attendance.getCheckIn() : null))
@@ -647,9 +659,11 @@ public class AttendanceServiceImpl implements AttendanceService {
     return com.norton.backend.dto.responses.attendances.OfficerReportResponse.builder()
         .officerId(officer.getUuid())
         .name(officer.getFirstNameEn() + " " + officer.getLastNameEn())
+        .nameKh(officer.getFirstNameKh() + " " + officer.getLastNameKh())
         .role(officer.getPosition() != null ? officer.getPosition().getName() : null)
         .departmentId(officer.getOffice() != null ? officer.getOffice().getId() : null)
         .departmentName(officer.getOffice() != null ? officer.getOffice().getName() : null)
+        .departmentNameKh(officer.getOffice() != null ? officer.getOffice().getNameKh() : null)
         .imageUrl(officer.getImageUrl())
         .phone(officer.getPhone())
         .email(officer.getEmail())

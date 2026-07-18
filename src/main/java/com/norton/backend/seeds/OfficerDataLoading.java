@@ -157,7 +157,14 @@ public class OfficerDataLoading implements CommandLineRunner {
       buildDepartmentSeeds().stream()
           .filter(seed -> seed.name().equals(department.getName()))
           .findFirst()
-          .ifPresent(seed -> departmentsByCode.put(seed.code().toUpperCase(), department));
+          .ifPresent(
+              seed -> {
+                departmentsByCode.put(seed.code().toUpperCase(), department);
+                if (department.getNameKh() == null) {
+                  department.setNameKh(seed.name());
+                  departmentRepository.save(department);
+                }
+              });
     }
 
     for (DepartmentSeed seed : buildDepartmentSeeds()) {
@@ -169,6 +176,7 @@ public class OfficerDataLoading implements CommandLineRunner {
       DepartmentModel department =
           DepartmentModel.builder()
               .name(seed.name())
+              .nameKh(seed.name())
               .description(seed.description())
               .status(DepartmentStatus.ACTIVE)
               .build();

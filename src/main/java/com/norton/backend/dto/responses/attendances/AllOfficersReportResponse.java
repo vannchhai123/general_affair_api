@@ -43,9 +43,17 @@ public class AllOfficersReportResponse {
     private String officerUUID;
     private String officerCode;
     private String name;
+
+    @JsonProperty("name_kh")
+    private String nameKh;
+
     private String role;
     private Long departmentId;
     private String departmentName;
+
+    @JsonProperty("department_name_kh")
+    private String departmentNameKh;
+
     private boolean isPresent;
     private String imageUrl;
     private String checkInTime;

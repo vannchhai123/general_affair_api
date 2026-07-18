@@ -1,5 +1,7 @@
 package com.norton.backend.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -9,6 +11,11 @@ public class DepartmentUpsertRequest {
   @NotBlank(message = "name is required")
   @Size(max = 100, message = "name must not exceed 100 characters")
   private String name;
+
+  @JsonProperty("name_kh")
+  @JsonAlias({"nameKh", "name_kh"})
+  @Size(max = 150, message = "Khmer name must not exceed 150 characters")
+  private String nameKh;
 
   @Size(max = 50, message = "code must not exceed 50 characters")
   private String code;
