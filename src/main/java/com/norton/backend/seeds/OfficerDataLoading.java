@@ -169,13 +169,13 @@ public class OfficerDataLoading implements CommandLineRunner {
                 officer.setOfficerCode("OFF-999");
                 officer.setFirstNameEn("Vannchhai");
                 officer.setLastNameEn("Developer");
-                officer.setFirstNameKh("វណ្ណឆៃ");
-                officer.setLastNameKh("អ្នកអភិវឌ្ឍន៍");
+                officer.setFirstNameKh("វ៉ាន់ឆៃ");
+                officer.setLastNameKh("ឆាន");
                 officer.setGender(GenderEnum.MALE);
                 officer.setDateOfBirth(LocalDate.of(1995, 1, 1));
                 officer.setNationalId("999999999");
-                officer.setNationality("Khmer");
-                officer.setEthnicity("Khmer");
+                officer.setNationality("ខ្មែរ");
+                officer.setEthnicity("ខ្មែរ");
                 officer.setPhone("012345678");
                 officer.setEmail("vannchhai@gmail.com");
                 officer.setOffice(position.getDepartment());
@@ -970,11 +970,11 @@ public class OfficerDataLoading implements CommandLineRunner {
     }
 
     public String nationality() {
-      return "Cambodian";
+      return "ខ្មែរ";
     }
 
     public String ethnicity() {
-      return "Cambodian";
+      return "ខ្មែរ";
     }
 
     public boolean invitationPriority() {
@@ -989,7 +989,7 @@ public class OfficerDataLoading implements CommandLineRunner {
     }
 
     public String contractType() {
-      return "Permanent";
+      return positionCode != null && positionCode.startsWith("POS-08") ? "CONTRACT" : "FULL_TIME";
     }
   }
 }
