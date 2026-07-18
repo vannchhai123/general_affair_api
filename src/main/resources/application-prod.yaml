@@ -32,9 +32,10 @@ spring:
           writetimeout: 5000
           starttls:
             enable: true
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: false
     properties:
       hibernate:
