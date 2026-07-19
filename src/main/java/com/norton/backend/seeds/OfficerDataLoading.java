@@ -72,9 +72,9 @@ public class OfficerDataLoading implements CommandLineRunner {
   public void run(String... args) {
     // Clean up existing officers and non-default users in a database-agnostic way
     try {
-      // Try PostgreSQL/MySQL style truncate cascade
-      jdbcTemplate.execute("TRUNCATE TABLE officers CASCADE");
-      jdbcTemplate.execute("TRUNCATE TABLE invitations CASCADE");
+      // Try PostgreSQL/MySQL style truncate cascade with identity sequence reset
+      jdbcTemplate.execute("TRUNCATE TABLE officers RESTART IDENTITY CASCADE");
+      jdbcTemplate.execute("TRUNCATE TABLE invitations RESTART IDENTITY CASCADE");
     } catch (Exception e) {
       // Fallback to H2 style truncate / set referential integrity false
       try {

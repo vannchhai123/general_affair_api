@@ -75,8 +75,8 @@ public class OfficerController {
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_DELETE)")
-  public ResponseEntity<Void> deleteOfficer(@PathVariable Long id) {
+  public ResponseEntity<java.util.Map<String, Boolean>> deleteOfficer(@PathVariable Long id) {
     officerService.deleteOfficer(id);
-    return ResponseEntity.noContent().build();
+    return ResponseEntity.ok(java.util.Map.of("success", true));
   }
 }

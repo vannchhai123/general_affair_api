@@ -27,8 +27,9 @@ public class AllOfficersReportController {
   })
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<AllOfficersReportResponse> getAllOfficersReport(
-      @PathVariable String onOffice,
-      @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onTodayDate) {
+      @PathVariable("onOffice") String onOffice,
+      @PathVariable("onTodayDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate onTodayDate) {
     return ResponseEntity.ok(attendanceService.getAllOfficersReport(onOffice, onTodayDate));
   }
 
@@ -38,8 +39,8 @@ public class AllOfficersReportController {
   })
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<AllOfficersReportResponse> getAllOfficersAttendanceReport(
-      @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate,
-      @PathVariable Long adminOfficerId) {
+      @PathVariable("onDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate,
+      @PathVariable("adminOfficerId") Long adminOfficerId) {
     return ResponseEntity.ok(
         attendanceService.getAllOfficersAttendanceReport(onDate, adminOfficerId));
   }
@@ -51,8 +52,8 @@ public class AllOfficersReportController {
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<com.norton.backend.dto.responses.attendances.OfficerReportResponse>
       getOfficerReport(
-          @PathVariable String officerIdentifier,
-          @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate) {
+          @PathVariable("officerIdentifier") String officerIdentifier,
+          @PathVariable("onDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate) {
     if (officerIdentifier == null || officerIdentifier.isBlank()) {
       throw new IllegalArgumentException("Officer identifier is required");
     }
@@ -70,8 +71,8 @@ public class AllOfficersReportController {
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<com.norton.backend.dto.responses.attendances.OfficerReportResponse>
       getOfficerReportByUuid(
-          @PathVariable String officerUuid,
-          @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate) {
+          @PathVariable("officerUuid") String officerUuid,
+          @PathVariable("onDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate) {
     return ResponseEntity.ok(attendanceService.getOfficerReport(officerUuid, onDate));
   }
 }

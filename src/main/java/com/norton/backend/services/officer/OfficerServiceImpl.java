@@ -55,6 +55,7 @@ public class OfficerServiceImpl implements OfficerService {
   private final UserRoleRepository userRoleRepository;
   private final PasswordEncoder passwordEncoder;
   private final OfficeAccessService officeAccessService;
+  private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
   @Override
   public MeResponse getMyProfile() {
@@ -497,6 +498,37 @@ public class OfficerServiceImpl implements OfficerService {
     officerRepository.delete(officer);
 
     if (user != null) {
+      // Nullify references in history tables to avoid foreign key violations on user deletion
+      try {
+        jdbcTemplate.update("UPDATE audit_log SET user_id = NULL WHERE user_id = ?", user.getId());
+      } catch (Exception e) {
+        // Ignore if table not present
+      }
+      try {
+        jdbcTemplate.update(
+            "UPDATE reports SET generated_by = NULL WHERE generated_by = ?", user.getId());
+      } catch (Exception e) {
+        // Ignore if table not present
+      }
+      try {
+        jdbcTemplate.update(
+            "UPDATE attendance SET approved_by = NULL WHERE approved_by = ?", user.getId());
+      } catch (Exception e) {
+        // Ignore
+      }
+      try {
+        jdbcTemplate.update(
+            "UPDATE leave_request SET approved_by = NULL WHERE approved_by = ?", user.getId());
+      } catch (Exception e) {
+        // Ignore
+      }
+      try {
+        jdbcTemplate.update(
+            "UPDATE mission SET approved_by = NULL WHERE approved_by = ?", user.getId());
+      } catch (Exception e) {
+        // Ignore
+      }
+
       userRepository.delete(user);
     }
   }
