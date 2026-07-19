@@ -111,6 +111,17 @@ public class OfficerDataLoading implements CommandLineRunner {
       }
     }
 
+    try {
+      jdbcTemplate.execute("DELETE FROM audit_log");
+    } catch (Exception e) {
+      System.out.println("Audit log table not present or could not be cleared.");
+    }
+    try {
+      jdbcTemplate.execute("DELETE FROM reports");
+    } catch (Exception e) {
+      System.out.println("Reports table not present or could not be cleared.");
+    }
+
     jdbcTemplate.execute(
         "DELETE FROM users WHERE LOWER(username) NOT IN ('admin', 'headoffice', 'manager', 'kelly', 'vannchhai', 'banned')");
 
