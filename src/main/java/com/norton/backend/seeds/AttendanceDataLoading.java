@@ -151,13 +151,27 @@ public class AttendanceDataLoading implements CommandLineRunner {
   }
 
   private List<OfficerModel> loadSeedOfficers() {
-    return officerRepository.findAll().stream()
-        .filter(
-            officer ->
-                officer.getOfficerCode() != null && officer.getOfficerCode().startsWith("OFF-"))
-        .sorted(Comparator.comparing(OfficerModel::getOfficerCode))
-        .limit(20)
-        .toList();
+    List<OfficerModel> officers =
+        new ArrayList<>(
+            officerRepository.findAll().stream()
+                .filter(
+                    officer ->
+                        officer.getOfficerCode() != null
+                            && officer.getOfficerCode().startsWith("OFF-"))
+                .sorted(Comparator.comparing(OfficerModel::getOfficerCode))
+                .limit(50)
+                .toList());
+
+    officerRepository
+        .findByOfficerCode("OFF-999")
+        .ifPresent(
+            officer -> {
+              if (officers.stream().noneMatch(o -> o.getId().equals(officer.getId()))) {
+                officers.add(officer);
+              }
+            });
+
+    return officers;
   }
 
   private AttendanceStatusModel getRequiredStatus(String code) {

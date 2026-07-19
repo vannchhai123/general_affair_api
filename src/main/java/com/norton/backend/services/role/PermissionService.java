@@ -56,6 +56,21 @@ public class PermissionService {
     role.getPermissions().addAll(permissions);
   }
 
+  public void revokePermissionsFromRole(String roleName, List<String> permissionNames) {
+    UserRoleModel role =
+        userRoleRepository
+            .findByRoleName(roleName)
+            .orElseThrow(() -> new ResourceNotFoundException("Role", "roleName", roleName));
+
+    List<PermissionModel> permissions =
+        permissionRepository.findAllByPermissionNameIn(permissionNames);
+
+    if (permissions.size() != permissionNames.size()) {
+      throw new RuntimeException("Some permissions not found");
+    }
+    role.getPermissions().removeAll(permissions);
+  }
+
   public PermissionResponse createPermission(PermissionRequest request) {
     if (permissionRepository.findByPermissionName(request.getPermissionName()).isPresent()) {
       throw new ConflictException("Permission already exists");

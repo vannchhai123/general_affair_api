@@ -33,6 +33,17 @@ public class PermissionController {
     return ResponseEntity.ok(Map.of("message", "Permissions assigned successfully"));
   }
 
+  @PostMapping("/roles/{role}/revoke")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ROLE_ASSIGN_PERMISSION)")
+  public ResponseEntity<Map<String, String>> revokePermissionsFromRole(
+      @PathVariable String role, @RequestBody PermissionRequest request) {
+
+    permissionService.revokePermissionsFromRole(
+        role, Collections.singletonList(request.getPermissionName()));
+
+    return ResponseEntity.ok(Map.of("message", "Permissions revoked successfully"));
+  }
+
   @PostMapping
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).PERMISSION_CREATE)")
   public ResponseEntity<PermissionResponse> createPermission(

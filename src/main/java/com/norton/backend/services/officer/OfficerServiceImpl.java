@@ -479,4 +479,25 @@ public class OfficerServiceImpl implements OfficerService {
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
   }
+
+  @Override
+  @Transactional
+  public void deleteOfficer(Long id) {
+    OfficerModel officer =
+        officerRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", id));
+
+    if (officer.getOffice() != null) {
+      officeAccessService.assertCanAccessOffice(officer.getOffice().getId());
+    }
+
+    UserModel user = officer.getUser();
+
+    officerRepository.delete(officer);
+
+    if (user != null) {
+      userRepository.delete(user);
+    }
+  }
 }

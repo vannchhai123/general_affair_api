@@ -74,6 +74,7 @@ public class OfficerDataLoading implements CommandLineRunner {
     try {
       // Try PostgreSQL/MySQL style truncate cascade
       jdbcTemplate.execute("TRUNCATE TABLE officers CASCADE");
+      jdbcTemplate.execute("TRUNCATE TABLE invitations CASCADE");
     } catch (Exception e) {
       // Fallback to H2 style truncate / set referential integrity false
       try {
@@ -87,6 +88,7 @@ public class OfficerDataLoading implements CommandLineRunner {
         jdbcTemplate.execute("TRUNCATE TABLE document_files");
         jdbcTemplate.execute("TRUNCATE TABLE documents");
         jdbcTemplate.execute("TRUNCATE TABLE invitation_participants");
+        jdbcTemplate.execute("TRUNCATE TABLE invitations");
         jdbcTemplate.execute("TRUNCATE TABLE officer_permissions");
         jdbcTemplate.execute("TRUNCATE TABLE officer_addresses");
         jdbcTemplate.execute("TRUNCATE TABLE officers");
@@ -102,6 +104,7 @@ public class OfficerDataLoading implements CommandLineRunner {
         jdbcTemplate.execute("DELETE FROM document_files");
         jdbcTemplate.execute("DELETE FROM documents");
         jdbcTemplate.execute("DELETE FROM invitation_participants");
+        jdbcTemplate.execute("DELETE FROM invitations");
         jdbcTemplate.execute("DELETE FROM officer_permissions");
         jdbcTemplate.execute("DELETE FROM officer_addresses");
         jdbcTemplate.execute("DELETE FROM officers");

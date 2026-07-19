@@ -26,10 +26,7 @@ public class InvitationDataLoading implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    if (invitationRepository.count() > 0) {
-      System.out.println("Invitations already seeded.");
-      return;
-    }
+    invitationRepository.deleteAll();
 
     List<OfficerModel> eligibleOfficers =
         filterEligibleInvitationOfficers(officerRepository.findAll());

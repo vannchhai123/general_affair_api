@@ -24,4 +24,6 @@ public interface OfficerService {
       getEligibleInvitationParticipants(String keyword, Integer limit);
 
   OfficerStatsResponse getOfficerStats();
+
+  void deleteOfficer(Long id);
 }
