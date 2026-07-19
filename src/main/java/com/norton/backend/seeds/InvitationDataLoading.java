@@ -31,8 +31,14 @@ public class InvitationDataLoading implements CommandLineRunner {
     List<OfficerModel> eligibleOfficers =
         filterEligibleInvitationOfficers(officerRepository.findAll());
     if (eligibleOfficers.isEmpty()) {
-      System.out.println("No eligible invitation officers found for seed data.");
-      return;
+      eligibleOfficers =
+          officerRepository.findAll().stream()
+              .filter(officer -> officer != null && officer.getStatus() == OfficerStatus.ACTIVE)
+              .limit(5)
+              .toList();
+    }
+    if (eligibleOfficers.isEmpty()) {
+      eligibleOfficers = officerRepository.findAll().stream().limit(5).toList();
     }
 
     // --- JANUARY 2026 SEEDS ---
