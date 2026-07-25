@@ -341,8 +341,6 @@ public class OfficerServiceImpl implements OfficerService {
   @Override
   public OfficerStatsResponse getOfficerStats() {
     Long officeId = officeAccessService.currentOfficeScopeIdOrNull();
-    long total =
-        officeId == null ? officerRepository.count() : officerRepository.countByOffice_Id(officeId);
 
     long active =
         officeId == null
@@ -356,6 +354,8 @@ public class OfficerServiceImpl implements OfficerService {
         officeId == null
             ? officerRepository.countByStatus(OfficerStatus.ON_LEAVE)
             : officerRepository.countByStatusAndOffice_Id(OfficerStatus.ON_LEAVE, officeId);
+
+    long total = active + inactive + onLeave;
 
     return officerMapper.toStatsResponse(total, active, inactive, onLeave);
   }
@@ -481,6 +481,28 @@ public class OfficerServiceImpl implements OfficerService {
     return trimmed.isEmpty() ? null : trimmed;
   }
 
+  private boolean tableExists(String tableName) {
+    try {
+      Boolean exists =
+          jdbcTemplate.execute(
+              (java.sql.Connection conn) -> {
+                try (java.sql.ResultSet rs =
+                    conn.getMetaData().getTables(null, null, tableName.toLowerCase(), null)) {
+                  if (rs.next()) {
+                    return true;
+                  }
+                }
+                try (java.sql.ResultSet rs =
+                    conn.getMetaData().getTables(null, null, tableName.toUpperCase(), null)) {
+                  return rs.next();
+                }
+              });
+      return exists != null && exists;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
   @Override
   @Transactional
   public void deleteOfficer(Long id) {
@@ -493,43 +515,15 @@ public class OfficerServiceImpl implements OfficerService {
       officeAccessService.assertCanAccessOffice(officer.getOffice().getId());
     }
 
+    // Set officer status to DELETED so they are hidden from the system
+    officer.setStatus(OfficerStatus.DELETED);
+    officerRepository.save(officer);
+
+    // Set user status to DELETED so they can no longer log in
     UserModel user = officer.getUser();
-
-    officerRepository.delete(officer);
-
     if (user != null) {
-      // Nullify references in history tables to avoid foreign key violations on user deletion
-      try {
-        jdbcTemplate.update("UPDATE audit_log SET user_id = NULL WHERE user_id = ?", user.getId());
-      } catch (Exception e) {
-        // Ignore if table not present
-      }
-      try {
-        jdbcTemplate.update(
-            "UPDATE reports SET generated_by = NULL WHERE generated_by = ?", user.getId());
-      } catch (Exception e) {
-        // Ignore if table not present
-      }
-      try {
-        jdbcTemplate.update(
-            "UPDATE attendance SET approved_by = NULL WHERE approved_by = ?", user.getId());
-      } catch (Exception e) {
-        // Ignore
-      }
-      try {
-        jdbcTemplate.update(
-            "UPDATE leave_request SET approved_by = NULL WHERE approved_by = ?", user.getId());
-      } catch (Exception e) {
-        // Ignore
-      }
-      try {
-        jdbcTemplate.update(
-            "UPDATE mission SET approved_by = NULL WHERE approved_by = ?", user.getId());
-      } catch (Exception e) {
-        // Ignore
-      }
-
-      userRepository.delete(user);
+      user.setUserStatus(UserStatus.DELETED);
+      userRepository.save(user);
     }
   }
 }

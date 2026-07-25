@@ -783,7 +783,7 @@ public class OfficerDataLoading implements CommandLineRunner {
     return null;
   }
 
-  private String mapPositionToCode(String csvPosName, String deptCode) {
+  private String mapPositionToCode(String csvPosName, String deptCode, int seedIndex) {
     if (csvPosName == null || deptCode == null) return null;
     String name = csvPosName.trim();
     if ("DEP-01".equals(deptCode)) {
@@ -794,10 +794,14 @@ public class OfficerDataLoading implements CommandLineRunner {
       if (name.contains("នាយករង")) return "POS-04-DEP-02";
       if (name.contains("នាយក")) return "POS-03-DEP-02";
     }
-    if (name.contains("ប្រធាន")) return "POS-05-" + deptCode;
     if (name.contains("អនុប្រធាន")) return "POS-06-" + deptCode;
-    if (name.contains("មន្ត្រី")) return "POS-07-" + deptCode;
-    return "POS-07-" + deptCode;
+    if (name.contains("ប្រធាន")) return "POS-05-" + deptCode;
+    if (name.contains("មន្ត្រីកិច្ចសន្យា")) return "POS-08-" + deptCode;
+    if (name.contains("មន្ត្រីក្របខណ្ឌ")) return "POS-07-" + deptCode;
+    if (name.contains("មន្ត្រី")) {
+      return (seedIndex % 3 == 0) ? "POS-08-" + deptCode : "POS-07-" + deptCode;
+    }
+    return (seedIndex % 3 == 0) ? "POS-08-" + deptCode : "POS-07-" + deptCode;
   }
 
   private String mapRoleName(String csvRole) {
@@ -886,7 +890,7 @@ public class OfficerDataLoading implements CommandLineRunner {
         }
 
         String deptCode = mapDepartmentToCode(departmentName);
-        String positionCode = mapPositionToCode(positionName, deptCode);
+        String positionCode = mapPositionToCode(positionName, deptCode, number);
         String roleName = mapRoleName(csvRole);
         String eduLevel = mapEducationLevel(eduLevelRaw);
 

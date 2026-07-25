@@ -4,5 +4,6 @@ public enum OfficerStatus {
   ACTIVE,
   INACTIVE,
   ON_LEAVE,
-  SUSPENDED
+  SUSPENDED,
+  DELETED
 }
