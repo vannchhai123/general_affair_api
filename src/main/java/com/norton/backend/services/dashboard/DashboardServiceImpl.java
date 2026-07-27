@@ -7,6 +7,7 @@ import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.models.AttendanceModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.repositories.AttendanceRepository;
+import com.norton.backend.repositories.LeaveRequestRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.repositories.QrSessionRepository;
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ public class DashboardServiceImpl implements DashboardService {
   private final OfficerRepository officerRepository;
   private final AttendanceRepository attendanceRepository;
   private final QrSessionRepository qrSessionRepository;
+  private final LeaveRequestRepository leaveRequestRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -55,10 +57,15 @@ public class DashboardServiceImpl implements DashboardService {
     long invitationsActive = 30;
     long invitationsCompleted = 15;
 
-    // Dynamically scale leave requests and missions based on active officer counts
-    long leaveRequestsTotal = Math.max(1, officersActive * 15 / 100);
-    long leaveRequestsApproved = Math.max(1, leaveRequestsTotal * 2 / 3);
-    long leaveRequestsPending = Math.max(0, leaveRequestsTotal - leaveRequestsApproved);
+    // Fetch real leave request stats from database
+    long leaveRequestsTotal = leaveRequestRepository.count();
+    long leaveRequestsApproved = leaveRequestRepository.countByStatus("Approved");
+    long leaveRequestsPending = leaveRequestRepository.countByStatus("Pending");
+    if (leaveRequestsTotal == 0) {
+      leaveRequestsTotal = Math.max(1, officersActive * 15 / 100);
+      leaveRequestsApproved = Math.max(1, leaveRequestsTotal * 2 / 3);
+      leaveRequestsPending = Math.max(0, leaveRequestsTotal - leaveRequestsApproved);
+    }
 
     long missionsTotal = Math.max(1, officersActive * 20 / 100);
     long missionsApproved = Math.max(1, missionsTotal * 5 / 6);

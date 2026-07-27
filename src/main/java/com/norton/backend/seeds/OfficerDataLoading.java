@@ -808,9 +808,10 @@ public class OfficerDataLoading implements CommandLineRunner {
     if (csvRole == null) return "ROLE_OFFICER";
     String role = csvRole.trim().toLowerCase();
     return switch (role) {
+      case "super admin", "superadmin" -> "ROLE_ADMIN";
       case "manager" -> "ROLE_MANAGER";
-      case "super admin" -> "ROLE_ADMIN";
-      case "head-office" -> "ROLE_HEAD_OFFICE";
+      case "admin" -> "ROLE_HEAD_OFFICE";
+      case "head-office", "headoffice", "head office" -> "ROLE_HEAD_OFFICE";
       default -> "ROLE_OFFICER";
     };
   }
@@ -828,12 +829,14 @@ public class OfficerDataLoading implements CommandLineRunner {
 
   private List<OfficerSeed> buildOfficerSeeds() {
     List<OfficerSeed> seeds = new ArrayList<>();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    DateTimeFormatter formatterText =
+        DateTimeFormatter.ofPattern("dd MMMM yyyy", java.util.Locale.ENGLISH);
+    DateTimeFormatter formatterSlash = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     try (BufferedReader reader =
         new BufferedReader(
             new InputStreamReader(
-                new ClassPathResource("employees_final_184.csv").getInputStream(),
+                new ClassPathResource("តារាងបញ្ចូលទិន្នន័យមន្ត្រី.csv").getInputStream(),
                 StandardCharsets.UTF_8))) {
 
       String line = reader.readLine(); // read header
@@ -846,10 +849,12 @@ public class OfficerDataLoading implements CommandLineRunner {
           continue;
         }
 
-        String officerCodeRaw = parts[0].trim();
-        if (officerCodeRaw.isEmpty() || !officerCodeRaw.matches("\\d+")) {
+        String serialRaw = parts[0].trim();
+        String officerCodeRaw = parts[1].trim();
+        if (serialRaw.isEmpty() || !serialRaw.matches("\\d+")) {
           continue;
         }
+
         String lastNameKh = parts[2].trim();
         String firstNameKh = parts[3].trim();
         String lastNameEn = parts[4].trim();
@@ -862,8 +867,11 @@ public class OfficerDataLoading implements CommandLineRunner {
         String hireDateStr = parts[13].trim();
         String csvRole = parts[14].trim();
 
-        int number = Integer.parseInt(officerCodeRaw);
-        String officerCode = "OFF-" + String.format("%03d", number);
+        int number = Integer.parseInt(serialRaw);
+        String officerCode =
+            officerCodeRaw.startsWith("OFF-")
+                ? officerCodeRaw
+                : "OFF-" + String.format("%03d", number);
 
         String username = parts[15].trim();
         if (username.isEmpty()) {
@@ -877,16 +885,24 @@ public class OfficerDataLoading implements CommandLineRunner {
 
         LocalDate dateOfBirth;
         try {
-          dateOfBirth = LocalDate.parse(dobStr, formatter);
+          dateOfBirth = LocalDate.parse(dobStr, formatterText);
         } catch (Exception e) {
-          dateOfBirth = LocalDate.of(1980, 1, 1);
+          try {
+            dateOfBirth = LocalDate.parse(dobStr, formatterSlash);
+          } catch (Exception ex) {
+            dateOfBirth = LocalDate.of(1980, 1, 1);
+          }
         }
 
         LocalDate hireDate;
         try {
-          hireDate = LocalDate.parse(hireDateStr, formatter);
+          hireDate = LocalDate.parse(hireDateStr, formatterText);
         } catch (Exception e) {
-          hireDate = LocalDate.of(2010, 7, 7);
+          try {
+            hireDate = LocalDate.parse(hireDateStr, formatterSlash);
+          } catch (Exception ex) {
+            hireDate = LocalDate.of(2010, 7, 7);
+          }
         }
 
         String deptCode = mapDepartmentToCode(departmentName);
