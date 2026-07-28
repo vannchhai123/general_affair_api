@@ -166,45 +166,41 @@ public class OfficerDataLoading implements CommandLineRunner {
 
     removeStaleOrganizationSeeds();
 
-    // Link an officer profile to vannchhai
-    userRepository
-        .findByUsername("vannchhai")
-        .ifPresent(
-            user -> {
-              OfficerModel officer =
-                  officerRepository.findByUserIdWithPosition(user.getId()).orElse(null);
-              PositionModel position =
-                  positionRepository.findAll().stream().findFirst().orElse(null);
-              if (position != null) {
-                if (officer == null) {
-                  officer =
-                      OfficerModel.builder().uuid(UUID.randomUUID().toString()).user(user).build();
-                }
-                officer.setOfficerCode("OFF-999");
-                officer.setFirstNameEn("Vannchhai");
-                officer.setLastNameEn("Developer");
-                officer.setFirstNameKh("វ៉ាន់ឆៃ");
-                officer.setLastNameKh("ឆាន");
-                officer.setGender(GenderEnum.MALE);
-                officer.setDateOfBirth(LocalDate.of(1995, 1, 1));
-                officer.setNationalId("999999999");
-                officer.setNationality("ខ្មែរ");
-                officer.setEthnicity("ខ្មែរ");
-                officer.setPhone("012345678");
-                officer.setEmail("vannchhai@gmail.com");
-                officer.setOffice(position.getDepartment());
-                officer.setPosition(position);
-                officer.setEducationLevel(
-                    educationLevelRepository.findAll().stream().findFirst().orElse(null));
-                officer.setHireDate(LocalDate.of(2020, 1, 1));
-                officer.setStatus(OfficerStatus.ACTIVE);
-
-                officerRepository.save(officer);
-                System.out.println("✅ Seeded/Updated officer profile for user vannchhai.");
-              }
-            });
+    // Link default accounts to real officers loaded from CSV
+    linkUserToOfficer("admin", "OFF-008"); // ងួន ច័ន្ទឡុង (Nguon Chanlong)
+    linkUserToOfficer("manager", "OFF-001"); // ចេង មុនីរ៉ា (Cheng Monira)
+    linkUserToOfficer("headoffice", "OFF-022"); // ប្រាក់ ឆវី (Prak Chhavy)
+    linkUserToOfficer("Kelly", "OFF-012"); // ឃៀម លីលី (Khiem Lyly)
+    linkUserToOfficer("vannchhai", "OFF-009"); // តាំង ស៊ីដេត (Tang Sidet)
 
     System.out.println("Officer Khmer seed data inserted/updated successfully.");
+  }
+
+  private void linkUserToOfficer(String username, String officerCode) {
+    userRepository
+        .findByUsername(username)
+        .ifPresent(
+            user -> {
+              officerRepository
+                  .findByOfficerCode(officerCode)
+                  .ifPresent(
+                      officer -> {
+                        officer.setUser(user);
+                        user.setFullName(officer.getFirstNameEn() + " " + officer.getLastNameEn());
+                        userRepository.save(user);
+                        officerRepository.save(officer);
+                        System.out.println(
+                            "✅ Linked user "
+                                + username
+                                + " to real CSV officer "
+                                + officerCode
+                                + " ("
+                                + officer.getLastNameKh()
+                                + " "
+                                + officer.getFirstNameKh()
+                                + ")");
+                      });
+            });
   }
 
   private Map<String, DepartmentModel> loadOrCreateDepartments() {

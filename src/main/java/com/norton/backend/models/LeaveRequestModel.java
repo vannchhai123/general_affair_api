@@ -28,8 +28,9 @@ public class LeaveRequestModel extends BaseIdModel {
   @Column(name = "end_date", nullable = false)
   private LocalDate endDate;
 
-  @Column(name = "leave_type", nullable = false, length = 100)
-  private String leaveType;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "leave_type_id")
+  private LeaveTypeModel leaveType;
 
   @Column(name = "total_days", nullable = false)
   private int totalDays;

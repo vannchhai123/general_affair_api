@@ -27,6 +27,9 @@ public class LeaveRequestResponse {
   @JsonProperty("end_date")
   private String endDate;
 
+  @JsonProperty("leave_type_id")
+  private Long leaveTypeId;
+
   @JsonProperty("leave_type")
   private String leaveType;
 

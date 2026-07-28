@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LeaveTypeResponse {
 
+  @JsonProperty("id")
+  private Long id;
+
   @JsonProperty("key")
   private String key;
 
@@ -23,4 +26,7 @@ public class LeaveTypeResponse {
 
   @JsonProperty("description")
   private String description;
+
+  @JsonProperty("is_active")
+  private Boolean isActive;
 }

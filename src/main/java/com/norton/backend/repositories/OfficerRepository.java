@@ -131,6 +131,8 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
 """)
   Optional<OfficerModel> findByUserIdWithPosition(Long userId);
 
+  Optional<OfficerModel> findByUserId(Long userId);
+
   long countByPosition_Department_Id(Long departmentId);
 
   long countByOffice_Id(Long officeId);

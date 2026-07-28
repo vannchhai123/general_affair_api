@@ -104,26 +104,24 @@ public class AttendanceDataLoading implements CommandLineRunner {
       seedMonthIfMissing(officers, yearMonth, present, late, approved, absent);
     }
 
-    // Ensure today's attendance exists for officers in the planning & finance office (seeded in
-    // Khmer)
+    // Ensure today's attendance exists for all officers in the system
     LocalDate today = LocalDate.now(ZoneId.of("Asia/Phnom_Penh"));
-    ensureTodaysAttendanceForOffice("ការិយាល័យផែនការ និងហិរញ្ញវត្ថុ", today, present, approved);
+    ensureTodaysAttendanceForAllOfficers(officers, today, present, approved);
 
     System.out.println("Monthly attendance seed data inserted/updated successfully.");
   }
 
-  private void ensureTodaysAttendanceForOffice(
-      String officeName,
+  private void ensureTodaysAttendanceForAllOfficers(
+      List<OfficerModel> officers,
       LocalDate date,
       AttendanceStatusModel present,
       AttendanceStatusModel approved) {
-    List<OfficerModel> officeOfficers = officerRepository.findByOffice_NameIgnoreCase(officeName);
-    if (officeOfficers == null || officeOfficers.isEmpty()) {
+    if (officers == null || officers.isEmpty()) {
       return;
     }
 
     List<AttendanceModel> todays = new ArrayList<>();
-    for (OfficerModel officer : officeOfficers) {
+    for (OfficerModel officer : officers) {
       if (attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
         continue;
       }
@@ -146,32 +144,17 @@ public class AttendanceDataLoading implements CommandLineRunner {
 
     if (!todays.isEmpty()) {
       attendanceRepository.saveAll(todays);
-      System.out.println("Inserted today's attendance for office: " + officeName);
+      System.out.println("Inserted today's attendance for " + todays.size() + " officers.");
     }
   }
 
   private List<OfficerModel> loadSeedOfficers() {
-    List<OfficerModel> officers =
-        new ArrayList<>(
-            officerRepository.findAll().stream()
-                .filter(
-                    officer ->
-                        officer.getOfficerCode() != null
-                            && officer.getOfficerCode().startsWith("OFF-"))
-                .sorted(Comparator.comparing(OfficerModel::getOfficerCode))
-                .limit(50)
-                .toList());
-
-    officerRepository
-        .findByOfficerCode("OFF-999")
-        .ifPresent(
-            officer -> {
-              if (officers.stream().noneMatch(o -> o.getId().equals(officer.getId()))) {
-                officers.add(officer);
-              }
-            });
-
-    return officers;
+    return new ArrayList<>(
+        officerRepository.findAll().stream()
+            .sorted(
+                Comparator.comparing(
+                    OfficerModel::getOfficerCode, Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList());
   }
 
   private AttendanceStatusModel getRequiredStatus(String code) {
@@ -234,10 +217,13 @@ public class AttendanceDataLoading implements CommandLineRunner {
       AttendanceStatusModel late,
       AttendanceStatusModel approved,
       AttendanceStatusModel absent) {
-    OfficerModel officer =
-        officerRepository
-            .findByOfficerCode(officerCode)
-            .orElseThrow(() -> new RuntimeException("Officer " + officerCode + " not found"));
+    if (officerCode == null || officerCode.isBlank()) {
+      return;
+    }
+    OfficerModel officer = officerRepository.findByOfficerCode(officerCode).orElse(null);
+    if (officer == null) {
+      return;
+    }
 
     String key = buildKey(officer.getId(), date);
     if (plannedKeys.contains(key)
@@ -251,8 +237,9 @@ public class AttendanceDataLoading implements CommandLineRunner {
   }
 
   private int parseOfficerIndex(String officerCode) {
+    if (officerCode == null) return 0;
     try {
-      return Math.max(Integer.parseInt(officerCode.replace("OFF-", "")) - 1, 0);
+      return Math.max(Integer.parseInt(officerCode.replaceAll("\\D", "")) - 1, 0);
     } catch (Exception ex) {
       return 0;
     }
@@ -294,7 +281,8 @@ public class AttendanceDataLoading implements CommandLineRunner {
 
     if (!newRecords.isEmpty()) {
       attendanceRepository.saveAll(newRecords);
-      System.out.println("Seeded attendance for month: " + month);
+      System.out.println(
+          "Seeded attendance for month: " + month + " (" + newRecords.size() + " records)");
     }
   }
 }

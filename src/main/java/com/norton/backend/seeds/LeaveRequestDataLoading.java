@@ -1,8 +1,10 @@
 package com.norton.backend.seeds;
 
 import com.norton.backend.models.LeaveRequestModel;
+import com.norton.backend.models.LeaveTypeModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.repositories.LeaveRequestRepository;
+import com.norton.backend.repositories.LeaveTypeRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,13 +18,14 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@DependsOn("officerDataLoading")
+@DependsOn({"officerDataLoading", "leaveTypeDataLoading"})
 @RequiredArgsConstructor
 @Order(12)
 public class LeaveRequestDataLoading implements CommandLineRunner {
 
   private final LeaveRequestRepository leaveRequestRepository;
   private final OfficerRepository officerRepository;
+  private final LeaveTypeRepository leaveTypeRepository;
 
   @Override
   public void run(String... args) {
@@ -44,10 +47,15 @@ public class LeaveRequestDataLoading implements CommandLineRunner {
     OfficerModel officer3 = officers.size() > 2 ? officers.get(2) : officer1;
     OfficerModel officer4 = officers.size() > 3 ? officers.get(3) : officer1;
 
+    LeaveTypeModel annualLeave = leaveTypeRepository.findByKey("Annual Leave").orElse(null);
+    LeaveTypeModel sickLeave = leaveTypeRepository.findByKey("Sick Leave").orElse(null);
+    LeaveTypeModel personalLeave = leaveTypeRepository.findByKey("Personal Leave").orElse(null);
+    LeaveTypeModel specialLeave = leaveTypeRepository.findByKey("Special Leave").orElse(null);
+
     LeaveRequestModel leave1 =
         LeaveRequestModel.builder()
             .officer(officer1)
-            .leaveType("Annual Leave")
+            .leaveType(annualLeave)
             .startDate(LocalDate.now().plusDays(2))
             .endDate(LocalDate.now().plusDays(4))
             .totalDays(3)
@@ -58,7 +66,7 @@ public class LeaveRequestDataLoading implements CommandLineRunner {
     LeaveRequestModel leave2 =
         LeaveRequestModel.builder()
             .officer(officer2)
-            .leaveType("Sick Leave")
+            .leaveType(sickLeave)
             .startDate(LocalDate.now().minusDays(3))
             .endDate(LocalDate.now().minusDays(1))
             .totalDays(3)
@@ -71,7 +79,7 @@ public class LeaveRequestDataLoading implements CommandLineRunner {
     LeaveRequestModel leave3 =
         LeaveRequestModel.builder()
             .officer(officer3)
-            .leaveType("Personal Leave")
+            .leaveType(personalLeave)
             .startDate(LocalDate.now().minusDays(5))
             .endDate(LocalDate.now().minusDays(5))
             .totalDays(1)
@@ -84,7 +92,7 @@ public class LeaveRequestDataLoading implements CommandLineRunner {
     LeaveRequestModel leave4 =
         LeaveRequestModel.builder()
             .officer(officer4)
-            .leaveType("Special Leave")
+            .leaveType(specialLeave)
             .startDate(LocalDate.now().plusDays(5))
             .endDate(LocalDate.now().plusDays(7))
             .totalDays(3)

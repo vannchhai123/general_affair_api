@@ -3,6 +3,8 @@ package com.norton.backend.controllers.mobile;
 import com.norton.backend.dto.request.leave.CreateLeaveRequestRequest;
 import com.norton.backend.dto.responses.leave.LeaveRequestResponse;
 import com.norton.backend.dto.responses.leave.LeaveTypeResponse;
+import com.norton.backend.models.OfficerModel;
+import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.services.leave.LeaveRequestService;
 import com.norton.backend.utils.SecurityUtils;
 import java.util.List;
@@ -22,6 +24,7 @@ public class MobileLeaveRequestController {
 
   private final LeaveRequestService leaveRequestService;
   private final SecurityUtils securityUtils;
+  private final OfficerRepository officerRepository;
 
   @GetMapping("/types")
   public ResponseEntity<List<LeaveTypeResponse>> getLeaveTypes() {
@@ -34,7 +37,8 @@ public class MobileLeaveRequestController {
       @RequestBody CreateLeaveRequestRequest request) {
     if (request.getOfficerId() == null) {
       Long currentUserId = securityUtils.getCurrentUserId();
-      request.setOfficerId(currentUserId);
+      OfficerModel officer = officerRepository.findByUserId(currentUserId).orElse(null);
+      request.setOfficerId(officer != null ? officer.getId() : currentUserId);
     }
     LeaveRequestResponse created = leaveRequestService.createLeaveRequest(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -43,9 +47,13 @@ public class MobileLeaveRequestController {
   @GetMapping("/my-requests")
   public ResponseEntity<List<LeaveRequestResponse>> getMyLeaveRequests(
       @RequestParam(required = false) Long officerId) {
-    Long targetOfficerId = officerId != null ? officerId : securityUtils.getCurrentUserId();
-    List<LeaveRequestResponse> requests =
-        leaveRequestService.getOfficerLeaveRequests(targetOfficerId);
+    Long targetId = officerId;
+    if (targetId == null) {
+      Long currentUserId = securityUtils.getCurrentUserId();
+      OfficerModel officer = officerRepository.findByUserId(currentUserId).orElse(null);
+      targetId = officer != null ? officer.getId() : currentUserId;
+    }
+    List<LeaveRequestResponse> requests = leaveRequestService.getOfficerLeaveRequests(targetId);
     return ResponseEntity.ok(requests);
   }
 

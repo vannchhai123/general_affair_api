@@ -5,8 +5,10 @@ import com.norton.backend.dto.request.leave.UpdateLeaveRequestRequest;
 import com.norton.backend.dto.responses.leave.LeaveRequestResponse;
 import com.norton.backend.dto.responses.leave.LeaveTypeResponse;
 import com.norton.backend.models.LeaveRequestModel;
+import com.norton.backend.models.LeaveTypeModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.repositories.LeaveRequestRepository;
+import com.norton.backend.repositories.LeaveTypeRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,40 +23,23 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
   private final LeaveRequestRepository leaveRequestRepository;
   private final OfficerRepository officerRepository;
+  private final LeaveTypeRepository leaveTypeRepository;
 
   @Override
+  @Transactional(readOnly = true)
   public List<LeaveTypeResponse> getLeaveTypes() {
-    return List.of(
-        LeaveTypeResponse.builder()
-            .key("Annual Leave")
-            .labelEn("Annual Leave")
-            .labelKh("ច្បាប់សម្រាកប្រចាំឆ្នាំ")
-            .description("Standard annual paid leave allocation")
-            .build(),
-        LeaveTypeResponse.builder()
-            .key("Sick Leave")
-            .labelEn("Sick Leave")
-            .labelKh("ច្បាប់ជំងឺ")
-            .description("Leave taken due to medical or health conditions")
-            .build(),
-        LeaveTypeResponse.builder()
-            .key("Personal Leave")
-            .labelEn("Personal Leave")
-            .labelKh("ច្បាប់ផ្ទាល់ខ្លួន")
-            .description("Leave for urgent personal affairs and family business")
-            .build(),
-        LeaveTypeResponse.builder()
-            .key("Special Leave")
-            .labelEn("Special Leave")
-            .labelKh("ច្បាប់ពិសេស")
-            .description("Special leave for weddings, events, or authorized activities")
-            .build(),
-        LeaveTypeResponse.builder()
-            .key("Maternity Leave")
-            .labelEn("Maternity / Paternity Leave")
-            .labelKh("ច្បាប់មាតុភាព / បិតុភាព")
-            .description("Parental leave for newborn care")
-            .build());
+    return leaveTypeRepository.findByIsActiveTrueOrderByIdAsc().stream()
+        .map(
+            t ->
+                LeaveTypeResponse.builder()
+                    .id(t.getId())
+                    .key(t.getKey())
+                    .labelEn(t.getLabelEn())
+                    .labelKh(t.getLabelKh())
+                    .description(t.getDescription())
+                    .isActive(t.getIsActive())
+                    .build())
+        .toList();
   }
 
   @Override
@@ -68,7 +53,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
   @Override
   @Transactional(readOnly = true)
   public List<LeaveRequestResponse> getOfficerLeaveRequests(Long officerId) {
-    return leaveRequestRepository.findByOfficerIdOrderByIdDesc(officerId).stream()
+    if (officerId == null) {
+      return List.of();
+    }
+    return leaveRequestRepository.findByOfficerIdOrUserIdOrderByIdDesc(officerId).stream()
         .map(this::mapToResponse)
         .toList();
   }
@@ -103,20 +91,35 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     OfficerModel officer =
         officerRepository
             .findById(request.getOfficerId())
-            .orElseThrow(
+            .orElseGet(
                 () ->
-                    new IllegalArgumentException(
-                        "Officer not found with id: " + request.getOfficerId()));
+                    officerRepository
+                        .findByUserId(request.getOfficerId())
+                        .orElseThrow(
+                            () ->
+                                new IllegalArgumentException(
+                                    "Officer not found with id: " + request.getOfficerId())));
 
     LocalDate startDate = LocalDate.parse(request.getStartDate());
     LocalDate endDate = LocalDate.parse(request.getEndDate());
+
+    LeaveTypeModel leaveTypeModel = null;
+    if (request.getLeaveTypeId() != null) {
+      leaveTypeModel = leaveTypeRepository.findById(request.getLeaveTypeId()).orElse(null);
+    }
+    if (leaveTypeModel == null && request.getLeaveType() != null) {
+      leaveTypeModel = leaveTypeRepository.findByKey(request.getLeaveType()).orElse(null);
+    }
+    if (leaveTypeModel == null) {
+      leaveTypeModel = leaveTypeRepository.findByKey("Annual Leave").orElse(null);
+    }
 
     LeaveRequestModel leaveRequest =
         LeaveRequestModel.builder()
             .officer(officer)
             .startDate(startDate)
             .endDate(endDate)
-            .leaveType(request.getLeaveType() != null ? request.getLeaveType() : "Annual Leave")
+            .leaveType(leaveTypeModel)
             .totalDays(request.getTotalDays() != null ? request.getTotalDays() : 1)
             .reason(request.getReason() != null ? request.getReason() : "")
             .status(request.getStatus() != null ? request.getStatus() : "Pending")
@@ -146,6 +149,31 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
       leaveRequest.setReason(request.getReason());
     }
 
+    if (request.getLeaveTypeId() != null || request.getLeaveType() != null) {
+      LeaveTypeModel leaveTypeModel = null;
+      if (request.getLeaveTypeId() != null) {
+        leaveTypeModel = leaveTypeRepository.findById(request.getLeaveTypeId()).orElse(null);
+      }
+      if (leaveTypeModel == null && request.getLeaveType() != null) {
+        leaveTypeModel = leaveTypeRepository.findByKey(request.getLeaveType()).orElse(null);
+      }
+      if (leaveTypeModel != null) {
+        leaveRequest.setLeaveType(leaveTypeModel);
+      }
+    }
+
+    if (request.getStartDate() != null) {
+      leaveRequest.setStartDate(LocalDate.parse(request.getStartDate()));
+    }
+
+    if (request.getEndDate() != null) {
+      leaveRequest.setEndDate(LocalDate.parse(request.getEndDate()));
+    }
+
+    if (request.getTotalDays() != null) {
+      leaveRequest.setTotalDays(request.getTotalDays());
+    }
+
     LeaveRequestModel saved = leaveRequestRepository.save(leaveRequest);
     return mapToResponse(saved);
   }
@@ -153,6 +181,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
   private LeaveRequestResponse mapToResponse(LeaveRequestModel model) {
     OfficerModel officer = model.getOfficer();
     OfficerModel approver = model.getApprovedByOfficer();
+    LeaveTypeModel lt = model.getLeaveType();
 
     String firstName =
         officer != null
@@ -178,13 +207,17 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             ? (approver.getLastNameKh() + " " + approver.getFirstNameKh())
             : ("Approved".equalsIgnoreCase(model.getStatus()) ? "ប្រធាននាយកដ្ឋាន" : null);
 
+    Long leaveTypeId = lt != null ? lt.getId() : null;
+    String leaveTypeKey = lt != null ? lt.getKey() : "Annual Leave";
+
     return LeaveRequestResponse.builder()
         .id(model.getId())
         .officerId(officer != null ? officer.getId() : null)
         .approvedBy(approver != null ? approver.getId() : null)
         .startDate(model.getStartDate() != null ? model.getStartDate().toString() : null)
         .endDate(model.getEndDate() != null ? model.getEndDate().toString() : null)
-        .leaveType(model.getLeaveType())
+        .leaveTypeId(leaveTypeId)
+        .leaveType(leaveTypeKey)
         .totalDays(model.getTotalDays())
         .reason(model.getReason())
         .status(model.getStatus())
