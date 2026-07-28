@@ -18,4 +18,6 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequestModel,
   List<LeaveRequestModel> findByOfficerIdOrUserIdOrderByIdDesc(@Param("id") Long id);
 
   long countByStatus(String status);
+
+  long countByStatusIgnoreCase(String status);
 }

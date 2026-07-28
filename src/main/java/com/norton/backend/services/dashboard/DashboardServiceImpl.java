@@ -59,12 +59,12 @@ public class DashboardServiceImpl implements DashboardService {
 
     // Fetch real leave request stats from database
     long leaveRequestsTotal = leaveRequestRepository.count();
-    long leaveRequestsApproved = leaveRequestRepository.countByStatus("Approved");
-    long leaveRequestsPending = leaveRequestRepository.countByStatus("Pending");
+    long leaveRequestsApproved = leaveRequestRepository.countByStatusIgnoreCase("Approved");
+    long leaveRequestsPending = leaveRequestRepository.countByStatusIgnoreCase("Pending");
     if (leaveRequestsTotal == 0) {
-      leaveRequestsTotal = Math.max(1, officersActive * 15 / 100);
-      leaveRequestsApproved = Math.max(1, leaveRequestsTotal * 2 / 3);
-      leaveRequestsPending = Math.max(0, leaveRequestsTotal - leaveRequestsApproved);
+      leaveRequestsTotal = 0;
+      leaveRequestsApproved = 0;
+      leaveRequestsPending = 0;
     }
 
     long missionsTotal = Math.max(1, officersActive * 20 / 100);
