@@ -44,6 +44,7 @@ import lombok.*;
       @Index(name = "idx_docs_status_date", columnList = "status, document_date")
     })
 public class DocumentModel extends BaseIdModel {
+
   @Column(nullable = false, unique = true)
   private UUID uuid;
 
