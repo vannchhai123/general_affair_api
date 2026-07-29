@@ -1,6 +1,7 @@
 package com.norton.backend.repositories;
 
 import com.norton.backend.models.LeaveRequestModel;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +21,28 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequestModel,
   long countByStatus(String status);
 
   long countByStatusIgnoreCase(String status);
+
+  @Query(
+      "SELECT COUNT(lr) > 0 FROM LeaveRequestModel lr "
+          + "WHERE lr.officer.id = :officerId "
+          + "AND LOWER(lr.status) NOT IN ('rejected', 'cancelled') "
+          + "AND lr.startDate <= :endDate "
+          + "AND lr.endDate >= :startDate")
+  boolean existsOverlappingRequest(
+      @Param("officerId") Long officerId,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate);
+
+  @Query(
+      "SELECT COUNT(lr) > 0 FROM LeaveRequestModel lr "
+          + "WHERE lr.officer.id = :officerId "
+          + "AND lr.id <> :excludeId "
+          + "AND LOWER(lr.status) NOT IN ('rejected', 'cancelled') "
+          + "AND lr.startDate <= :endDate "
+          + "AND lr.endDate >= :startDate")
+  boolean existsOverlappingRequestExcludingId(
+      @Param("officerId") Long officerId,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate,
+      @Param("excludeId") Long excludeId);
 }

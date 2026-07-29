@@ -4,6 +4,9 @@ import com.norton.backend.dto.request.leave.CreateLeaveRequestRequest;
 import com.norton.backend.dto.request.leave.UpdateLeaveRequestRequest;
 import com.norton.backend.dto.responses.leave.LeaveRequestResponse;
 import com.norton.backend.dto.responses.leave.LeaveTypeResponse;
+import com.norton.backend.exceptions.BadRequestException;
+import com.norton.backend.exceptions.ConflictException;
+import com.norton.backend.exceptions.ResourceNotFoundException;
 import com.norton.backend.models.LeaveRequestModel;
 import com.norton.backend.models.LeaveTypeModel;
 import com.norton.backend.models.OfficerModel;
@@ -12,6 +15,8 @@ import com.norton.backend.repositories.LeaveTypeRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -67,8 +72,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     LeaveRequestModel leaveRequest =
         leaveRequestRepository
             .findById(id)
-            .orElseThrow(
-                () -> new IllegalArgumentException("Leave request not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Leave request", "id", id));
     return mapToResponse(leaveRequest);
   }
 
@@ -78,8 +82,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     LeaveRequestModel leaveRequest =
         leaveRequestRepository
             .findById(id)
-            .orElseThrow(
-                () -> new IllegalArgumentException("Leave request not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Leave request", "id", id));
     leaveRequest.setStatus("Cancelled");
     LeaveRequestModel saved = leaveRequestRepository.save(leaveRequest);
     return mapToResponse(saved);
@@ -88,6 +91,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
   @Override
   @Transactional
   public LeaveRequestResponse createLeaveRequest(CreateLeaveRequestRequest request) {
+    if (request.getOfficerId() == null) {
+      throw new BadRequestException("Officer ID must be specified");
+    }
+
     OfficerModel officer =
         officerRepository
             .findById(request.getOfficerId())
@@ -97,11 +104,35 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                         .findByUserId(request.getOfficerId())
                         .orElseThrow(
                             () ->
-                                new IllegalArgumentException(
-                                    "Officer not found with id: " + request.getOfficerId())));
+                                new ResourceNotFoundException(
+                                    "Officer", "id", request.getOfficerId())));
 
-    LocalDate startDate = LocalDate.parse(request.getStartDate());
-    LocalDate endDate = LocalDate.parse(request.getEndDate());
+    if (request.getStartDate() == null || request.getStartDate().isBlank()) {
+      throw new BadRequestException("Start date is required");
+    }
+    if (request.getEndDate() == null || request.getEndDate().isBlank()) {
+      throw new BadRequestException("End date is required");
+    }
+
+    LocalDate startDate;
+    LocalDate endDate;
+    try {
+      startDate = LocalDate.parse(request.getStartDate());
+      endDate = LocalDate.parse(request.getEndDate());
+    } catch (DateTimeParseException e) {
+      throw new BadRequestException("Invalid date format. Use YYYY-MM-DD");
+    }
+
+    if (endDate.isBefore(startDate)) {
+      throw new BadRequestException("End date cannot be before start date");
+    }
+
+    boolean existsOverlapping =
+        leaveRequestRepository.existsOverlappingRequest(officer.getId(), startDate, endDate);
+    if (existsOverlapping) {
+      throw new ConflictException(
+          "You already have an active leave request covering the selected date(s)");
+    }
 
     LeaveTypeModel leaveTypeModel = null;
     if (request.getLeaveTypeId() != null) {
@@ -114,13 +145,19 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
       leaveTypeModel = leaveTypeRepository.findByKey("Annual Leave").orElse(null);
     }
 
+    int calculatedDays = (int) (ChronoUnit.DAYS.between(startDate, endDate) + 1);
+    int totalDays =
+        (request.getTotalDays() != null && request.getTotalDays() > 0)
+            ? request.getTotalDays()
+            : calculatedDays;
+
     LeaveRequestModel leaveRequest =
         LeaveRequestModel.builder()
             .officer(officer)
             .startDate(startDate)
             .endDate(endDate)
             .leaveType(leaveTypeModel)
-            .totalDays(request.getTotalDays() != null ? request.getTotalDays() : 1)
+            .totalDays(totalDays)
             .reason(request.getReason() != null ? request.getReason() : "")
             .status(request.getStatus() != null ? request.getStatus() : "Pending")
             .build();
@@ -135,8 +172,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     LeaveRequestModel leaveRequest =
         leaveRequestRepository
             .findById(id)
-            .orElseThrow(
-                () -> new IllegalArgumentException("Leave request not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Leave request", "id", id));
 
     if (request.getStatus() != null) {
       leaveRequest.setStatus(request.getStatus());
@@ -162,16 +198,35 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
       }
     }
 
-    if (request.getStartDate() != null) {
-      leaveRequest.setStartDate(LocalDate.parse(request.getStartDate()));
+    LocalDate newStartDate =
+        request.getStartDate() != null
+            ? LocalDate.parse(request.getStartDate())
+            : leaveRequest.getStartDate();
+    LocalDate newEndDate =
+        request.getEndDate() != null
+            ? LocalDate.parse(request.getEndDate())
+            : leaveRequest.getEndDate();
+
+    if (newEndDate.isBefore(newStartDate)) {
+      throw new BadRequestException("End date cannot be before start date");
     }
 
-    if (request.getEndDate() != null) {
-      leaveRequest.setEndDate(LocalDate.parse(request.getEndDate()));
+    if (request.getStartDate() != null || request.getEndDate() != null) {
+      boolean existsOverlapping =
+          leaveRequestRepository.existsOverlappingRequestExcludingId(
+              leaveRequest.getOfficer().getId(), newStartDate, newEndDate, id);
+      if (existsOverlapping) {
+        throw new ConflictException(
+            "You already have an active leave request covering the selected date(s)");
+      }
+      leaveRequest.setStartDate(newStartDate);
+      leaveRequest.setEndDate(newEndDate);
     }
 
     if (request.getTotalDays() != null) {
       leaveRequest.setTotalDays(request.getTotalDays());
+    } else if (request.getStartDate() != null || request.getEndDate() != null) {
+      leaveRequest.setTotalDays((int) (ChronoUnit.DAYS.between(newStartDate, newEndDate) + 1));
     }
 
     LeaveRequestModel saved = leaveRequestRepository.save(leaveRequest);
