@@ -287,14 +287,42 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     String normalizedOffice = onOffice.trim();
-    DepartmentModel requestedOffice = resolveOfficeByName(normalizedOffice);
+    boolean isAll = "all".equalsIgnoreCase(normalizedOffice);
+    DepartmentModel requestedOffice = isAll ? null : resolveOfficeByName(normalizedOffice);
 
     Long scopeOfficeId = officeAccessService.currentOfficeScopeIdOrNull();
-    if (scopeOfficeId != null && !scopeOfficeId.equals(requestedOffice.getId())) {
+    if (scopeOfficeId != null
+        && requestedOffice != null
+        && !scopeOfficeId.equals(requestedOffice.getId())) {
       throw new UnauthorizedException("You can only access officers in your own office");
     }
 
-    List<OfficerModel> officers = officerRepository.findByOffice_Id(requestedOffice.getId());
+    List<OfficerModel> officers;
+    Map<Long, AttendanceModel> attendancesByOfficerId;
+
+    if (requestedOffice != null) {
+      officers = officerRepository.findByOffice_Id(requestedOffice.getId());
+      attendancesByOfficerId =
+          attendanceRepository
+              .findAllByDateAndOfficer_Office_Id(onTodayDate, requestedOffice.getId())
+              .stream()
+              .filter(att -> att.getOfficer() != null)
+              .collect(
+                  Collectors.toMap(
+                      att -> att.getOfficer().getId(),
+                      att -> att,
+                      (existing, replacement) -> existing));
+    } else {
+      officers = officerRepository.findAll();
+      attendancesByOfficerId =
+          attendanceRepository.findAllByDate(onTodayDate).stream()
+              .filter(att -> att.getOfficer() != null)
+              .collect(
+                  Collectors.toMap(
+                      att -> att.getOfficer().getId(),
+                      att -> att,
+                      (existing, replacement) -> existing));
+    }
 
     // If current user is a regular officer on mobile, only return their own information
     String currentRole = officeAccessService.currentUser().getRole().getRoleName();
@@ -350,17 +378,6 @@ public class AttendanceServiceImpl implements AttendanceService {
           .build();
     }
 
-    Map<Long, AttendanceModel> attendancesByOfficerId =
-        attendanceRepository
-            .findAllByDateAndOfficer_Office_Id(onTodayDate, requestedOffice.getId())
-            .stream()
-            .filter(att -> att.getOfficer() != null)
-            .collect(
-                Collectors.toMap(
-                    att -> att.getOfficer().getId(),
-                    att -> att,
-                    (existing, replacement) -> existing));
-
     List<AllOfficersReportResponse.AttendanceStaffReportItem> attendanceStaffs =
         officers.stream()
             .map(
@@ -395,7 +412,10 @@ public class AttendanceServiceImpl implements AttendanceService {
       allowedDepartments =
           departmentRepository.findAll().stream().map(this::toDepartmentDto).toList();
     } else {
-      allowedDepartments = List.of(toDepartmentDto(requestedOffice));
+      allowedDepartments =
+          requestedOffice != null
+              ? List.of(toDepartmentDto(requestedOffice))
+              : Collections.emptyList();
     }
 
     return buildAllOfficersReportResponse(attendanceStaffs, allowedDepartments);
@@ -468,36 +488,53 @@ public class AttendanceServiceImpl implements AttendanceService {
       return buildAllOfficersReportResponse(Collections.singletonList(item), departmentList);
     }
 
+    boolean hasGlobalAccess = officeAccessService.hasGlobalOfficeAccess();
     DepartmentModel targetOffice = null;
+
     if (officeId != null) {
       targetOffice =
           departmentRepository
               .findById(officeId)
               .orElseThrow(() -> new ResourceNotFoundException("Office", "id", officeId));
-    } else if (office != null && !office.isBlank()) {
+    } else if (office != null && !office.isBlank() && !"all".equalsIgnoreCase(office.trim())) {
       targetOffice = resolveOfficeByName(office.trim());
-    } else {
+    } else if (!hasGlobalAccess) {
       targetOffice = resolveOfficerDepartment(adminOfficer);
     }
 
-    if (targetOffice == null) {
-      throw new BadRequestException("Admin officer is not assigned to an office");
+    if (!hasGlobalAccess) {
+      if (targetOffice == null) {
+        throw new BadRequestException("Admin officer is not assigned to an office");
+      }
+      officeAccessService.assertCanAccessOffice(targetOffice.getId());
     }
 
-    officeAccessService.assertCanAccessOffice(targetOffice.getId());
+    List<OfficerModel> officers;
+    Map<Long, AttendanceModel> attendancesByOfficerId;
 
-    List<OfficerModel> officers = officerRepository.findByOffice_Id(targetOffice.getId());
-
-    Map<Long, AttendanceModel> attendancesByOfficerId =
-        attendanceRepository
-            .findAllByDateAndOfficer_Office_Id(onDate, targetOffice.getId())
-            .stream()
-            .filter(att -> att.getOfficer() != null)
-            .collect(
-                Collectors.toMap(
-                    att -> att.getOfficer().getId(),
-                    att -> att,
-                    (existing, replacement) -> existing));
+    if (targetOffice != null) {
+      officers = officerRepository.findByOffice_Id(targetOffice.getId());
+      attendancesByOfficerId =
+          attendanceRepository
+              .findAllByDateAndOfficer_Office_Id(onDate, targetOffice.getId())
+              .stream()
+              .filter(att -> att.getOfficer() != null)
+              .collect(
+                  Collectors.toMap(
+                      att -> att.getOfficer().getId(),
+                      att -> att,
+                      (existing, replacement) -> existing));
+    } else {
+      officers = officerRepository.findAll();
+      attendancesByOfficerId =
+          attendanceRepository.findAllByDate(onDate).stream()
+              .filter(att -> att.getOfficer() != null)
+              .collect(
+                  Collectors.toMap(
+                      att -> att.getOfficer().getId(),
+                      att -> att,
+                      (existing, replacement) -> existing));
+    }
 
     List<AllOfficersReportResponse.AttendanceStaffReportItem> attendanceStaffs =
         officers.stream()
@@ -532,11 +569,12 @@ public class AttendanceServiceImpl implements AttendanceService {
             .collect(Collectors.toList());
 
     List<DepartmentResponseDto> allowedDepartments;
-    if (officeAccessService.hasGlobalOfficeAccess()) {
+    if (hasGlobalAccess) {
       allowedDepartments =
           departmentRepository.findAll().stream().map(this::toDepartmentDto).toList();
     } else {
-      allowedDepartments = List.of(toDepartmentDto(targetOffice));
+      allowedDepartments =
+          targetOffice != null ? List.of(toDepartmentDto(targetOffice)) : Collections.emptyList();
     }
 
     return buildAllOfficersReportResponse(attendanceStaffs, allowedDepartments);
