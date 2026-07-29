@@ -40,9 +40,11 @@ public class AllOfficersReportController {
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
   public ResponseEntity<AllOfficersReportResponse> getAllOfficersAttendanceReport(
       @PathVariable("onDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate onDate,
-      @PathVariable("adminOfficerId") Long adminOfficerId) {
+      @PathVariable("adminOfficerId") Long adminOfficerId,
+      @org.springframework.web.bind.annotation.RequestParam(required = false) Long officeId,
+      @org.springframework.web.bind.annotation.RequestParam(required = false) String office) {
     return ResponseEntity.ok(
-        attendanceService.getAllOfficersAttendanceReport(onDate, adminOfficerId));
+        attendanceService.getAllOfficersAttendanceReport(onDate, adminOfficerId, officeId, office));
   }
 
   @GetMapping({

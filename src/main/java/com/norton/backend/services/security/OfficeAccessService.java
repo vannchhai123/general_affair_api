@@ -35,9 +35,17 @@ public class OfficeAccessService {
     return hasRole("ROLE_HEAD_OFFICE");
   }
 
+  public boolean isManager() {
+    return hasRole("ROLE_MANAGER");
+  }
+
+  public boolean hasGlobalOfficeAccess() {
+    return isAdmin() || isHeadOffice() || isManager();
+  }
+
   @Transactional(readOnly = true)
   public Long currentOfficeScopeIdOrNull() {
-    if (isAdmin() || isHeadOffice()) {
+    if (hasGlobalOfficeAccess()) {
       return null;
     }
 
