@@ -64,7 +64,7 @@ public class UploadImageController {
   }
 
   @PostMapping(value = "/{inviteId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE', 'MANAGER', 'OFFICER')")
   public ResponseEntity<UploadImagesResponse> uploadImages(
       @PathVariable Long inviteId,
       @RequestParam(value = "files", required = false) MultipartFile[] files,
@@ -129,7 +129,7 @@ public class UploadImageController {
   }
 
   @GetMapping("/{inviteId}/images/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE', 'MANAGER', 'OFFICER')")
   public ResponseEntity<UploadImageResponse> getImageById(
       @PathVariable Long inviteId, @PathVariable Long id) {
     InvitationModel invitation =
@@ -166,7 +166,7 @@ public class UploadImageController {
   }
 
   @DeleteMapping("/{inviteId}/images/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'HEAD_OFFICE', 'MANAGER', 'OFFICER')")
   @Transactional
   public ResponseEntity<UploadImageResponse> deleteImageById(
       @PathVariable Long inviteId, @PathVariable Long id) {
