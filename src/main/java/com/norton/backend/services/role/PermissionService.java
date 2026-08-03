@@ -186,4 +186,27 @@ public class PermissionService {
 
     return mapper.toResponse(entity);
   }
+
+  public void assignRoleToOfficer(Long officerId, String roleName) {
+    OfficerModel officer =
+        officerRepository
+            .findById(officerId)
+            .orElseGet(
+                () ->
+                    officerRepository
+                        .findByUserId(officerId)
+                        .orElseThrow(
+                            () -> new ResourceNotFoundException("Officer", "id", officerId)));
+
+    UserRoleModel role =
+        userRoleRepository
+            .findByRoleName(roleName)
+            .orElseThrow(() -> new ResourceNotFoundException("Role", "roleName", roleName));
+
+    if (officer.getUser() != null) {
+      officer.getUser().setRole(role);
+    } else {
+      throw new ConflictException("Officer has no linked user account to assign role");
+    }
+  }
 }

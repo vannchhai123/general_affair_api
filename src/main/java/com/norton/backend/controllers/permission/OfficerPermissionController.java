@@ -41,4 +41,18 @@ public class OfficerPermissionController {
 
     return ResponseEntity.ok(response);
   }
+
+  @PutMapping("/officers/{officerId}/role")
+  @PreAuthorize(
+      "hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_ASSIGN_PERMISSION) or hasRole('ADMIN')")
+  public ResponseEntity<java.util.Map<String, Object>> assignRoleToOfficer(
+      @PathVariable Long officerId, @RequestBody java.util.Map<String, String> body) {
+    String roleName = body.get("roleName") != null ? body.get("roleName") : body.get("role");
+    if (roleName == null || roleName.isBlank()) {
+      throw new com.norton.backend.exceptions.BadRequestException("roleName is required");
+    }
+    permissionService.assignRoleToOfficer(officerId, roleName.trim());
+    return ResponseEntity.ok(
+        java.util.Map.of("success", true, "message", "Officer role assigned successfully"));
+  }
 }
