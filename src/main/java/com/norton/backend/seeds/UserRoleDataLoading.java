@@ -24,7 +24,6 @@ public class UserRoleDataLoading implements CommandLineRunner {
     loadRole("ROLE_MANAGER", "Manager role");
     loadRole("ROLE_OFFICER", "Officer role");
   }
-
   private void loadRole(String roleName, String description) {
 
     if (!roleRepository.existsByRoleName(roleName)) {
