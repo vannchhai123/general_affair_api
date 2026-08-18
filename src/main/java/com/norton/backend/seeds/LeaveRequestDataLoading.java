@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Component;
 @DependsOn({"officerDataLoading", "leaveTypeDataLoading"})
 @RequiredArgsConstructor
 @Order(12)
-@Profile("dev")
+// @Profile("dev")
 public class LeaveRequestDataLoading implements CommandLineRunner {
 
   private final LeaveRequestRepository leaveRequestRepository;
