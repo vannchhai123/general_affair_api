@@ -5,12 +5,14 @@ import com.norton.backend.repositories.AttendanceStatusRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Order(6)
+@Profile("dev")
 public class AttendanceStatusDataLoading implements CommandLineRunner {
 
   private final AttendanceStatusRepository attendanceStatusRepository;

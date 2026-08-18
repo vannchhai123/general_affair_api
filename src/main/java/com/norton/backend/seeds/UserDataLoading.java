@@ -9,6 +9,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("permissionDataLoading")
 @RequiredArgsConstructor
 @Order(value = 3)
+@Profile("dev")
 public class UserDataLoading implements CommandLineRunner {
 
   private final UserRepository userRepository;

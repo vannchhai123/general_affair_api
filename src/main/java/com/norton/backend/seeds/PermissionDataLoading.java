@@ -10,6 +10,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("userRoleDataLoading")
 @RequiredArgsConstructor
 @Order(2)
+@Profile("dev")
 @Transactional
 public class PermissionDataLoading implements CommandLineRunner {
 

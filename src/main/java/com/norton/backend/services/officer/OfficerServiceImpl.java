@@ -316,6 +316,40 @@ public class OfficerServiceImpl implements OfficerService {
   }
 
   @Override
+  public java.util.List<OfficerResponseDto> getOfficersByOffice(Long officeId) {
+    if (officeId == null) {
+      throw new BadRequestException("officeId is required");
+    }
+    if (!departmentRepository.existsById(officeId)) {
+      throw new ResourceNotFoundException("Office", "id", officeId);
+    }
+
+    return officerRepository.findByOffice_Id(officeId).stream()
+        .map(officerMapper::toResponse)
+        .toList();
+  }
+
+  @Override
+  public java.util.List<OfficerResponseDto> getOfficersByPosition(Long positionId) {
+    if (positionId == null) {
+      throw new BadRequestException("positionId is required");
+    }
+
+    PositionModel position =
+        positionRepository
+            .findById(positionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Position", "id", positionId));
+
+    if (position.getDepartment() == null || position.getDepartment().getId() == null) {
+      throw new ResourceNotFoundException("Position", "id", positionId);
+    }
+
+    return officerRepository.findByPosition_Id(positionId).stream()
+        .map(officerMapper::toResponse)
+        .toList();
+  }
+
+  @Override
   public java.util.List<OfficerResponse> getEligibleInvitationParticipants(
       String keyword, Integer limit) {
     String search = keyword == null ? null : keyword.trim();

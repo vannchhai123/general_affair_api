@@ -67,6 +67,20 @@ public class OfficerController {
     return ResponseEntity.ok(officerService.getAllOfficers(search, request));
   }
 
+  @GetMapping("/by-office")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
+  public ResponseEntity<java.util.List<OfficerResponseDto>> getOfficersByOffice(
+      @RequestParam("officeId") Long officeId) {
+    return ResponseEntity.ok(officerService.getOfficersByOffice(officeId));
+  }
+
+  @GetMapping("/by-position")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
+  public ResponseEntity<java.util.List<OfficerResponseDto>> getOfficersByPosition(
+      @RequestParam("positionId") Long positionId) {
+    return ResponseEntity.ok(officerService.getOfficersByPosition(positionId));
+  }
+
   @GetMapping("/stats")
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW)")
   public OfficerStatsResponse getStats() {

@@ -23,6 +23,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Component;
 @DependsOn({"attendanceDataLoading", "officerDataLoading"})
 @RequiredArgsConstructor
 @Order(8)
+@Profile("dev")
 public class AttendanceSessionDataLoading implements CommandLineRunner {
 
   private static final LocalTime MORNING_START = LocalTime.of(8, 0);

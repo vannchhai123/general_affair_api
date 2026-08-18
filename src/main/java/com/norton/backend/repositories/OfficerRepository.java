@@ -49,6 +49,8 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
 
   java.util.List<OfficerModel> findByOffice_Id(Long officeId);
 
+  java.util.List<OfficerModel> findByPosition_Id(Long positionId);
+
   @Query(
       """
     SELECT o

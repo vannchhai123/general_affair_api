@@ -1,11 +1,13 @@
 package com.norton.backend.services.officer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.norton.backend.dto.request.CreateOfficerRequest;
+import com.norton.backend.dto.responses.officers.OfficerResponseDto;
 import com.norton.backend.enums.GenderEnum;
 import com.norton.backend.enums.OfficerStatus;
 import com.norton.backend.mapper.OfficerMapper;
@@ -22,6 +24,7 @@ import com.norton.backend.repositories.UserRepository;
 import com.norton.backend.repositories.UserRoleRepository;
 import com.norton.backend.services.security.OfficeAccessService;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +48,55 @@ class OfficerServiceImplTest {
   @Mock private OfficeAccessService officeAccessService;
 
   @InjectMocks private OfficerServiceImpl officerService;
+
+  @Test
+  void getOfficersByOffice_returnsMatchingOfficers() {
+    Long officeId = 5L;
+    OfficerModel officer = new OfficerModel();
+    officer.setId(1L);
+    officer.setStatus(OfficerStatus.ACTIVE);
+
+    OfficerResponseDto response = new OfficerResponseDto();
+    response.setId(1L);
+
+    when(departmentRepository.existsById(officeId)).thenReturn(true);
+    when(officerRepository.findByOffice_Id(officeId)).thenReturn(List.of(officer));
+    when(officerMapper.toResponse(officer)).thenReturn(response);
+
+    List<OfficerResponseDto> result = officerService.getOfficersByOffice(officeId);
+
+    assertEquals(1, result.size());
+    assertEquals(1L, result.get(0).getId());
+    verify(officerRepository).findByOffice_Id(officeId);
+  }
+
+  @Test
+  void getOfficersByPosition_returnsMatchingOfficers() {
+    Long positionId = 6L;
+    DepartmentModel department = new DepartmentModel();
+    department.setId(5L);
+
+    PositionModel position = new PositionModel();
+    position.setId(positionId);
+    position.setDepartment(department);
+
+    OfficerModel officer = new OfficerModel();
+    officer.setId(2L);
+    officer.setStatus(OfficerStatus.ACTIVE);
+
+    OfficerResponseDto response = new OfficerResponseDto();
+    response.setId(2L);
+
+    when(positionRepository.findById(positionId)).thenReturn(Optional.of(position));
+    when(officerRepository.findByPosition_Id(positionId)).thenReturn(List.of(officer));
+    when(officerMapper.toResponse(officer)).thenReturn(response);
+
+    List<OfficerResponseDto> result = officerService.getOfficersByPosition(positionId);
+
+    assertEquals(1, result.size());
+    assertEquals(2L, result.get(0).getId());
+    verify(officerRepository).findByPosition_Id(positionId);
+  }
 
   @Test
   void updateOfficer_updatesInvitationPriority() {
