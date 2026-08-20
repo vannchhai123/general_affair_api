@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface InvitationRepository extends JpaRepository<InvitationModel, Long> {
 
+  List<InvitationModel> findByTypeIgnoreCase(String type);
+
   @Query(
       """
       select i from InvitationModel i

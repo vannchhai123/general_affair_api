@@ -27,7 +27,7 @@ public interface InvitationService {
       String type,
       String status);
 
-  List<CreateInvitationResponse> getInvitations();
+  List<CreateInvitationResponse> getInvitations(String type);
 
   CreateInvitationResponse getInvitationById(Long id);
 

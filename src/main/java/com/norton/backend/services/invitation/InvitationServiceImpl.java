@@ -103,10 +103,14 @@ public class InvitationServiceImpl implements InvitationService {
   }
 
   @Override
-  public List<CreateInvitationResponse> getInvitations() {
-    return invitationRepository.findAll().stream()
-        .map(this::toResponse)
-        .collect(Collectors.toList());
+  public List<CreateInvitationResponse> getInvitations(String type) {
+    List<InvitationModel> invitations;
+    if (type != null && !type.isBlank()) {
+      invitations = invitationRepository.findByTypeIgnoreCase(type.trim());
+    } else {
+      invitations = invitationRepository.findAll();
+    }
+    return invitations.stream().map(this::toResponse).collect(Collectors.toList());
   }
 
   @Override

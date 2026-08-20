@@ -91,8 +91,9 @@ public class InvitationController {
 
   @GetMapping
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_VIEW)")
-  public ResponseEntity<List<CreateInvitationResponse>> getInvitations() {
-    return ResponseEntity.ok(invitationService.getInvitations());
+  public ResponseEntity<List<CreateInvitationResponse>> getInvitations(
+      @RequestParam(required = false) String type) {
+    return ResponseEntity.ok(invitationService.getInvitations(type));
   }
 
   @GetMapping("/{id}")
