@@ -530,6 +530,13 @@ public class InvitationServiceImpl implements InvitationService {
   @Transactional(readOnly = true)
   public List<DisplayInvitationResponse> getInvitationsByParticipantAndMonth(
       Long participantId, String yearMonth) {
+    return getInvitationsByTypeAndParticipantAndMonth(null, participantId, yearMonth);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<DisplayInvitationResponse> getInvitationsByTypeAndParticipantAndMonth(
+      String type, Long participantId, String yearMonth) {
 
     if (!officerRepository.existsById(participantId)) {
       throw new ResourceNotFoundException("Officer", "id", participantId);
@@ -545,9 +552,16 @@ public class InvitationServiceImpl implements InvitationService {
       throw new BadRequestException("Invalid yearMonth format. Expected YYYY-MM (e.g. 2026-02)");
     }
 
-    List<InvitationModel> invitations =
-        invitationRepository.findByParticipantIdAndEventDateBetween(
-            participantId, startDate, endDate);
+    List<InvitationModel> invitations;
+    if (type != null && !type.isBlank()) {
+      invitations =
+          invitationRepository.findByParticipantIdAndTypeAndEventDateBetween(
+              participantId, type.trim(), startDate, endDate);
+    } else {
+      invitations =
+          invitationRepository.findByParticipantIdAndEventDateBetween(
+              participantId, startDate, endDate);
+    }
 
     return invitations.stream()
         .map(

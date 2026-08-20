@@ -39,4 +39,7 @@ public interface InvitationService {
 
   List<DisplayInvitationResponse> getInvitationsByParticipantAndMonth(
       Long participantId, String yearMonth);
+
+  List<DisplayInvitationResponse> getInvitationsByTypeAndParticipantAndMonth(
+      String type, Long participantId, String yearMonth);
 }

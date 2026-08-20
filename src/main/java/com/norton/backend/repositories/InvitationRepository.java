@@ -26,4 +26,20 @@ public interface InvitationRepository extends JpaRepository<InvitationModel, Lon
       @Param("participantId") Long participantId,
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate);
+
+  @Query(
+      """
+      select i from InvitationModel i
+      join i.participants p
+      where p.officer.id = :participantId
+        and lower(i.type) = lower(:type)
+        and i.eventDate >= :startDate
+        and i.eventDate <= :endDate
+      order by i.eventDate asc, i.eventTime asc
+      """)
+  List<InvitationModel> findByParticipantIdAndTypeAndEventDateBetween(
+      @Param("participantId") Long participantId,
+      @Param("type") String type,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate);
 }

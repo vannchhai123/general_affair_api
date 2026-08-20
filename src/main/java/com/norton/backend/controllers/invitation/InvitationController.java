@@ -132,4 +132,14 @@ public class InvitationController {
     return ResponseEntity.ok(
         invitationService.getInvitationsByParticipantAndMonth(participantId, yearMonth));
   }
+
+  @GetMapping("/display/{type}/{participantId}/{yearMonth}")
+  @PreAuthorize(
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  public ResponseEntity<List<DisplayInvitationResponse>> getInvitationsByTypeAndParticipantAndMonth(
+      @PathVariable String type, @PathVariable Long participantId, @PathVariable String yearMonth) {
+    return ResponseEntity.ok(
+        invitationService.getInvitationsByTypeAndParticipantAndMonth(
+            type, participantId, yearMonth));
+  }
 }
