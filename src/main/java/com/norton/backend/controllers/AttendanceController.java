@@ -3,10 +3,12 @@ package com.norton.backend.controllers;
 import com.norton.backend.dto.request.AttendanceScanRequest;
 import com.norton.backend.dto.request.CreateAttendanceRequest;
 import com.norton.backend.dto.request.UpdateAttendanceStatusRequest;
+import com.norton.backend.dto.request.attendances.UpdateAttendanceLocationSettingsRequest;
 import com.norton.backend.dto.responses.PageResponse;
 import com.norton.backend.dto.responses.attendances.AllOfficersReportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceExportResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceImportResponse;
+import com.norton.backend.dto.responses.attendances.AttendanceLocationSettingsResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceScanSuccessResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceStatusResponse;
@@ -14,6 +16,7 @@ import com.norton.backend.dto.responses.attendances.AttendanceSummaryResponse;
 import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import com.norton.backend.exceptions.BadRequestException;
+import com.norton.backend.services.attendance.AttendanceLocationSettingService;
 import com.norton.backend.services.attendance.AttendanceScanService;
 import com.norton.backend.services.attendance.AttendanceService;
 import jakarta.validation.Valid;
@@ -45,6 +48,7 @@ public class AttendanceController {
 
   private final AttendanceService attendanceService;
   private final AttendanceScanService attendanceScanService;
+  private final AttendanceLocationSettingService attendanceLocationSettingService;
 
   @GetMapping
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
@@ -183,5 +187,18 @@ public class AttendanceController {
           public String instruction =
               "Call GET /api/v1/attendance/status to verify reset: isCheckedIn=false, checkInTime=null";
         });
+  }
+
+  @GetMapping("/location-settings")
+  public ResponseEntity<AttendanceLocationSettingsResponse> getLocationSettings() {
+    return ResponseEntity.ok(attendanceLocationSettingService.getSettings());
+  }
+
+  @PutMapping("/location-settings")
+  @PreAuthorize(
+      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  public ResponseEntity<AttendanceLocationSettingsResponse> updateLocationSettings(
+      @Valid @RequestBody UpdateAttendanceLocationSettingsRequest request) {
+    return ResponseEntity.ok(attendanceLocationSettingService.updateSettings(request));
   }
 }

@@ -1,9 +1,11 @@
 package com.norton.backend.controllers.mobile;
 
+import com.norton.backend.dto.responses.attendances.AttendanceLocationSettingsResponse;
 import com.norton.backend.dto.responses.invitation.CreateInvitationResponse;
 import com.norton.backend.dto.responses.mobile.MobileHomeResponse;
 import com.norton.backend.dto.responses.mobile.MobileMeetingCalendarResponse;
 import com.norton.backend.dto.responses.mobile.MobileShiftResponseDto;
+import com.norton.backend.services.attendance.AttendanceLocationSettingService;
 import com.norton.backend.services.mobile.MobileHomeService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -26,6 +28,7 @@ public class MobileHomeController {
   public static final String BASE_URL = "/api/v1/mobile";
 
   private final MobileHomeService mobileHomeService;
+  private final AttendanceLocationSettingService attendanceLocationSettingService;
 
   @GetMapping("/home")
   public ResponseEntity<MobileHomeResponse> getHomeData() {
@@ -56,5 +59,10 @@ public class MobileHomeController {
   @GetMapping("/shifts/me")
   public ResponseEntity<MobileShiftResponseDto> getMyShift() {
     return ResponseEntity.ok(mobileHomeService.getMyShift());
+  }
+
+  @GetMapping("/attendance-location-settings")
+  public ResponseEntity<AttendanceLocationSettingsResponse> getAttendanceLocationSettings() {
+    return ResponseEntity.ok(attendanceLocationSettingService.getSettings());
   }
 }
