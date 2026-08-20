@@ -12,7 +12,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("officerDataLoading")
 @RequiredArgsConstructor
 @Order(9)
-@Profile("dev")
+// @Profile("dev")
 public class InvitationDataLoading implements CommandLineRunner {
 
   private final InvitationRepository invitationRepository;
@@ -72,7 +71,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 1, 15))
             .eventTime(LocalTime.of(13, 30))
             .location("Room 102")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
@@ -126,7 +125,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 2, 12))
             .eventTime(LocalTime.of(14, 30))
             .location("Meeting Room 1 (Floor 2)")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
@@ -165,7 +164,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 2, 25))
             .eventTime(LocalTime.of(8, 30))
             .location("Training Room C")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
@@ -202,7 +201,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 3, 12))
             .eventTime(LocalTime.of(15, 0))
             .location("HR Interview Room")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
@@ -239,7 +238,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 6, 10))
             .eventTime(LocalTime.of(10, 0))
             .location("Conference Hall B")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
@@ -276,7 +275,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 7, 8))
             .eventTime(LocalTime.of(9, 30))
             .location("Press Room")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
@@ -317,7 +316,7 @@ public class InvitationDataLoading implements CommandLineRunner {
             .eventDate(LocalDate.of(2026, 8, 11))
             .eventTime(LocalTime.of(10, 30))
             .location("Emergency Operation Center")
-            .type("incoming")
+            .type("outgoing")
             .status("pending")
             .build();
     for (OfficerModel officer : eligibleOfficers) {
