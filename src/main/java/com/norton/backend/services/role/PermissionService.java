@@ -209,4 +209,12 @@ public class PermissionService {
       throw new ConflictException("Officer has no linked user account to assign role");
     }
   }
+
+  public void deleteOfficerPermission(Long id) {
+    OfficerPermission entity =
+        repository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("OfficerPermission", "id", id));
+    repository.delete(entity);
+  }
 }

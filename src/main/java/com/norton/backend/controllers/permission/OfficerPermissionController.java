@@ -55,4 +55,13 @@ public class OfficerPermissionController {
     return ResponseEntity.ok(
         java.util.Map.of("success", true, "message", "Officer role assigned successfully"));
   }
+
+  @DeleteMapping("/{id}")
+  @PreAuthorize(
+      "hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_REMOVE_PERMISSION) or hasRole('ADMIN')")
+  public ResponseEntity<java.util.Map<String, Object>> delete(@PathVariable Long id) {
+    permissionService.deleteOfficerPermission(id);
+    return ResponseEntity.ok(
+        java.util.Map.of("success", true, "message", "Permission revoked successfully"));
+  }
 }

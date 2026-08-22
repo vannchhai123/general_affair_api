@@ -57,6 +57,12 @@ public class AttendanceStatusDataLoading implements CommandLineRunner {
   private void createIfMissing(AttendanceStatusModel status) {
     attendanceStatusRepository
         .findByCode(status.getCode())
-        .orElseGet(() -> attendanceStatusRepository.save(status));
+        .ifPresentOrElse(
+            existing -> {
+              existing.setName(status.getName());
+              existing.setDescription(status.getDescription());
+              attendanceStatusRepository.save(existing);
+            },
+            () -> attendanceStatusRepository.save(status));
   }
 }

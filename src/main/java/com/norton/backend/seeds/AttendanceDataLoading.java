@@ -136,7 +136,7 @@ public class AttendanceDataLoading implements CommandLineRunner {
           .totalWorkMin(0)
           .totalLateMin(0)
           .status(absent)
-          .notes("អវត្តមាន")
+          .notes("Absent")
           .build();
     }
 
@@ -154,7 +154,7 @@ public class AttendanceDataLoading implements CommandLineRunner {
         .totalWorkMin(Math.max(totalWorkMin, 0))
         .totalLateMin(lateMinutes)
         .status(status)
-        .notes("ទិន្នន័យសាកល្បងប្រចាំខែ")
+        .notes("Monthly test seed data")
         .build();
   }
 
