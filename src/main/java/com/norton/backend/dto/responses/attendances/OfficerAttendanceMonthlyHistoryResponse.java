@@ -26,6 +26,9 @@ public class OfficerAttendanceMonthlyHistoryResponse {
   @JsonProperty("lateDates")
   private List<LocalDate> lateDates;
 
+  @JsonProperty("leaveDates")
+  private List<LocalDate> leaveDates;
+
   @Data
   @Builder
   @NoArgsConstructor
@@ -35,5 +38,6 @@ public class OfficerAttendanceMonthlyHistoryResponse {
     private Integer present;
     private Integer absent;
     private Integer late;
+    private Integer leave;
   }
 }

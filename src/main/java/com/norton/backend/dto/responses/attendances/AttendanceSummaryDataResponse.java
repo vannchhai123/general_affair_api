@@ -10,5 +10,6 @@ public class AttendanceSummaryDataResponse {
   private int presentCount;
   private int absentCount;
   private int lateCount;
+  private int leaveCount;
   private int totalWorkingDays;
 }

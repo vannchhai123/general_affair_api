@@ -27,6 +27,7 @@ import com.norton.backend.models.AttendanceModel;
 import com.norton.backend.models.AttendanceSessionModel;
 import com.norton.backend.models.AttendanceStatusModel;
 import com.norton.backend.models.DepartmentModel;
+import com.norton.backend.models.LeaveRequestModel;
 import com.norton.backend.models.OfficerModel;
 import com.norton.backend.models.ShiftModel;
 import com.norton.backend.models.UserModel;
@@ -34,6 +35,7 @@ import com.norton.backend.repositories.AttendanceRepository;
 import com.norton.backend.repositories.AttendanceSessionRepository;
 import com.norton.backend.repositories.AttendanceStatusRepository;
 import com.norton.backend.repositories.DepartmentRepository;
+import com.norton.backend.repositories.LeaveRequestRepository;
 import com.norton.backend.repositories.OfficerRepository;
 import com.norton.backend.services.security.OfficeAccessService;
 import com.norton.backend.services.shift.ShiftResolutionService;
@@ -41,6 +43,7 @@ import com.norton.backend.services.shift.ShiftResolutionService.ShiftWindow;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,6 +56,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -85,9 +89,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class AttendanceServiceImpl implements AttendanceService {
 
   private static final List<String> MORNING_SHIFT_NAMES =
-      List.of("ážœáŸáž“áž–áŸ’ážšáž¹áž€", "Morning Shift");
+      List.of("ážœáŸ áž“áž–áŸ’ážšáž¹áž€", "Morning Shift");
   private static final List<String> AFTERNOON_SHIFT_NAMES =
-      List.of("ážœáŸáž“ážšážŸáŸ€áž›", "Afternoon Shift");
+      List.of("ážœáŸ áž“ážšážŸáŸ€áž›", "Afternoon Shift");
   private static final Set<String> ALLOWED_STATUS_CODES =
       Set.of("PRESENT", "ABSENT", "LATE", "HALF_DAY");
   private static final DateTimeFormatter EXPORT_DATE_FORMAT =
@@ -101,6 +105,7 @@ public class AttendanceServiceImpl implements AttendanceService {
   private final AttendanceStatusRepository attendanceStatusRepository;
   private final ShiftResolutionService shiftResolutionService;
   private final OfficeAccessService officeAccessService;
+  private final LeaveRequestRepository leaveRequestRepository;
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
@@ -240,6 +245,22 @@ public class AttendanceServiceImpl implements AttendanceService {
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", targetOfficerId));
     officeAccessService.assertCanAccessOfficer(targetOfficer);
 
+    List<LeaveRequestModel> approvedLeaves =
+        leaveRequestRepository.findApprovedOverlapping(targetOfficerId, startOfMonth, endOfMonth);
+
+    Set<LocalDate> leaveDates = new HashSet<>();
+    for (LeaveRequestModel leave : approvedLeaves) {
+      LocalDate cur =
+          leave.getStartDate().isBefore(startOfMonth) ? startOfMonth : leave.getStartDate();
+      LocalDate end = leave.getEndDate().isAfter(endOfMonth) ? endOfMonth : leave.getEndDate();
+      while (!cur.isAfter(end)) {
+        if (cur.getDayOfWeek() != DayOfWeek.SATURDAY && cur.getDayOfWeek() != DayOfWeek.SUNDAY) {
+          leaveDates.add(cur);
+        }
+        cur = cur.plusDays(1);
+      }
+    }
+
     int lateCount =
         (int)
             monthlyAttendances.stream()
@@ -257,8 +278,9 @@ public class AttendanceServiceImpl implements AttendanceService {
                         attendance.getTotalLateMin() == null || attendance.getTotalLateMin() <= 0)
                 .count();
 
+    int leaveCount = leaveDates.size();
     int totalWorkingDays = calculateWorkingDays(startOfMonth, endOfMonth);
-    int absentCount = Math.max(totalWorkingDays - presentCount - lateCount, 0);
+    int absentCount = Math.max(totalWorkingDays - presentCount - lateCount - leaveCount, 0);
 
     AttendanceSummaryDataResponse data =
         AttendanceSummaryDataResponse.builder()
@@ -266,6 +288,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             .presentCount(presentCount)
             .absentCount(absentCount)
             .lateCount(lateCount)
+            .leaveCount(leaveCount)
             .totalWorkingDays(totalWorkingDays)
             .build();
 
@@ -971,11 +994,29 @@ public class AttendanceServiceImpl implements AttendanceService {
       List<AttendanceModel> attendances =
           attendanceRepository.findAllByOfficerIdAndDateBetween(officerId, startDate, endDate);
 
+      List<LeaveRequestModel> approvedLeaves =
+          leaveRequestRepository.findApprovedOverlapping(officerId, startDate, endDate);
+
+      Set<LocalDate> leaveDatesSet = new HashSet<>();
+      for (LeaveRequestModel leave : approvedLeaves) {
+        LocalDate cur = leave.getStartDate().isBefore(startDate) ? startDate : leave.getStartDate();
+        LocalDate end = leave.getEndDate().isAfter(endDate) ? endDate : leave.getEndDate();
+        while (!cur.isAfter(end)) {
+          if (cur.getDayOfWeek() != DayOfWeek.SATURDAY && cur.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            leaveDatesSet.add(cur);
+          }
+          cur = cur.plusDays(1);
+        }
+      }
+
       List<LocalDate> presentDates = new ArrayList<>();
       List<LocalDate> absentDates = new ArrayList<>();
       List<LocalDate> lateDates = new ArrayList<>();
 
       for (AttendanceModel attendance : attendances) {
+        if (leaveDatesSet.contains(attendance.getDate())) {
+          continue;
+        }
         if (attendance.getCheckIn() == null) {
           absentDates.add(attendance.getDate());
         } else if (attendance.getTotalLateMin() != null && attendance.getTotalLateMin() > 0) {
@@ -985,11 +1026,14 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
       }
 
+      List<LocalDate> leaveDates = leaveDatesSet.stream().sorted().toList();
+
       OfficerAttendanceMonthlyHistoryResponse.MonthlySummary summary =
           OfficerAttendanceMonthlyHistoryResponse.MonthlySummary.builder()
               .present(presentDates.size())
               .absent(absentDates.size())
               .late(lateDates.size())
+              .leave(leaveDates.size())
               .build();
 
       return OfficerAttendanceMonthlyHistoryResponse.builder()
@@ -998,6 +1042,7 @@ public class AttendanceServiceImpl implements AttendanceService {
           .presentDates(presentDates)
           .absentDates(absentDates)
           .lateDates(lateDates)
+          .leaveDates(leaveDates)
           .build();
     } catch (NumberFormatException | java.time.DateTimeException ex) {
       throw new BadRequestException("Invalid month format. Use yyyy-MM");

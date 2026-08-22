@@ -45,4 +45,15 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequestModel,
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("excludeId") Long excludeId);
+
+  @Query(
+      "SELECT lr FROM LeaveRequestModel lr "
+          + "WHERE lr.officer.id = :officerId "
+          + "AND LOWER(lr.status) = 'approved' "
+          + "AND lr.startDate <= :endDate "
+          + "AND lr.endDate >= :startDate")
+  List<LeaveRequestModel> findApprovedOverlapping(
+      @Param("officerId") Long officerId,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate);
 }
