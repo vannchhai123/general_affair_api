@@ -13,7 +13,11 @@ import java.util.Map;
 public interface AuthService {
   AuthResponse<UserDto> login(LoginRequest request);
 
+  AuthResponse<UserDto> adminLogin(LoginRequest request);
+
   AuthResponse<UserDto> refreshToken(String refreshToken);
+
+  AuthResponse<UserDto> adminRefreshToken(String refreshToken);
 
   MeResponse getMyProfile();
 

@@ -34,10 +34,24 @@ public class AuthController {
     return ResponseEntity.ok(authService.login(request));
   }
 
+  @PostMapping("/admin/login")
+  public ResponseEntity<AuthResponse<UserDto>> adminLogin(
+      @Valid @RequestBody LoginRequest request) {
+    return ResponseEntity.ok(authService.adminLogin(request));
+  }
+
   @PostMapping("/refresh")
   public ResponseEntity<AuthResponse<UserDto>> refreshToken(@RequestBody RefreshRequest request) {
 
     AuthResponse<UserDto> response = authService.refreshToken(request.getRefreshToken());
+    return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/admin/refresh")
+  public ResponseEntity<AuthResponse<UserDto>> adminRefreshToken(
+      @RequestBody RefreshRequest request) {
+
+    AuthResponse<UserDto> response = authService.adminRefreshToken(request.getRefreshToken());
     return ResponseEntity.ok(response);
   }
 

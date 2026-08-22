@@ -67,6 +67,25 @@ public class AuthServiceImpl implements AuthService {
         new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
     UserModel user = (UserModel) customUserDetailsService.loadUserByUsername(request.getUsername());
+    String accessToken = jwtService.generateToken(Map.of(), user);
+    String refreshToken = jwtService.generateRefreshToken(user);
+
+    UserDto userDto = userMapper.toDto(user);
+
+    return AuthResponse.<UserDto>builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .data(userDto)
+        .build();
+  }
+
+  @Override
+  public AuthResponse<UserDto> adminLogin(LoginRequest request) {
+
+    authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+
+    UserModel user = (UserModel) customUserDetailsService.loadUserByUsername(request.getUsername());
 
     validateAdminAccess(user);
 
@@ -84,6 +103,29 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   public AuthResponse<UserDto> refreshToken(String refreshToken) {
+
+    if (!jwtService.isRefreshTokenValid(refreshToken)) {
+      throw new RuntimeException("Invalid refresh token");
+    }
+
+    String username = jwtService.extractUsername(refreshToken);
+    UserModel user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    String accessToken = jwtService.generateToken(Map.of(), user);
+    String newRefreshToken = jwtService.generateRefreshToken(user);
+
+    return AuthResponse.<UserDto>builder()
+        .accessToken(accessToken)
+        .refreshToken(newRefreshToken)
+        .data(userMapper.toDto(user))
+        .build();
+  }
+
+  @Override
+  public AuthResponse<UserDto> adminRefreshToken(String refreshToken) {
 
     if (!jwtService.isRefreshTokenValid(refreshToken)) {
       throw new RuntimeException("Invalid refresh token");

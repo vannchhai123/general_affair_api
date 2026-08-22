@@ -92,6 +92,11 @@ public class OfficerServiceImpl implements OfficerService {
       }
     }
 
+    String nationalId = trimToNull(request.getNationalId());
+    if (nationalId != null && officerRepository.existsByNationalId(nationalId)) {
+      throw new ConflictException("National ID (NID) already exists: " + nationalId);
+    }
+
     DepartmentModel department = resolveOffice(request);
     officeAccessService.assertCanAccessOffice(department.getId());
 
@@ -201,6 +206,11 @@ public class OfficerServiceImpl implements OfficerService {
       if (userId != null && userRepository.existsByEmailAndIdNot(email, userId)) {
         throw new ConflictException("User email already exists: " + email);
       }
+    }
+
+    String nationalId = trimToNull(request.getNationalId());
+    if (nationalId != null && officerRepository.existsByNationalIdAndIdNot(nationalId, id)) {
+      throw new ConflictException("National ID (NID) already exists: " + nationalId);
     }
 
     DepartmentModel department = resolveOffice(request);

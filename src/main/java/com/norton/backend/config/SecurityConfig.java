@@ -70,7 +70,9 @@ public class SecurityConfig {
                     .hasAnyRole("ADMIN", "HEAD_OFFICE", "MANAGER", "OFFICER")
                     .requestMatchers(
                         AuthController.BASE_URL + "/login",
+                        AuthController.BASE_URL + "/admin/login",
                         AuthController.BASE_URL + "/refresh",
+                        AuthController.BASE_URL + "/admin/refresh",
                         AuthController.BASE_URL + "/forgot-password/verify-email",
                         AuthController.BASE_URL + "/forgot-password/verify-otp",
                         AuthController.BASE_URL + "/forgot-password/reset",
