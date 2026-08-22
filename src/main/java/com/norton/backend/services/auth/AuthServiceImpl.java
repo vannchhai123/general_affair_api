@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -66,6 +67,9 @@ public class AuthServiceImpl implements AuthService {
         new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
     UserModel user = (UserModel) customUserDetailsService.loadUserByUsername(request.getUsername());
+
+    validateAdminAccess(user);
+
     String accessToken = jwtService.generateToken(Map.of(), user);
     String refreshToken = jwtService.generateRefreshToken(user);
 
@@ -91,6 +95,8 @@ public class AuthServiceImpl implements AuthService {
             .findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
+    validateAdminAccess(user);
+
     String accessToken = jwtService.generateToken(Map.of(), user);
     String newRefreshToken = jwtService.generateRefreshToken(user);
 
@@ -99,6 +105,17 @@ public class AuthServiceImpl implements AuthService {
         .refreshToken(newRefreshToken)
         .data(userMapper.toDto(user))
         .build();
+  }
+
+  private void validateAdminAccess(UserModel user) {
+    if (user == null || user.getRole() == null) {
+      throw new AccessDeniedException("Access denied: Only administrators are allowed to log in.");
+    }
+    String roleName = user.getRole().getRoleName();
+    boolean isAdmin = "ROLE_ADMIN".equalsIgnoreCase(roleName) || "ADMIN".equalsIgnoreCase(roleName);
+    if (!isAdmin) {
+      throw new AccessDeniedException("Access denied: Only administrators are allowed to log in.");
+    }
   }
 
   @Override
