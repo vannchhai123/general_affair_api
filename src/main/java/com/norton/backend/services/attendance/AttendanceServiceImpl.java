@@ -261,26 +261,51 @@ public class AttendanceServiceImpl implements AttendanceService {
       }
     }
 
-    int lateCount =
-        (int)
-            monthlyAttendances.stream()
-                .filter(attendance -> attendance.getCheckIn() != null)
-                .filter(attendance -> attendance.getTotalLateMin() != null)
-                .filter(attendance -> attendance.getTotalLateMin() > 0)
-                .count();
+    Set<LocalDate> presentDatesSet = new HashSet<>();
+    Set<LocalDate> lateDatesSet = new HashSet<>();
 
-    int presentCount =
-        (int)
-            monthlyAttendances.stream()
-                .filter(attendance -> attendance.getCheckIn() != null)
-                .filter(
-                    attendance ->
-                        attendance.getTotalLateMin() == null || attendance.getTotalLateMin() <= 0)
-                .count();
+    for (AttendanceModel attendance : monthlyAttendances) {
+      if (leaveDates.contains(attendance.getDate())) {
+        continue;
+      }
+      if (attendance.getCheckIn() != null) {
+        if (attendance.getTotalLateMin() != null && attendance.getTotalLateMin() > 0) {
+          lateDatesSet.add(attendance.getDate());
+        } else {
+          presentDatesSet.add(attendance.getDate());
+        }
+      }
+    }
 
+    int presentCount = presentDatesSet.size();
+    int lateCount = lateDatesSet.size();
     int leaveCount = leaveDates.size();
     int totalWorkingDays = calculateWorkingDays(startOfMonth, endOfMonth);
-    int absentCount = Math.max(totalWorkingDays - presentCount - lateCount - leaveCount, 0);
+
+    int absentCount = 0;
+    if (!startOfMonth.isAfter(today)) {
+      LocalDate maxCheckDate = endOfMonth.isBefore(today) ? endOfMonth : today;
+      LocalDate day = startOfMonth;
+      while (!day.isAfter(maxCheckDate)) {
+        if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+          if (!leaveDates.contains(day)
+              && !presentDatesSet.contains(day)
+              && !lateDatesSet.contains(day)) {
+            if (day.isBefore(today)) {
+              absentCount++;
+            } else if (day.equals(today)) {
+              boolean explicitlyAbsentToday =
+                  monthlyAttendances.stream()
+                      .anyMatch(a -> a.getDate().equals(today) && a.getCheckIn() == null);
+              if (explicitlyAbsentToday) {
+                absentCount++;
+              }
+            }
+          }
+        }
+        day = day.plusDays(1);
+      }
+    }
 
     AttendanceSummaryDataResponse data =
         AttendanceSummaryDataResponse.builder()
@@ -1025,17 +1050,32 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
       }
 
+      ZoneId zoneId = resolveScanZoneId();
+      LocalDate today = LocalDate.now(zoneId);
+
       List<LocalDate> absentDates = new ArrayList<>();
-      LocalDate day = startDate;
-      while (!day.isAfter(endDate)) {
-        if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
-          if (!leaveDatesSet.contains(day)
-              && !presentDatesSet.contains(day)
-              && !lateDatesSet.contains(day)) {
-            absentDates.add(day);
+      if (!startDate.isAfter(today)) {
+        LocalDate maxCheckDate = endDate.isBefore(today) ? endDate : today;
+        LocalDate day = startDate;
+        while (!day.isAfter(maxCheckDate)) {
+          if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            if (!leaveDatesSet.contains(day)
+                && !presentDatesSet.contains(day)
+                && !lateDatesSet.contains(day)) {
+              if (day.isBefore(today)) {
+                absentDates.add(day);
+              } else if (day.equals(today)) {
+                boolean explicitlyAbsentToday =
+                    attendances.stream()
+                        .anyMatch(a -> a.getDate().equals(today) && a.getCheckIn() == null);
+                if (explicitlyAbsentToday) {
+                  absentDates.add(day);
+                }
+              }
+            }
           }
+          day = day.plusDays(1);
         }
-        day = day.plusDays(1);
       }
 
       List<LocalDate> presentDates = presentDatesSet.stream().sorted().toList();
@@ -1080,10 +1120,34 @@ public class AttendanceServiceImpl implements AttendanceService {
             .orElseThrow(() -> new ResourceNotFoundException("Officer", "id", officerId));
     officeAccessService.assertCanAccessOfficer(officer);
 
-    AttendanceModel attendance =
-        attendanceRepository
-            .findByOfficerIdAndDate(officerId, onDate)
-            .orElseThrow(() -> new ResourceNotFoundException("Attendance", "date", onDate));
+    Optional<AttendanceModel> attendanceOpt =
+        attendanceRepository.findByOfficerIdAndDate(officerId, onDate);
+
+    if (attendanceOpt.isEmpty()) {
+      List<LeaveRequestModel> approvedLeaves =
+          leaveRequestRepository.findApprovedOverlapping(officerId, onDate, onDate);
+      if (!approvedLeaves.isEmpty()) {
+        return OfficerAttendanceDailyDetailResponse.builder()
+            .date(onDate)
+            .status("LEAVE")
+            .checkIn(null)
+            .checkOut(null)
+            .workingHours("00:00")
+            .lateMinutes(0)
+            .office(
+                officer.getOffice() != null
+                    ? OfficerAttendanceDailyDetailResponse.OfficeInfo.builder()
+                        .id(officer.getOffice().getId())
+                        .name(officer.getOffice().getName())
+                        .build()
+                    : null)
+            .timeline(List.of())
+            .build();
+      }
+      throw new ResourceNotFoundException("Attendance", "date", onDate);
+    }
+
+    AttendanceModel attendance = attendanceOpt.get();
 
     String status = attendance.getStatus() != null ? attendance.getStatus().getCode() : "UNKNOWN";
     LocalTime checkInTime =
