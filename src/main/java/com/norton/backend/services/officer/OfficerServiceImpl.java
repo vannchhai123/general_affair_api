@@ -70,12 +70,12 @@ public class OfficerServiceImpl implements OfficerService {
   @Transactional
   public CreateOfficerResponse createOfficer(CreateOfficerRequest request) {
     if (officerRepository.existsByOfficerCode(request.getOfficerCode())) {
-      throw new ConflictException("Officer code already exists: " + request.getOfficerCode());
+      throw new ConflictException("អត្តលេខមន្ត្រីនេះមានរួចហើយ: " + request.getOfficerCode());
     }
 
     String username = request.getUsername().trim();
     if (userRepository.existsByUsername(username)) {
-      throw new ConflictException("Username already exists: " + username);
+      throw new ConflictException("ឈ្មោះគណនី (Username) នេះមានរួចហើយ: " + username);
     }
 
     String email =
@@ -84,17 +84,17 @@ public class OfficerServiceImpl implements OfficerService {
             : request.getEmail().trim();
     if (email != null) {
       if (officerRepository.existsByEmail(email)) {
-        throw new ConflictException("Officer email already exists: " + email);
+        throw new ConflictException("អ៊ីមែលមន្ត្រីនេះមានរួចហើយ: " + email);
       }
 
       if (userRepository.existsByEmail(email)) {
-        throw new ConflictException("User email already exists: " + email);
+        throw new ConflictException("អ៊ីមែលគណនីនេះមានរួចហើយ: " + email);
       }
     }
 
     String nationalId = trimToNull(request.getNationalId());
     if (nationalId != null && officerRepository.existsByNationalId(nationalId)) {
-      throw new ConflictException("National ID (NID) already exists: " + nationalId);
+      throw new ConflictException("លេខអត្តសញ្ញាណប័ណ្ណ (NID) នេះមានរួចហើយ: " + nationalId);
     }
 
     DepartmentModel department = resolveOffice(request);
@@ -185,7 +185,7 @@ public class OfficerServiceImpl implements OfficerService {
     officeAccessService.assertCanAccessOfficer(officer);
 
     if (officerRepository.existsByOfficerCodeAndIdNot(request.getOfficerCode(), id)) {
-      throw new ConflictException("Officer code already exists: " + request.getOfficerCode());
+      throw new ConflictException("អត្តលេខមន្ត្រីនេះមានរួចហើយ: " + request.getOfficerCode());
     }
 
     String username = request.getUsername().trim();
@@ -196,21 +196,21 @@ public class OfficerServiceImpl implements OfficerService {
 
     Long userId = officer.getUser() != null ? officer.getUser().getId() : null;
     if (userId != null && userRepository.existsByUsernameAndIdNot(username, userId)) {
-      throw new ConflictException("Username already exists: " + username);
+      throw new ConflictException("ឈ្មោះគណនី (Username) នេះមានរួចហើយ: " + username);
     }
 
     if (email != null) {
       if (officerRepository.existsByEmailAndIdNot(email, id)) {
-        throw new ConflictException("Officer email already exists: " + email);
+        throw new ConflictException("អ៊ីមែលមន្ត្រីនេះមានរួចហើយ: " + email);
       }
       if (userId != null && userRepository.existsByEmailAndIdNot(email, userId)) {
-        throw new ConflictException("User email already exists: " + email);
+        throw new ConflictException("អ៊ីមែលគណនីនេះមានរួចហើយ: " + email);
       }
     }
 
     String nationalId = trimToNull(request.getNationalId());
     if (nationalId != null && officerRepository.existsByNationalIdAndIdNot(nationalId, id)) {
-      throw new ConflictException("National ID (NID) already exists: " + nationalId);
+      throw new ConflictException("លេខអត្តសញ្ញាណប័ណ្ណ (NID) នេះមានរួចហើយ: " + nationalId);
     }
 
     DepartmentModel department = resolveOffice(request);

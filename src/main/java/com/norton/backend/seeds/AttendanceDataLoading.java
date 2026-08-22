@@ -45,14 +45,19 @@ public class AttendanceDataLoading implements CommandLineRunner {
     AttendanceStatusModel approved = getRequiredStatus("APPROVED");
     AttendanceStatusModel absent = getRequiredStatus("ABSENT");
 
-    YearMonth month = YearMonth.now(ZoneId.of("Asia/Phnom_Penh"));
+    LocalDate today = LocalDate.now(ZoneId.of("Asia/Phnom_Penh"));
+    LocalDate yesterday = today.minusDays(1);
+    YearMonth currentMonth = YearMonth.from(today);
+    YearMonth previousMonth = currentMonth.minusMonths(1);
+
     List<AttendanceModel> records = new ArrayList<>();
     Set<String> plannedKeys = new HashSet<>();
 
+    // 1. Seed previous month historical data if missing
     for (int officerIndex = 0; officerIndex < officers.size(); officerIndex++) {
       OfficerModel officer = officers.get(officerIndex);
-      for (int day = 1; day <= month.lengthOfMonth(); day++) {
-        LocalDate date = month.atDay(day);
+      for (int day = 1; day <= previousMonth.lengthOfMonth(); day++) {
+        LocalDate date = previousMonth.atDay(day);
         String key = buildKey(officer.getId(), date);
         if (isWeekend(date)
             || plannedKeys.contains(key)
@@ -65,81 +70,31 @@ public class AttendanceDataLoading implements CommandLineRunner {
       }
     }
 
-    if (officers.size() >= 5) {
-      addIfMissing(
-          records,
-          plannedKeys,
-          officers.get(0).getOfficerCode(),
-          LocalDate.of(2026, 4, 14),
-          present,
-          late,
-          approved,
-          absent);
-      addIfMissing(
-          records,
-          plannedKeys,
-          officers.get(1).getOfficerCode(),
-          LocalDate.of(2026, 4, 14),
-          present,
-          late,
-          approved,
-          absent);
-      addIfMissing(
-          records,
-          plannedKeys,
-          officers.get(4).getOfficerCode(),
-          LocalDate.of(2026, 4, 14),
-          present,
-          late,
-          approved,
-          absent);
+    // 2. Seed current month strictly up to yesterday (leave today empty for scan testing)
+    if (yesterday.getMonth() == today.getMonth()) {
+      for (int officerIndex = 0; officerIndex < officers.size(); officerIndex++) {
+        OfficerModel officer = officers.get(officerIndex);
+        for (int day = 1; day <= yesterday.getDayOfMonth(); day++) {
+          LocalDate date = currentMonth.atDay(day);
+          String key = buildKey(officer.getId(), date);
+          if (isWeekend(date)
+              || plannedKeys.contains(key)
+              || attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
+            continue;
+          }
+          records.add(
+              buildDailyAttendance(officer, officerIndex, date, present, late, approved, absent));
+          plannedKeys.add(key);
+        }
+      }
     }
 
     if (!records.isEmpty()) {
       attendanceRepository.saveAll(records);
-    }
-
-    // Ensure today's attendance exists for all officers in the system
-    LocalDate today = LocalDate.now(ZoneId.of("Asia/Phnom_Penh"));
-    ensureTodaysAttendanceForAllOfficers(officers, today, present, approved);
-
-    System.out.println("Monthly attendance seed data inserted/updated successfully.");
-  }
-
-  private void ensureTodaysAttendanceForAllOfficers(
-      List<OfficerModel> officers,
-      LocalDate date,
-      AttendanceStatusModel present,
-      AttendanceStatusModel approved) {
-    if (officers == null || officers.isEmpty()) {
-      return;
-    }
-
-    List<AttendanceModel> todays = new ArrayList<>();
-    for (OfficerModel officer : officers) {
-      if (attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
-        continue;
-      }
-
-      LocalDateTime checkIn = date.atTime(8, 0);
-      LocalDateTime checkOut = date.atTime(17, 0);
-      AttendanceModel a =
-          AttendanceModel.builder()
-              .officer(officer)
-              .date(date)
-              .checkIn(checkIn)
-              .checkOut(checkOut)
-              .totalWorkMin((int) java.time.Duration.between(checkIn, checkOut).toMinutes())
-              .totalLateMin(0)
-              .status(present != null ? present : approved)
-              .notes("Seeded attendance for " + date)
-              .build();
-      todays.add(a);
-    }
-
-    if (!todays.isEmpty()) {
-      attendanceRepository.saveAll(todays);
-      System.out.println("Inserted today's attendance for " + todays.size() + " officers.");
+      System.out.println(
+          "Monthly attendance seed data inserted up to yesterday ("
+              + records.size()
+              + " records). Today is left clear for scan testing.");
     }
   }
 
@@ -203,43 +158,6 @@ public class AttendanceDataLoading implements CommandLineRunner {
         .build();
   }
 
-  private void addIfMissing(
-      List<AttendanceModel> records,
-      Set<String> plannedKeys,
-      String officerCode,
-      LocalDate date,
-      AttendanceStatusModel present,
-      AttendanceStatusModel late,
-      AttendanceStatusModel approved,
-      AttendanceStatusModel absent) {
-    if (officerCode == null || officerCode.isBlank()) {
-      return;
-    }
-    OfficerModel officer = officerRepository.findByOfficerCode(officerCode).orElse(null);
-    if (officer == null) {
-      return;
-    }
-
-    String key = buildKey(officer.getId(), date);
-    if (plannedKeys.contains(key)
-        || attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
-      return;
-    }
-
-    int officerIndex = parseOfficerIndex(officerCode);
-    records.add(buildDailyAttendance(officer, officerIndex, date, present, late, approved, absent));
-    plannedKeys.add(key);
-  }
-
-  private int parseOfficerIndex(String officerCode) {
-    if (officerCode == null) return 0;
-    try {
-      return Math.max(Integer.parseInt(officerCode.replaceAll("\\D", "")) - 1, 0);
-    } catch (Exception ex) {
-      return 0;
-    }
-  }
-
   private boolean isWeekend(LocalDate date) {
     DayOfWeek day = date.getDayOfWeek();
     return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
@@ -247,37 +165,5 @@ public class AttendanceDataLoading implements CommandLineRunner {
 
   private String buildKey(Long officerId, LocalDate date) {
     return officerId + "|" + date;
-  }
-
-  private void seedMonthIfMissing(
-      List<OfficerModel> officers,
-      YearMonth month,
-      AttendanceStatusModel present,
-      AttendanceStatusModel late,
-      AttendanceStatusModel approved,
-      AttendanceStatusModel absent) {
-    if (officers == null || officers.isEmpty()) {
-      return;
-    }
-
-    List<AttendanceModel> newRecords = new ArrayList<>();
-    for (int officerIndex = 0; officerIndex < officers.size(); officerIndex++) {
-      OfficerModel officer = officers.get(officerIndex);
-      for (int day = 1; day <= month.lengthOfMonth(); day++) {
-        LocalDate date = month.atDay(day);
-        if (isWeekend(date)
-            || attendanceRepository.existsByOfficerIdAndDate(officer.getId(), date)) {
-          continue;
-        }
-        newRecords.add(
-            buildDailyAttendance(officer, officerIndex, date, present, late, approved, absent));
-      }
-    }
-
-    if (!newRecords.isEmpty()) {
-      attendanceRepository.saveAll(newRecords);
-      System.out.println(
-          "Seeded attendance for month: " + month + " (" + newRecords.size() + " records)");
-    }
   }
 }
