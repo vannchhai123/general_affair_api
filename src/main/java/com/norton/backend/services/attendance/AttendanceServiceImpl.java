@@ -1009,23 +1009,37 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
       }
 
-      List<LocalDate> presentDates = new ArrayList<>();
-      List<LocalDate> absentDates = new ArrayList<>();
-      List<LocalDate> lateDates = new ArrayList<>();
+      Set<LocalDate> presentDatesSet = new HashSet<>();
+      Set<LocalDate> lateDatesSet = new HashSet<>();
 
       for (AttendanceModel attendance : attendances) {
         if (leaveDatesSet.contains(attendance.getDate())) {
           continue;
         }
-        if (attendance.getCheckIn() == null) {
-          absentDates.add(attendance.getDate());
-        } else if (attendance.getTotalLateMin() != null && attendance.getTotalLateMin() > 0) {
-          lateDates.add(attendance.getDate());
-        } else {
-          presentDates.add(attendance.getDate());
+        if (attendance.getCheckIn() != null) {
+          if (attendance.getTotalLateMin() != null && attendance.getTotalLateMin() > 0) {
+            lateDatesSet.add(attendance.getDate());
+          } else {
+            presentDatesSet.add(attendance.getDate());
+          }
         }
       }
 
+      List<LocalDate> absentDates = new ArrayList<>();
+      LocalDate day = startDate;
+      while (!day.isAfter(endDate)) {
+        if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+          if (!leaveDatesSet.contains(day)
+              && !presentDatesSet.contains(day)
+              && !lateDatesSet.contains(day)) {
+            absentDates.add(day);
+          }
+        }
+        day = day.plusDays(1);
+      }
+
+      List<LocalDate> presentDates = presentDatesSet.stream().sorted().toList();
+      List<LocalDate> lateDates = lateDatesSet.stream().sorted().toList();
       List<LocalDate> leaveDates = leaveDatesSet.stream().sorted().toList();
 
       OfficerAttendanceMonthlyHistoryResponse.MonthlySummary summary =
