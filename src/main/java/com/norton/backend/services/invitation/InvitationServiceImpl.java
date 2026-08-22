@@ -187,9 +187,11 @@ public class InvitationServiceImpl implements InvitationService {
         throw new BadRequestException("Officers not found for ids: " + missingIds);
       }
 
+      boolean isOutgoing = "outgoing".equalsIgnoreCase(invitation.getType());
       for (OfficerModel officer : officers) {
         if (!originalParticipantIds.contains(officer.getId())) {
-          if (officer.getStatus() != OfficerStatus.ACTIVE || !officer.isInvitationPriority()) {
+          if (officer.getStatus() != OfficerStatus.ACTIVE
+              || (!isOutgoing && !officer.isInvitationPriority())) {
             throw new BadRequestException(
                 "Officer with id " + officer.getId() + " is not eligible for invitations");
           }
@@ -415,8 +417,10 @@ public class InvitationServiceImpl implements InvitationService {
       throw new BadRequestException("Officers not found for ids: " + missingIds);
     }
 
+    boolean isOutgoing = "outgoing".equalsIgnoreCase(type);
     for (OfficerModel officer : officers) {
-      if (officer.getStatus() != OfficerStatus.ACTIVE || !officer.isInvitationPriority()) {
+      if (officer.getStatus() != OfficerStatus.ACTIVE
+          || (!isOutgoing && !officer.isInvitationPriority())) {
         throw new BadRequestException(
             "Officer with id " + officer.getId() + " is not eligible for invitations");
       }
