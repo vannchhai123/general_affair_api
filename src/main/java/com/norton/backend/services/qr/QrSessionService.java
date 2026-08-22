@@ -29,6 +29,8 @@ public interface QrSessionService {
 
   List<QrSessionCheckInResponse> getQrSessionCheckIns(String id);
 
+  List<QrSessionCheckInResponse> getTodayCheckIns();
+
   QrSessionCheckInResponse createQrSessionCheckIn(String id, CreateQrSessionCheckInRequest request);
 
   QrSessionStatsResponse getQrSessionStats(String id);

@@ -25,7 +25,9 @@ import com.norton.backend.security.JwtService;
 import com.norton.backend.services.shift.ShiftResolutionService;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
@@ -248,6 +250,19 @@ public class QrSessionServiceImpl implements QrSessionService {
     qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
     getSessionByToken(id);
     return qrSessionCheckInRepository.findAllByQrSessionTokenWithOfficer(id).stream()
+        .map(checkIn -> toCheckInResponse(checkIn, null))
+        .toList();
+  }
+
+  @Override
+  @Transactional
+  public List<QrSessionCheckInResponse> getTodayCheckIns() {
+    qrSessionLifecycleService.closeExpiredSessions(qrSessionLifecycleService.now());
+    ZoneId zoneId = qrSessionLifecycleService.resolveZoneId();
+    LocalDate today = LocalDate.now(zoneId);
+    LocalDateTime startOfDay = today.atStartOfDay();
+    LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+    return qrSessionCheckInRepository.findAllTodayWithOfficer(startOfDay, endOfDay).stream()
         .map(checkIn -> toCheckInResponse(checkIn, null))
         .toList();
   }

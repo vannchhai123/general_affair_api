@@ -66,6 +66,12 @@ public class QrSessionController {
     return ResponseEntity.ok(qrSessionService.updateQrSession(id, request));
   }
 
+  @GetMapping("/today/checkins")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).QR_SESSION_VIEW)")
+  public ResponseEntity<List<QrSessionCheckInResponse>> getTodayQrSessionCheckIns() {
+    return ResponseEntity.ok(qrSessionService.getTodayCheckIns());
+  }
+
   @GetMapping("/{sessionId}/checkins")
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).QR_SESSION_VIEW)")
   public ResponseEntity<List<QrSessionCheckInResponse>> getQrSessionCheckIns(

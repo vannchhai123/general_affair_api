@@ -13,6 +13,7 @@ import com.norton.backend.models.OfficerModel;
 import com.norton.backend.repositories.LeaveRequestRepository;
 import com.norton.backend.repositories.LeaveTypeRepository;
 import com.norton.backend.repositories.OfficerRepository;
+import com.norton.backend.utils.SecurityUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -29,6 +30,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
   private final LeaveRequestRepository leaveRequestRepository;
   private final OfficerRepository officerRepository;
   private final LeaveTypeRepository leaveTypeRepository;
+  private final SecurityUtils securityUtils;
 
   @Override
   @Transactional(readOnly = true)
@@ -159,7 +161,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             .leaveType(leaveTypeModel)
             .totalDays(totalDays)
             .reason(request.getReason() != null ? request.getReason() : "")
-            .status(request.getStatus() != null ? request.getStatus() : "Pending")
+            .status(request.getStatus() != null ? normalizeStatus(request.getStatus()) : "Pending")
             .build();
 
     LeaveRequestModel saved = leaveRequestRepository.save(leaveRequest);
@@ -174,10 +176,21 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Leave request", "id", id));
 
-    if (request.getStatus() != null) {
-      leaveRequest.setStatus(request.getStatus());
-      if ("Approved".equalsIgnoreCase(request.getStatus())) {
+    if (request.getStatus() != null && !request.getStatus().isBlank()) {
+      String normalizedStatus = normalizeStatus(request.getStatus());
+      leaveRequest.setStatus(normalizedStatus);
+      if ("Approved".equalsIgnoreCase(normalizedStatus)
+          || "Rejected".equalsIgnoreCase(normalizedStatus)) {
         leaveRequest.setApprovedAt(LocalDateTime.now());
+        try {
+          Long currentUserId = securityUtils.getCurrentUserId();
+          OfficerModel approver = officerRepository.findByUserId(currentUserId).orElse(null);
+          if (approver != null) {
+            leaveRequest.setApprovedByOfficer(approver);
+          }
+        } catch (Exception ignored) {
+          // If called without auth context in tests
+        }
       }
     }
 
@@ -282,5 +295,18 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         .department(departmentName)
         .approverName(approverName)
         .build();
+  }
+
+  private String normalizeStatus(String status) {
+    if (status == null || status.isBlank()) {
+      return "Pending";
+    }
+    String s = status.trim();
+    if ("APPROVED".equalsIgnoreCase(s)) return "Approved";
+    if ("REJECTED".equalsIgnoreCase(s)) return "Rejected";
+    if ("CANCELLED".equalsIgnoreCase(s) || "CANCELED".equalsIgnoreCase(s)) return "Cancelled";
+    if ("PENDING".equalsIgnoreCase(s)) return "Pending";
+    return Character.toUpperCase(s.charAt(0))
+        + (s.length() > 1 ? s.substring(1).toLowerCase() : "");
   }
 }
