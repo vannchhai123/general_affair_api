@@ -22,13 +22,16 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
 
   Page<DocumentModel> findByDirectionIgnoreCase(String direction, Pageable pageable);
 
+  Page<DocumentModel> findByDirectionInIgnoreCase(
+      java.util.Collection<String> directions, Pageable pageable);
+
   java.util.List<DocumentModel> findByStatus(
       String status, org.springframework.data.domain.Sort sort);
 
   @org.springframework.data.jpa.repository.Query(
       """
       select d from DocumentModel d
-      where upper(trim(d.direction)) = 'INTERNAL'
+      where upper(trim(d.direction)) in ('INTERNAL', 'OUTGOING')
         and (:query is null or :query = ''
              or lower(d.documentNumber) like lower(concat('%', :query, '%'))
              or lower(d.subject) like lower(concat('%', :query, '%'))
@@ -41,7 +44,7 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
       """
       select d from DocumentModel d
       join d.documentType dt
-      where upper(trim(d.direction)) = 'INTERNAL'
+      where upper(trim(d.direction)) in ('INTERNAL', 'OUTGOING')
         and (:query is null or :query = ''
              or lower(d.documentNumber) like lower(concat('%', :query, '%'))
              or lower(d.subject) like lower(concat('%', :query, '%'))
@@ -62,7 +65,7 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
   @org.springframework.data.jpa.repository.Query(
       """
       select d from DocumentModel d
-      where upper(trim(d.direction)) = 'INTERNAL'
+      where upper(trim(d.direction)) in ('INTERNAL', 'OUTGOING')
         and d.documentDate >= :startDate
         and d.documentDate <= :endDate
       """)

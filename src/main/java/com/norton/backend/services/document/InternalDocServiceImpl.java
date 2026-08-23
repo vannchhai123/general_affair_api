@@ -54,7 +54,7 @@ public class InternalDocServiceImpl implements InternalDocService {
   public PageResponse<InternalDocResponse> getInternalDocuments(int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
     Page<DocumentModel> documentPage =
-        documentRepository.findByDirectionIgnoreCase("INTERNAL", pageable);
+        documentRepository.findByDirectionInIgnoreCase(List.of("INTERNAL", "OUTGOING"), pageable);
 
     List<InternalDocResponse> content =
         documentPage.getContent().stream()
@@ -205,9 +205,10 @@ public class InternalDocServiceImpl implements InternalDocService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Document", "id", id));
 
-    if (!"INTERNAL".equals(doc.getDirection())) {
+    if (!"INTERNAL".equalsIgnoreCase(doc.getDirection())
+        && !"OUTGOING".equalsIgnoreCase(doc.getDirection())) {
       throw new com.norton.backend.exceptions.BadRequestException(
-          "Document is not an internal document");
+          "Document is not an internal or outgoing document");
     }
 
     InternalDocDetailsResponse.DocTypeDto typeDto = null;
@@ -417,9 +418,10 @@ public class InternalDocServiceImpl implements InternalDocService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Document", "id", id));
 
-    if (!"INTERNAL".equals(doc.getDirection())) {
+    if (!"INTERNAL".equalsIgnoreCase(doc.getDirection())
+        && !"OUTGOING".equalsIgnoreCase(doc.getDirection())) {
       throw new com.norton.backend.exceptions.BadRequestException(
-          "Document is not an internal document");
+          "Document is not an internal or outgoing document");
     }
 
     UserModel user =
