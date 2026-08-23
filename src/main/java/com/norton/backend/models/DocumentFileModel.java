@@ -27,12 +27,12 @@ public class DocumentFileModel extends BaseIdModel {
   @JoinColumn(name = "upload_image_id")
   private UploadImageModel uploadImage;
 
-  @Size(max = 255, message = "File name must not exceed 255 characters")
-  @Column(name = "file_name", length = 255)
+  @Size(max = 500, message = "File name must not exceed 500 characters")
+  @Column(name = "file_name", length = 500)
   private String fileName;
 
-  @Size(max = 255, message = "File path must not exceed 255 characters")
-  @Column(name = "file_path", length = 255)
+  @Size(max = 2048, message = "File path must not exceed 2048 characters")
+  @Column(name = "file_path", length = 2048)
   private String filePath;
 
   @Size(max = 100, message = "Mime type must not exceed 100 characters")
