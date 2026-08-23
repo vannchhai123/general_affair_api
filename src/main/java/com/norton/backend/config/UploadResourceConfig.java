@@ -21,8 +21,9 @@ public class UploadResourceConfig implements WebMvcConfigurer {
     if (!uploadUri.endsWith("/")) {
       uploadUri += "/";
     }
+    String filePathLocation = "file:" + uploadPath.toString().replace('\\', '/') + "/";
 
-    registry.addResourceHandler("/uploads/**").addResourceLocations(uploadUri);
+    registry.addResourceHandler("/uploads/**").addResourceLocations(uploadUri, filePathLocation);
   }
 
   @Override
