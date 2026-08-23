@@ -53,7 +53,8 @@ public class InternalDocServiceImpl implements InternalDocService {
   @Transactional(readOnly = true)
   public PageResponse<InternalDocResponse> getInternalDocuments(int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-    Page<DocumentModel> documentPage = documentRepository.findByDirection("INTERNAL", pageable);
+    Page<DocumentModel> documentPage =
+        documentRepository.findByDirectionIgnoreCase("INTERNAL", pageable);
 
     List<InternalDocResponse> content =
         documentPage.getContent().stream()
