@@ -209,6 +209,7 @@ public class DocumentServiceImpl implements DocumentService {
     } else if (request.getReceiverOrganizationName() != null
         && !request.getReceiverOrganizationName().isBlank()) {
       String name = request.getReceiverOrganizationName().trim();
+      String shortName = name.length() > 100 ? name.substring(0, 97) + "..." : name;
       receiverOrg =
           organizationRepository
               .findByName(name)
@@ -217,7 +218,7 @@ public class DocumentServiceImpl implements DocumentService {
                     OrganizationModel newOrg =
                         OrganizationModel.builder()
                             .name(name)
-                            .shortName(name)
+                            .shortName(shortName)
                             .status("ACTIVE")
                             .build();
                     return organizationRepository.save(newOrg);
@@ -415,6 +416,7 @@ public class DocumentServiceImpl implements DocumentService {
     } else if (request.getReceiverOrganizationName() != null
         && !request.getReceiverOrganizationName().isBlank()) {
       String name = request.getReceiverOrganizationName().trim();
+      String shortName = name.length() > 100 ? name.substring(0, 97) + "..." : name;
       OrganizationModel receiverOrg =
           organizationRepository
               .findByName(name)
@@ -423,7 +425,7 @@ public class DocumentServiceImpl implements DocumentService {
                     OrganizationModel newOrg =
                         OrganizationModel.builder()
                             .name(name)
-                            .shortName(name)
+                            .shortName(shortName)
                             .status("ACTIVE")
                             .build();
                     return organizationRepository.save(newOrg);

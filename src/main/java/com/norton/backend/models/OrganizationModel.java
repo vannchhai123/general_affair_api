@@ -27,12 +27,12 @@ public class OrganizationModel extends BaseIdModel {
   private UUID uuid;
 
   @NotBlank(message = "Name is required")
-  @Size(max = 255, message = "Name must not exceed 255 characters")
-  @Column(nullable = false, unique = true, length = 255)
+  @Size(max = 500, message = "Name must not exceed 500 characters")
+  @Column(nullable = false, unique = true, length = 500)
   private String name;
 
-  @Size(max = 100, message = "Short name must not exceed 100 characters")
-  @Column(name = "short_name", length = 100)
+  @Size(max = 255, message = "Short name must not exceed 255 characters")
+  @Column(name = "short_name", length = 255)
   private String shortName;
 
   @Size(max = 50, message = "Organization type must not exceed 50 characters")
