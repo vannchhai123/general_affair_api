@@ -35,10 +35,18 @@ public class InternalDocController {
     return ResponseEntity.ok(internalDocService.getDocTypeNames());
   }
 
-  @GetMapping("/DocType/get")
+  @GetMapping({"/DocType/get", "/DocType/get/{docType}", "/DocType/{docType}/get"})
   @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_VIEW)")
   public ResponseEntity<PageResponse<InternalDocResponse>> getDocTypes(
-      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+      @PathVariable(required = false) String docType,
+      @RequestParam(required = false) String type,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    String filterType = docType != null && !docType.isBlank() ? docType : type;
+    if (filterType != null && !filterType.isBlank() && !"ALL".equalsIgnoreCase(filterType.trim())) {
+      return ResponseEntity.ok(
+          internalDocService.searchInternalDocumentsByType(filterType.trim(), "", page, size));
+    }
     return ResponseEntity.ok(internalDocService.getInternalDocuments(page, size));
   }
 

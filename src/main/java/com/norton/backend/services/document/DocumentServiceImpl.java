@@ -365,11 +365,18 @@ public class DocumentServiceImpl implements DocumentService {
       }
     }
 
+    if (request.getDirection() != null && !request.getDirection().isBlank()) {
+      doc.setDirection(request.getDirection());
+    }
     doc.setDocumentNumber(request.getDocumentNumber());
     doc.setDocumentDate(request.getDocumentDate());
     doc.setSubject(request.getSubject());
-    doc.setSummary(request.getSubject());
+    doc.setSummary(request.getSummary());
+    doc.setConfidentiality(request.getConfidentiality());
+    doc.setPriority(request.getPriority());
+    doc.setStatus(request.getStatus());
     doc.setRemarks(request.getRemarks());
+    doc.setUpdatedBy(creator);
 
     if (request.getDocumentTypeId() != null) {
       DocumentTypeModel type =
@@ -382,7 +389,30 @@ public class DocumentServiceImpl implements DocumentService {
       doc.setDocumentType(type);
     }
 
-    if (request.getReceiverOrganizationName() != null
+    if (request.getSenderOrganizationId() != null) {
+      OrganizationModel senderOrg =
+          organizationRepository
+              .findById(request.getSenderOrganizationId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Organization", "id", request.getSenderOrganizationId()));
+      doc.setSenderOrganization(senderOrg);
+    } else if ("OUTGOING".equalsIgnoreCase(request.getDirection())) {
+      OrganizationModel senderOrg = organizationRepository.findById(3L).orElse(null);
+      doc.setSenderOrganization(senderOrg);
+    }
+
+    if (request.getReceiverOrganizationId() != null) {
+      OrganizationModel receiverOrg =
+          organizationRepository
+              .findById(request.getReceiverOrganizationId())
+              .orElseThrow(
+                  () ->
+                      new ResourceNotFoundException(
+                          "Organization", "id", request.getReceiverOrganizationId()));
+      doc.setReceiverOrganization(receiverOrg);
+    } else if (request.getReceiverOrganizationName() != null
         && !request.getReceiverOrganizationName().isBlank()) {
       String name = request.getReceiverOrganizationName().trim();
       OrganizationModel receiverOrg =
@@ -445,6 +475,48 @@ public class DocumentServiceImpl implements DocumentService {
             .description("បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានឯកសារ")
             .build();
     documentLogRepository.save(updateLog);
+
+    return convertToResponse(doc);
+  }
+
+  @Override
+  @Transactional
+  public DocumentDetailsResponse updateStatus(Long id, String status, String currentUsername) {
+    DocumentModel doc =
+        documentRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Document", "id", id));
+
+    UserModel user =
+        userRepository
+            .findByUsername(currentUsername)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername));
+    OfficerModel officer = user.getOfficer();
+    if (officer == null) {
+      List<OfficerModel> officers = officerRepository.findAll();
+      if (!officers.isEmpty()) {
+        officer = officers.get(0);
+      } else {
+        throw new com.norton.backend.exceptions.BadRequestException(
+            "Authenticated user is not associated with an officer profile, and no officer profiles exist in the database.");
+      }
+    }
+
+    String oldStatus = doc.getStatus();
+    String newStatus = status != null ? status.trim().toUpperCase() : "";
+
+    doc.setStatus(newStatus);
+    doc.setUpdatedBy(officer);
+    doc = documentRepository.save(doc);
+
+    DocumentLogModel statusLog =
+        DocumentLogModel.builder()
+            .document(doc)
+            .officer(officer)
+            .action("STATUS_CHANGE")
+            .description("ស្ថានភាពត្រូវបានផ្លាស់ប្តូរពី " + oldStatus + " ទៅជា " + newStatus)
+            .build();
+    documentLogRepository.save(statusLog);
 
     return convertToResponse(doc);
   }

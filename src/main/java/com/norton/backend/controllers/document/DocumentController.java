@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -69,5 +70,13 @@ public class DocumentController {
       @PathVariable Long id, @Validated @RequestBody CreateDocumentRequest request) {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
     return ResponseEntity.ok(documentService.updateDocument(id, request, username));
+  }
+
+  @PatchMapping("/{id}/status")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).DOCUMENT_UPDATE)")
+  public ResponseEntity<DocumentDetailsResponse> updateDocumentStatus(
+      @PathVariable Long id, @RequestParam String status) {
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    return ResponseEntity.ok(documentService.updateStatus(id, status, username));
   }
 }

@@ -16,4 +16,6 @@ public interface DocumentService {
 
   DocumentDetailsResponse updateDocument(
       Long id, CreateDocumentRequest request, String currentUsername);
+
+  DocumentDetailsResponse updateStatus(Long id, String status, String currentUsername);
 }

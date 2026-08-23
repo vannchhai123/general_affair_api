@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 @Order(5)
+@Profile("dev")
 public class AttendanceLocationDataLoading implements CommandLineRunner {
 
   private final AttendanceLocationSettingRepository repository;
