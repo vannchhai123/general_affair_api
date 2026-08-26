@@ -13,6 +13,8 @@ public interface PermissionRepository extends JpaRepository<PermissionModel, Lon
 
   List<PermissionModel> findAllByPermissionNameIn(List<String> permissionNames);
 
+  List<PermissionModel> findAllByIdIn(java.util.Collection<Long> ids);
+
   Optional<PermissionModel> findByPermissionName(String permissionName);
 
   Page<PermissionModel> findAll(Pageable pageable);

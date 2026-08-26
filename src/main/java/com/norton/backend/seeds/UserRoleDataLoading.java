@@ -17,22 +17,82 @@ public class UserRoleDataLoading implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-
-    loadRole("ROLE_ADMIN", "Administrator with full access");
-    loadRole("ROLE_HEAD_OFFICE", "Head Office for daily operations");
-    loadRole("ROLE_MANAGER", "Manager role");
-    loadRole("ROLE_OFFICER", "Officer role");
+    loadRole(
+        "ROLE_ADMIN",
+        "នាយកគ្រប់គ្រងប្រព័ន្ធ",
+        "System Administrator",
+        1,
+        true,
+        "Administrator with full access");
+    loadRole(
+        "ROLE_GOVERNOR",
+        "អភិបាលរាជធានី-ខេត្ត",
+        "Governor",
+        2,
+        false,
+        "Governor with executive access");
+    loadRole(
+        "ROLE_DEPUTY_GOVERNOR",
+        "អភិបាលរង",
+        "Deputy Governor",
+        3,
+        false,
+        "Deputy Governor role");
+    loadRole(
+        "ROLE_HEAD_OFFICE",
+        "នាយករដ្ឋបាល",
+        "Head of Administration",
+        4,
+        true,
+        "Head Office for daily operations");
+    loadRole(
+        "ROLE_MANAGER",
+        "ប្រធានការិយាល័យ",
+        "Office Manager",
+        5,
+        true,
+        "Manager role");
+    loadRole(
+        "ROLE_OFFICER",
+        "មន្ត្រីរាជការ",
+        "Civil Officer",
+        6,
+        true,
+        "Officer role");
   }
 
-  private void loadRole(String roleName, String description) {
+  private void loadRole(
+      String code,
+      String nameKm,
+      String nameEn,
+      int hierarchyLevel,
+      boolean isSystem,
+      String description) {
 
-    if (!roleRepository.existsByRoleName(roleName)) {
+    UserRoleModel role =
+        roleRepository
+            .findByRoleName(code)
+            .orElseGet(
+                () ->
+                    UserRoleModel.builder()
+                        .code(code)
+                        .roleName(code)
+                        .nameKm(nameKm)
+                        .nameEn(nameEn)
+                        .hierarchyLevel(hierarchyLevel)
+                        .isSystem(isSystem)
+                        .description(description)
+                        .build());
 
-      UserRoleModel role =
-          UserRoleModel.builder().roleName(roleName).description(description).build();
+    role.setCode(code);
+    role.setRoleName(code);
+    role.setNameKm(nameKm);
+    role.setNameEn(nameEn);
+    role.setHierarchyLevel(hierarchyLevel);
+    role.setIsSystem(isSystem);
+    role.setDescription(description);
 
-      roleRepository.save(role);
-      System.out.println("✅ Seeded role: " + roleName);
-    }
+    roleRepository.save(role);
+    System.out.println("✅ Seeded role: " + code + " (" + nameKm + ")");
   }
 }

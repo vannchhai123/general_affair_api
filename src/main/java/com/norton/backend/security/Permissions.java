@@ -9,6 +9,9 @@ public final class Permissions {
   public static final String PERMISSION_DELETE = "PERMISSION_DELETE";
   public static final String PERMISSION_VIEW = "PERMISSION_VIEW";
 
+  public static final String ROLE_CREATE = "ROLE_CREATE";
+  public static final String ROLE_UPDATE = "ROLE_UPDATE";
+  public static final String ROLE_DELETE = "ROLE_DELETE";
   public static final String ROLE_ASSIGN_PERMISSION = "ROLE_ASSIGN_PERMISSION";
   public static final String ROLE_REMOVE_PERMISSION = "ROLE_REMOVE_PERMISSION";
   public static final String ROLE_VIEW = "ROLE_VIEW";

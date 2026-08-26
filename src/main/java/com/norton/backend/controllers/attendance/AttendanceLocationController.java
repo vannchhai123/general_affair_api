@@ -46,24 +46,21 @@ public class AttendanceLocationController {
   }
 
   @PostMapping
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<AttendanceLocationDto> createLocation(
       @Valid @RequestBody CreateAttendanceLocationRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(locationService.createLocation(request));
   }
 
   @PutMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<AttendanceLocationDto> updateLocation(
       @PathVariable Long id, @Valid @RequestBody UpdateAttendanceLocationRequest request) {
     return ResponseEntity.ok(locationService.updateLocation(id, request));
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<Map<String, Object>> deleteLocation(@PathVariable Long id) {
     locationService.deleteLocation(id);
     return ResponseEntity.ok(
@@ -76,16 +73,14 @@ public class AttendanceLocationController {
   }
 
   @PatchMapping("/settings/toggle")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<AttendanceLocationSettingsResponse> toggleGlobalSetting(
       @Valid @RequestBody ToggleLocationSettingRequest request) {
     return ResponseEntity.ok(locationService.toggleGlobalSetting(request.getIsGlobalEnabled()));
   }
 
   @PutMapping("/settings")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<AttendanceLocationSettingsResponse> updateFullSettings(
       @Valid @RequestBody UpdateAttendanceLocationSettingsRequest request) {
     return ResponseEntity.ok(locationService.updateSettings(request));

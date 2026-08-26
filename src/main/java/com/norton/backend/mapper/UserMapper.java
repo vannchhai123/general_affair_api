@@ -12,6 +12,9 @@ import org.mapstruct.Mapping;
 public interface UserMapper {
 
   @Mapping(target = "role", source = "role.roleName")
+  @Mapping(target = "roleNameKm", source = "role.nameKm")
+  @Mapping(target = "roleNameEn", source = "role.nameEn")
+  @Mapping(target = "hierarchyLevel", source = "role.hierarchyLevel")
   @Mapping(target = "permissions", expression = "java(mapAuthorities(user))")
   @Mapping(
       target = "imageUrl",
@@ -21,6 +24,9 @@ public interface UserMapper {
 
   @Mapping(target = "uuid", expression = "java(user.getUuid().toString())")
   @Mapping(target = "role", source = "role.roleName")
+  @Mapping(target = "roleNameKm", source = "role.nameKm")
+  @Mapping(target = "roleNameEn", source = "role.nameEn")
+  @Mapping(target = "hierarchyLevel", source = "role.hierarchyLevel")
   @Mapping(target = "officerId", source = "officer.id")
   @Mapping(target = "officer", source = "officer")
   @Mapping(target = "permissions", expression = "java(mapAuthorities(user))")

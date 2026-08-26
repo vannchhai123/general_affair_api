@@ -14,7 +14,7 @@ public class HomeController {
     return "API is running";
   }
 
-  @PreAuthorize("hasRole('HEAD_OFFICE')")
+  @PreAuthorize("isAuthenticated()")
   @GetMapping("/admin/test")
   public String adminTest() {
     return "Admin access granted";

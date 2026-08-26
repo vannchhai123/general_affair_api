@@ -40,6 +40,14 @@ public class OfficeAccessService {
   }
 
   public boolean hasGlobalOfficeAccess() {
+    UserModel currentUser = currentUser();
+    if (currentUser.getRole() == null) {
+      return false;
+    }
+    Integer level = currentUser.getRole().getHierarchyLevel();
+    if (level != null && level <= 5) {
+      return true;
+    }
     return isAdmin() || isHeadOffice() || isManager();
   }
 

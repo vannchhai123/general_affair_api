@@ -36,6 +36,9 @@ public class PermissionDataLoading implements CommandLineRunner {
     PermissionModel permissionDelete =
         createPermission("PERMISSION_DELETE", "Delete permissions", "Permission");
 
+    PermissionModel roleCreate = createPermission("ROLE_CREATE", "Create roles", "Role");
+    PermissionModel roleUpdate = createPermission("ROLE_UPDATE", "Update roles", "Role");
+    PermissionModel roleDelete = createPermission("ROLE_DELETE", "Delete roles", "Role");
     PermissionModel roleAssign =
         createPermission("ROLE_ASSIGN_PERMISSION", "Assign permissions to role", "Role");
     PermissionModel roleRemove =
@@ -128,6 +131,9 @@ public class PermissionDataLoading implements CommandLineRunner {
             permissionCreate,
             permissionUpdate,
             permissionDelete,
+            roleCreate,
+            roleUpdate,
+            roleDelete,
             roleAssign,
             roleRemove,
             roleView,
@@ -171,12 +177,61 @@ public class PermissionDataLoading implements CommandLineRunner {
             documentDelete);
 
     createOrUpdateRole(
-        "ROLE_ADMIN", "Administrator with full system control", superAdminPermissions);
+        "ROLE_ADMIN",
+        "នាយកគ្រប់គ្រងប្រព័ន្ធ",
+        "System Administrator",
+        1,
+        true,
+        "Administrator with full system control",
+        superAdminPermissions);
+
+    createOrUpdateRole(
+        "ROLE_GOVERNOR",
+        "អភិបាលរាជធានី-ខេត្ត",
+        "Governor",
+        2,
+        false,
+        "Governor with executive access",
+        Set.of(
+            officerView,
+            officerViewPermission,
+            invitationParticipantView,
+            attendanceView,
+            attendanceExport,
+            organizationView,
+            qrView,
+            dashboardView,
+            invitationView,
+            documentView));
+
+    createOrUpdateRole(
+        "ROLE_DEPUTY_GOVERNOR",
+        "អភិបាលរង",
+        "Deputy Governor",
+        3,
+        false,
+        "Deputy Governor role",
+        Set.of(
+            officerView,
+            officerViewPermission,
+            invitationParticipantView,
+            attendanceView,
+            attendanceExport,
+            organizationView,
+            qrView,
+            dashboardView,
+            invitationView,
+            documentView));
 
     createOrUpdateRole(
         "ROLE_HEAD_OFFICE",
+        "នាយករដ្ឋបាល",
+        "Head of Administration",
+        4,
+        true,
         "Head Office for daily operations",
         Set.of(
+            roleView,
             officerView,
             officerCreate,
             officerUpdate,
@@ -211,6 +266,10 @@ public class PermissionDataLoading implements CommandLineRunner {
 
     createOrUpdateRole(
         "ROLE_MANAGER",
+        "ប្រធានការិយាល័យ",
+        "Office Manager",
+        5,
+        true,
         "Manager with approval and reporting access",
         Set.of(
             officerView,
@@ -230,6 +289,10 @@ public class PermissionDataLoading implements CommandLineRunner {
 
     createOrUpdateRole(
         "ROLE_OFFICER",
+        "មន្ត្រីរាជការ",
+        "Civil Officer",
+        6,
+        true,
         "Officer with self-service access",
         Set.of(
             attendanceView,
@@ -255,19 +318,38 @@ public class PermissionDataLoading implements CommandLineRunner {
   }
 
   private void createOrUpdateRole(
-      String roleName, String description, Set<PermissionModel> permissions) {
+      String code,
+      String nameKm,
+      String nameEn,
+      int hierarchyLevel,
+      boolean isSystem,
+      String description,
+      Set<PermissionModel> permissions) {
 
     UserRoleModel role =
         roleRepository
-            .findByRoleName(roleName)
+            .findByRoleName(code)
             .orElseGet(
                 () ->
                     roleRepository.save(
                         UserRoleModel.builder()
-                            .roleName(roleName)
+                            .code(code)
+                            .roleName(code)
+                            .nameKm(nameKm)
+                            .nameEn(nameEn)
+                            .hierarchyLevel(hierarchyLevel)
+                            .isSystem(isSystem)
                             .description(description)
                             .permissions(new HashSet<>())
                             .build()));
+
+    role.setCode(code);
+    role.setRoleName(code);
+    role.setNameKm(nameKm);
+    role.setNameEn(nameEn);
+    role.setHierarchyLevel(hierarchyLevel);
+    role.setIsSystem(isSystem);
+    role.setDescription(description);
 
     role.getPermissions().clear();
     role.getPermissions().addAll(permissions);

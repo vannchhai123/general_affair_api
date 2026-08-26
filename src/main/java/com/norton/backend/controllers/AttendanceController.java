@@ -195,8 +195,7 @@ public class AttendanceController {
   }
 
   @PutMapping("/location-settings")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<AttendanceLocationSettingsResponse> updateLocationSettings(
       @Valid @RequestBody UpdateAttendanceLocationSettingsRequest request) {
     return ResponseEntity.ok(attendanceLocationSettingService.updateSettings(request));

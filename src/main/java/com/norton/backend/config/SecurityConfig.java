@@ -67,12 +67,14 @@ public class SecurityConfig {
                     .requestMatchers(
                         org.springframework.http.HttpMethod.POST,
                         AuthController.BASE_URL + "/change-password")
-                    .hasAnyRole("ADMIN", "HEAD_OFFICE", "MANAGER", "OFFICER")
+                    .authenticated()
                     .requestMatchers(
                         AuthController.BASE_URL + "/login",
                         AuthController.BASE_URL + "/admin/login",
                         AuthController.BASE_URL + "/refresh",
                         AuthController.BASE_URL + "/admin/refresh",
+                        "/api/v1/super-admin/auth/login",
+                        "/api/v1/super-admin/auth/refresh",
                         AuthController.BASE_URL + "/forgot-password/verify-email",
                         AuthController.BASE_URL + "/forgot-password/verify-otp",
                         AuthController.BASE_URL + "/forgot-password/reset",

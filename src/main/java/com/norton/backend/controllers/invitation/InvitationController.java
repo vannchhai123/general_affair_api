@@ -40,7 +40,7 @@ public class InvitationController {
 
   @GetMapping("/eligible-participants")
   @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+      "hasAuthority(T(com.norton.backend.security.Permissions).INVITATION_PARTICIPANT_VIEW) or isAuthenticated()")
   public ResponseEntity<EligibleParticipantsResponse> getEligibleParticipants(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Integer limit) {
@@ -54,8 +54,8 @@ public class InvitationController {
 
     return ResponseEntity.ok(
         EligibleParticipantsResponse.builder()
-            .participantIds(participantIds)
             .participants(participants)
+            .participantIds(participantIds)
             .build());
   }
 
@@ -117,16 +117,14 @@ public class InvitationController {
   }
 
   @PostMapping("/{id}/respond")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<InvitationResponseDto> respondToInvitation(
       @PathVariable Long id, @Validated @RequestBody InvitationResponseRequest request) {
     return ResponseEntity.ok(invitationService.respondToInvitation(id, request));
   }
 
   @GetMapping("/display/{participantId}/{yearMonth}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<List<DisplayInvitationResponse>> getInvitationsByParticipantAndMonth(
       @PathVariable Long participantId, @PathVariable String yearMonth) {
     return ResponseEntity.ok(
@@ -134,8 +132,7 @@ public class InvitationController {
   }
 
   @GetMapping("/display/{type}/{participantId}/{yearMonth}")
-  @PreAuthorize(
-      "hasRole('ADMIN') or hasRole('HEAD_OFFICE') or hasRole('MANAGER') or hasRole('OFFICER')")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<List<DisplayInvitationResponse>> getInvitationsByTypeAndParticipantAndMonth(
       @PathVariable String type, @PathVariable Long participantId, @PathVariable String yearMonth) {
     return ResponseEntity.ok(
@@ -143,3 +140,4 @@ public class InvitationController {
             type, participantId, yearMonth));
   }
 }
+

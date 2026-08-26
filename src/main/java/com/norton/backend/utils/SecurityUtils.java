@@ -28,4 +28,14 @@ public class SecurityUtils {
 
     return user.getId();
   }
+
+  public UserModel getCurrentUser() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && authentication.getPrincipal() instanceof UserModel user) {
+      return user;
+    }
+    return userRepository
+        .findByUsername(getCurrentUsername())
+        .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+  }
 }

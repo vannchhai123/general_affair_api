@@ -153,10 +153,27 @@ public class AuthServiceImpl implements AuthService {
     if (user == null || user.getRole() == null) {
       throw new AccessDeniedException("Access denied: Only administrators are allowed to log in.");
     }
-    String roleName = user.getRole().getRoleName();
-    boolean isAdmin = "ROLE_ADMIN".equalsIgnoreCase(roleName) || "ADMIN".equalsIgnoreCase(roleName);
-    if (!isAdmin) {
-      throw new AccessDeniedException("Access denied: Only administrators are allowed to log in.");
+    String roleCode =
+        user.getRole().getCode() != null
+            ? user.getRole().getCode()
+            : user.getRole().getRoleName();
+
+    boolean isSuperAdmin =
+        "ROLE_ADMIN".equalsIgnoreCase(roleCode) || "ADMIN".equalsIgnoreCase(roleCode);
+
+    Integer hierarchyLevel = user.getRole().getHierarchyLevel();
+    boolean hasAdminHierarchy = hierarchyLevel != null && hierarchyLevel <= 5;
+
+    boolean hasDashboardPermission =
+        user.getAuthorities().stream()
+            .anyMatch(
+                a ->
+                    "DASHBOARD_VIEW".equalsIgnoreCase(a.getAuthority())
+                        || "ROLE_VIEW".equalsIgnoreCase(a.getAuthority()));
+
+    if (!isSuperAdmin && !hasAdminHierarchy && !hasDashboardPermission) {
+      throw new AccessDeniedException(
+          "Access denied: Only administrative accounts are allowed to log in to the portal.");
     }
   }
 
