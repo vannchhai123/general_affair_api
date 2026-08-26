@@ -22,13 +22,13 @@ import lombok.Setter;
 public class InvitationModel extends BaseIdModel {
 
   @NotBlank(message = "title is required")
-  @Column(name = "title", nullable = false, length = 255)
+  @Column(name = "title", nullable = false, length = 500)
   private String title;
 
-  @Column(name = "description", length = 1024)
+  @Column(name = "description", columnDefinition = "TEXT")
   private String description;
 
-  @Column(name = "presided_by", length = 255)
+  @Column(name = "presided_by", length = 500)
   private String presidedBy;
 
   @Column(name = "event_date")
@@ -37,7 +37,7 @@ public class InvitationModel extends BaseIdModel {
   @Column(name = "event_time")
   private LocalTime eventTime;
 
-  @Column(name = "location", length = 512)
+  @Column(name = "location", length = 1000)
   private String location;
 
   @Builder.Default
