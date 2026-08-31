@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<UserModel, Long> {
 
   Optional<UserModel> findByUsername(String username);
 
+  Optional<UserModel> findByEmail(String email);
+
   Optional<UserModel> findByEmailIgnoreCase(String email);
 
   long countByUserStatus(com.norton.backend.enums.UserStatus userStatus);

@@ -403,12 +403,28 @@ public class OfficerDataLoading implements CommandLineRunner {
 
   private UserModel loadOrCreateUser(OfficerSeed seed, UserRoleModel officerRole) {
     UserModel user = userRepository.findByUsername(seed.username()).orElse(null);
+    if (user == null && seed.userEmail() != null) {
+      user = userRepository.findByEmail(seed.userEmail()).orElse(null);
+    }
+
     if (user == null) {
+      String username = seed.username();
+      int seq = 1;
+      while (userRepository.existsByUsername(username)) {
+        username = seed.username() + "_" + seq++;
+      }
+
+      String email = seed.userEmail();
+      seq = 1;
+      while (email != null && userRepository.existsByEmail(email)) {
+        email = "seed_" + seq++ + "_" + seed.userEmail();
+      }
+
       user =
           UserModel.builder()
               .uuid(UUID.randomUUID())
-              .username(seed.username())
-              .email(seed.userEmail())
+              .username(username)
+              .email(email)
               .fullName(seed.firstNameEn() + " " + seed.lastNameEn())
               .passwordHash(passwordEncoder.encode("officer@1234"))
               .role(officerRole)
@@ -419,7 +435,12 @@ public class OfficerDataLoading implements CommandLineRunner {
       user.setPasswordHash(passwordEncoder.encode("officer@1234"));
       user.setRole(officerRole);
       user.setFullName(seed.firstNameEn() + " " + seed.lastNameEn());
-      user.setEmail(seed.userEmail());
+      if (seed.userEmail() != null) {
+        UserModel existingWithEmail = userRepository.findByEmail(seed.userEmail()).orElse(null);
+        if (existingWithEmail == null || existingWithEmail.getId().equals(user.getId())) {
+          user.setEmail(seed.userEmail());
+        }
+      }
       user = userRepository.save(user);
     }
     return user;
@@ -435,6 +456,12 @@ public class OfficerDataLoading implements CommandLineRunner {
     }
 
     String email = username + "@dummy.com";
+    int emailSeq = 1;
+    while (userRepository.existsByEmail(email)) {
+      email = username + "_" + emailSeq + "@dummy.com";
+      emailSeq++;
+    }
+
     return userRepository.save(
         UserModel.builder()
             .uuid(UUID.randomUUID())
@@ -503,7 +530,13 @@ public class OfficerDataLoading implements CommandLineRunner {
 
     if (officer.getUser() != null) {
       officer.getUser().setFullName(seed.firstNameEn() + " " + seed.lastNameEn());
-      officer.getUser().setEmail(seed.userEmail());
+      if (seed.userEmail() != null) {
+        boolean emailTakenByAnother =
+            userRepository.existsByEmailAndIdNot(seed.userEmail(), officer.getUser().getId());
+        if (!emailTakenByAnother) {
+          officer.getUser().setEmail(seed.userEmail());
+        }
+      }
       userRepository.save(officer.getUser());
     }
   }
