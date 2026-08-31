@@ -1,9 +1,7 @@
 package com.norton.backend.models;
 
 import jakarta.persistence.*;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.*;
 
@@ -29,19 +27,19 @@ public class UserRoleModel extends BaseIdModel {
   private String nameEn;
 
   @Builder.Default
-  @Column(name = "hierarchy_level", nullable = false)
+  @Column(name = "hierarchy_level")
   private Integer hierarchyLevel = 99;
 
   @Builder.Default
-  @Column(name = "is_system", nullable = false)
+  @Column(name = "is_system")
   private Boolean isSystem = false;
 
   @Column(name = "description", length = 500)
   private String description;
 
   @Builder.Default
-  @OneToMany(mappedBy = "role")
-  private List<UserModel> users = new ArrayList<>();
+  @ManyToMany(mappedBy = "roles")
+  private Set<UserModel> users = new HashSet<>();
 
   @Builder.Default
   @ManyToMany(fetch = FetchType.EAGER)

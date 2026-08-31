@@ -11,6 +11,11 @@ import org.mapstruct.Mapping;
 public interface PermissionMapper {
 
   @Mapping(target = "permissionName", source = "permissionName")
+  @Mapping(target = "code", source = "permissionName")
+  @Mapping(
+      target = "name",
+      expression =
+          "java(permission.getDescription() != null ? permission.getDescription() : permission.getPermissionName())")
   PermissionResponse toResponse(PermissionModel permission);
 
   List<PermissionResponse> toResponseList(List<PermissionModel> permissions);

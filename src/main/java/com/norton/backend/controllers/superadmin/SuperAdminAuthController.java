@@ -34,9 +34,9 @@ public class SuperAdminAuthController {
   }
 
   @PostMapping("/refresh")
-  public ResponseEntity<AuthResponse<UserDto>> refreshToken(
-      @RequestBody RefreshRequest request) {
-    return ResponseEntity.ok(superAdminAuthService.superAdminRefreshToken(request.getRefreshToken()));
+  public ResponseEntity<AuthResponse<UserDto>> refreshToken(@RequestBody RefreshRequest request) {
+    return ResponseEntity.ok(
+        superAdminAuthService.superAdminRefreshToken(request.getRefreshToken()));
   }
 
   @GetMapping("/me")

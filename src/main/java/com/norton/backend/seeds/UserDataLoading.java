@@ -32,9 +32,46 @@ public class UserDataLoading implements CommandLineRunner {
     UserRoleModel managerRole = createRoleIfNotExists("ROLE_MANAGER", "Manager");
     UserRoleModel officerRole = createRoleIfNotExists("ROLE_OFFICER", "Officer user");
 
+    // Super Administrator users (Super-Admin Portal)
+    createUserIfNotExists(
+        "vannchhai",
+        "vannchhai@gmail.com",
+        "Vannchhai",
+        "vannchhai123",
+        adminRole,
+        UserStatus.ACTIVE);
+
     createUserIfNotExists(
         "admin", "admin@gmail.com", "Admin User", "admin123", adminRole, UserStatus.ACTIVE);
 
+    createUserIfNotExists(
+        "superadmin",
+        "superadmin@gmail.com",
+        "Super Administrator",
+        "superadmin123",
+        adminRole,
+        UserStatus.ACTIVE);
+
+    createUserIfNotExists(
+        "admin_sokha",
+        "sokha.admin@gmail.com",
+        "Sokha Chea",
+        "admin123",
+        adminRole,
+        UserStatus.ACTIVE);
+
+    createUserIfNotExists(
+        "admin_dara", "dara.admin@gmail.com", "Dara Som", "admin123", adminRole, UserStatus.ACTIVE);
+
+    createUserIfNotExists(
+        "admin_visal",
+        "visal.admin@gmail.com",
+        "Visal Rath",
+        "admin123",
+        adminRole,
+        UserStatus.ACTIVE);
+
+    // Other roles / portal users
     createUserIfNotExists(
         "headoffice",
         "headoffice@gmail.com",
@@ -57,14 +94,6 @@ public class UserDataLoading implements CommandLineRunner {
         "ឈិន ខិលី",
         "kelly@123",
         headOfficeRole,
-        UserStatus.ACTIVE);
-
-    createUserIfNotExists(
-        "vannchhai",
-        "vannchhai@gmail.com",
-        "Vannchhai",
-        "vannchhai@123",
-        officerRole,
         UserStatus.ACTIVE);
 
     createUserIfNotExists(
@@ -99,11 +128,18 @@ public class UserDataLoading implements CommandLineRunner {
               .email(email)
               .fullName(fullName)
               .passwordHash(passwordEncoder.encode(rawPassword))
-              .role(role)
+              .roles(
+                  role != null
+                      ? new java.util.HashSet<>(java.util.List.of(role))
+                      : new java.util.HashSet<>())
               .userStatus(status)
               .build();
       userRepository.save(user);
     } else {
+      user.setEmail(email);
+      user.setFullName(fullName);
+      user.setRole(role);
+      user.setUserStatus(status);
       user.setPasswordHash(passwordEncoder.encode(rawPassword));
       userRepository.save(user);
     }

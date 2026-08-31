@@ -36,30 +36,34 @@ public class SuperAdminUserController {
   private final SecurityUtils securityUtils;
 
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
   public ResponseEntity<PageResponse<SuperAdminUserDetailResponse>> getAllUsers(
       @RequestParam(required = false) String keyword,
-      @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC)
+      @PageableDefault(page = 0, size = 20, sort = "id", direction = Sort.Direction.DESC)
           Pageable pageable) {
     return ResponseEntity.ok(superAdminUserService.getAllUsers(keyword, pageable));
   }
 
   @GetMapping("/{id}")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
   public ResponseEntity<SuperAdminUserDetailResponse> getUserById(@PathVariable Long id) {
     return ResponseEntity.ok(superAdminUserService.getUserById(id));
   }
 
   @PutMapping("/{id}/status")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
   public ResponseEntity<SuperAdminUserDetailResponse> updateUserStatus(
       @PathVariable Long id, @Valid @RequestBody UpdateUserStatusRequest request) {
     UserModel currentUser = securityUtils.getCurrentUser();
     return ResponseEntity.ok(superAdminUserService.updateUserStatus(id, request, currentUser));
   }
 
-  @PutMapping("/{id}/role")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('ROLE_ADMIN')")
+  @PutMapping(value = {"/{id}/role", "/{id}/roles"})
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
   public ResponseEntity<SuperAdminUserDetailResponse> assignUserRole(
       @PathVariable Long id, @Valid @RequestBody AssignUserRoleRequest request) {
     UserModel currentUser = securityUtils.getCurrentUser();
@@ -67,15 +71,13 @@ public class SuperAdminUserController {
   }
 
   @PostMapping("/{id}/reset-password")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
   public ResponseEntity<Map<String, Object>> resetUserPassword(
       @PathVariable Long id, @Valid @RequestBody AdminResetPasswordRequest request) {
     UserModel currentUser = securityUtils.getCurrentUser();
     superAdminUserService.resetUserPassword(id, request, currentUser);
     return ResponseEntity.ok(
-        Map.of(
-            "success", true,
-            "message", "User password reset successfully",
-            "userId", id));
+        Map.of("success", true, "message", "User password reset successfully", "userId", id));
   }
 }

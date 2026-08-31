@@ -22,11 +22,16 @@ public interface UserRepository extends JpaRepository<UserModel, Long> {
   long countByUserStatus(com.norton.backend.enums.UserStatus userStatus);
 
   @org.springframework.data.jpa.repository.Query(
-      "SELECT u FROM UserModel u WHERE "
-          + "(:keyword IS NULL OR :keyword = '' "
-          + "OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-          + "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-          + "OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+      "SELECT u FROM UserModel u "
+          + "LEFT JOIN u.officer o "
+          + "LEFT JOIN o.office off "
+          + "WHERE (:keyword IS NULL OR TRIM(:keyword) = '' "
+          + "OR LOWER(u.username) LIKE LOWER(CONCAT('%', TRIM(:keyword), '%')) "
+          + "OR LOWER(u.email) LIKE LOWER(CONCAT('%', TRIM(:keyword), '%')) "
+          + "OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', TRIM(:keyword), '%')) "
+          + "OR LOWER(o.officerCode) LIKE LOWER(CONCAT('%', TRIM(:keyword), '%')) "
+          + "OR LOWER(off.name) LIKE LOWER(CONCAT('%', TRIM(:keyword), '%')) "
+          + "OR LOWER(off.nameKh) LIKE LOWER(CONCAT('%', TRIM(:keyword), '%')))")
   org.springframework.data.domain.Page<UserModel> searchUsers(
       @org.springframework.data.repository.query.Param("keyword") String keyword,
       org.springframework.data.domain.Pageable pageable);

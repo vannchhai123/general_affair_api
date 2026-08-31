@@ -1,6 +1,8 @@
 package com.norton.backend.dto.request.superadmin;
 
-import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +14,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AssignUserRoleRequest {
 
-  @NotNull(message = "Role ID is required")
+  @JsonProperty("roleId")
+  @JsonAlias({"roleId", "role_id"})
   private Long roleId;
+
+  @JsonProperty("roleIds")
+  @JsonAlias({"roleIds", "role_ids", "roles"})
+  private List<Long> roleIds;
 }

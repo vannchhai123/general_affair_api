@@ -85,13 +85,12 @@ public class SuperAdminAuthServiceImpl implements SuperAdminAuthService {
 
   private void validateSuperAdminAccess(UserModel user) {
     if (user == null || user.getRole() == null) {
-      throw new AccessDeniedException("Access denied: Only Super Administrators are allowed to log in.");
+      throw new AccessDeniedException(
+          "Access denied: Only Super Administrators are allowed to log in.");
     }
 
     String roleCode =
-        user.getRole().getCode() != null
-            ? user.getRole().getCode()
-            : user.getRole().getRoleName();
+        user.getRole().getCode() != null ? user.getRole().getCode() : user.getRole().getRoleName();
 
     boolean isSuperAdminRole =
         "ROLE_ADMIN".equalsIgnoreCase(roleCode) || "ROLE_SUPER_ADMIN".equalsIgnoreCase(roleCode);

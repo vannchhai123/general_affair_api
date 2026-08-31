@@ -82,8 +82,7 @@ public class RoleServiceImpl implements RoleService {
 
     Set<PermissionModel> permissions = new HashSet<>();
     if (request.getPermissionIds() != null && !request.getPermissionIds().isEmpty()) {
-      List<PermissionModel> found =
-          permissionRepository.findAllByIdIn(request.getPermissionIds());
+      List<PermissionModel> found = permissionRepository.findAllByIdIn(request.getPermissionIds());
       if (found.size() != request.getPermissionIds().size()) {
         throw new BadRequestException("One or more permission IDs are invalid");
       }
@@ -188,11 +187,47 @@ public class RoleServiceImpl implements RoleService {
         newPermissions.size());
 
     return Map.of(
-        "success", true,
-        "message", "Permissions synchronized successfully",
-        "roleId", role.getId(),
-        "syncedCount", role.getPermissions().size(),
-        "permissions", permissionNames);
+        "success",
+        true,
+        "message",
+        "Permissions synchronized successfully",
+        "roleId",
+        role.getId(),
+        "syncedCount",
+        role.getPermissions().size(),
+        "permissions",
+        permissionNames);
+  }
+
+  @Override
+  public RoleResponse syncRolePermissionsAndReturn(
+      Long roleId, List<Long> permissionIds, UserModel currentUser) {
+    UserRoleModel role =
+        userRoleRepository
+            .findById(roleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Role", "id", roleId));
+
+    assertCanManageRole(role, currentUser);
+
+    Set<PermissionModel> newPermissions = new HashSet<>();
+    if (permissionIds != null && !permissionIds.isEmpty()) {
+      List<PermissionModel> found = permissionRepository.findAllByIdIn(permissionIds);
+      if (found.size() != permissionIds.size()) {
+        throw new BadRequestException("One or more permission IDs are invalid");
+      }
+      newPermissions.addAll(found);
+    }
+
+    role.getPermissions().clear();
+    role.getPermissions().addAll(newPermissions);
+    UserRoleModel saved = userRoleRepository.save(role);
+
+    log.info(
+        "Synchronized permissions for role: id={}, totalPermissions={}",
+        role.getId(),
+        newPermissions.size());
+
+    return roleMapper.toResponse(saved);
   }
 
   private void assertCanManageRole(UserRoleModel targetRole, UserModel currentUser) {
@@ -205,8 +240,7 @@ public class RoleServiceImpl implements RoleService {
             ? currentUser.getRole().getHierarchyLevel()
             : 99;
 
-    int targetLevel =
-        targetRole.getHierarchyLevel() != null ? targetRole.getHierarchyLevel() : 99;
+    int targetLevel = targetRole.getHierarchyLevel() != null ? targetRole.getHierarchyLevel() : 99;
 
     // Caller cannot manage roles that have equal or strictly higher authority (lower level number)
     // Exception: Super Admin (level 1) can manage everything

@@ -140,4 +140,3 @@ public class InvitationController {
             type, participantId, yearMonth));
   }
 }
-

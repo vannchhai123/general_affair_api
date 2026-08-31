@@ -5,7 +5,6 @@ import com.norton.backend.dto.responses.role.RoleSimpleResponse;
 import com.norton.backend.enums.UserStatus;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class SuperAdminUserDetailResponse {
 
   private Long id;
-  private UUID uuid;
+  private String uuid;
   private String username;
   private String email;
 
@@ -32,6 +31,7 @@ public class SuperAdminUserDetailResponse {
   private String imageUrl;
 
   private RoleSimpleResponse role;
+  private List<RoleSimpleResponse> roles;
 
   @JsonProperty("officer_id")
   private Long officerId;

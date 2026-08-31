@@ -19,7 +19,8 @@ public class SuperAdminDashboardController {
   private final SuperAdminDashboardService superAdminDashboardService;
 
   @GetMapping("/stats")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority(T(com.norton.backend.security.Permissions).DASHBOARD_VIEW)")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', T(com.norton.backend.security.Permissions).DASHBOARD_VIEW)")
   public ResponseEntity<SuperAdminStatsResponse> getSystemStats() {
     return ResponseEntity.ok(superAdminDashboardService.getSystemStats());
   }

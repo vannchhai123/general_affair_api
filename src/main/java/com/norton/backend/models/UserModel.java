@@ -48,10 +48,38 @@ public class UserModel extends BaseIdModel implements UserDetails {
   @Column(nullable = false)
   private UserStatus userStatus;
 
-  @NotNull(message = "Role is required")
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "role_id", nullable = false)
-  private UserRoleModel role;
+  @Singular("role")
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "user_roles_mapping",
+      joinColumns = @JoinColumn(name = "user_id"),
+      inverseJoinColumns = @JoinColumn(name = "role_id"))
+  private java.util.Set<UserRoleModel> roles = new java.util.HashSet<>();
+
+  public UserRoleModel getPrimaryRole() {
+    if (roles == null || roles.isEmpty()) {
+      return null;
+    }
+    return roles.stream()
+        .min(
+            java.util.Comparator.comparing(
+                r -> r.getHierarchyLevel() != null ? r.getHierarchyLevel() : 999))
+        .orElse(roles.iterator().next());
+  }
+
+  public UserRoleModel getRole() {
+    return getPrimaryRole();
+  }
+
+  public void setRole(UserRoleModel role) {
+    if (this.roles == null) {
+      this.roles = new java.util.HashSet<>();
+    }
+    if (role != null) {
+      this.roles.clear();
+      this.roles.add(role);
+    }
+  }
 
   @OneToOne(mappedBy = "user")
   private OfficerModel officer;
@@ -75,13 +103,17 @@ public class UserModel extends BaseIdModel implements UserDetails {
   public Collection<? extends GrantedAuthority> getAuthorities() {
     if (this.authorities == null) {
       List<GrantedAuthority> list = new ArrayList<>();
-      if (role != null) {
-        list.add(new SimpleGrantedAuthority(role.getRoleName()));
-        if (role.getPermissions() != null) {
-          role.getPermissions()
-              .forEach(
-                  permission ->
-                      list.add(new SimpleGrantedAuthority(permission.getPermissionName())));
+      if (roles != null && !roles.isEmpty()) {
+        for (UserRoleModel r : roles) {
+          if (r.getRoleName() != null) {
+            list.add(new SimpleGrantedAuthority(r.getRoleName()));
+          }
+          if (r.getPermissions() != null) {
+            r.getPermissions()
+                .forEach(
+                    permission ->
+                        list.add(new SimpleGrantedAuthority(permission.getPermissionName())));
+          }
         }
       }
 

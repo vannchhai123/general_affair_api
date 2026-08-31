@@ -48,7 +48,9 @@ public class SuperAdminUserServiceImpl implements SuperAdminUserService {
         .size(page.getSize())
         .totalElements(page.getTotalElements())
         .totalPages(page.getTotalPages())
+        .first(page.isFirst())
         .last(page.isLast())
+        .empty(page.isEmpty())
         .build();
   }
 
@@ -88,22 +90,43 @@ public class SuperAdminUserServiceImpl implements SuperAdminUserService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
-    UserRoleModel newRole =
-        userRoleRepository
-            .findById(request.getRoleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Role", "id", request.getRoleId()));
+    java.util.Set<Long> roleIdsToAssign = new java.util.HashSet<>();
+    if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
+      roleIdsToAssign.addAll(request.getRoleIds());
+    }
+    if (request.getRoleId() != null) {
+      roleIdsToAssign.add(request.getRoleId());
+    }
 
-    assertCanAssignRole(newRole, currentUser);
+    if (roleIdsToAssign.isEmpty()) {
+      throw new BadRequestException("At least one valid Role ID must be provided");
+    }
 
-    user.setRole(newRole);
+    List<UserRoleModel> rolesFound = userRoleRepository.findAllById(roleIdsToAssign);
+    java.util.Set<Long> foundIds =
+        rolesFound.stream().map(UserRoleModel::getId).collect(java.util.stream.Collectors.toSet());
+    java.util.Set<Long> missingIds =
+        roleIdsToAssign.stream()
+            .filter(rId -> !foundIds.contains(rId))
+            .collect(java.util.stream.Collectors.toSet());
+
+    if (!missingIds.isEmpty()) {
+      throw new BadRequestException("Role ID(s) not found in database: " + missingIds);
+    }
+
+    for (UserRoleModel newRole : rolesFound) {
+      assertCanAssignRole(newRole, currentUser);
+    }
+
+    user.getRoles().clear();
+    user.getRoles().addAll(rolesFound);
     UserModel saved = userRepository.save(user);
-    log.info("Assigned role '{}' to user id={}", newRole.getCode(), id);
+    log.info("Assigned {} role(s) to user id={}", rolesFound.size(), id);
     return toDetailResponse(saved);
   }
 
   @Override
-  public void resetUserPassword(
-      Long id, AdminResetPasswordRequest request, UserModel currentUser) {
+  public void resetUserPassword(Long id, AdminResetPasswordRequest request, UserModel currentUser) {
     UserModel user =
         userRepository
             .findById(id)
@@ -124,8 +147,7 @@ public class SuperAdminUserServiceImpl implements SuperAdminUserService {
             ? currentUser.getRole().getHierarchyLevel()
             : 99;
 
-    int targetLevel =
-        targetRole.getHierarchyLevel() != null ? targetRole.getHierarchyLevel() : 99;
+    int targetLevel = targetRole.getHierarchyLevel() != null ? targetRole.getHierarchyLevel() : 99;
 
     if (callerLevel > 1 && targetLevel < callerLevel) {
       throw new AccessDeniedException(
@@ -138,8 +160,13 @@ public class SuperAdminUserServiceImpl implements SuperAdminUserService {
   }
 
   private SuperAdminUserDetailResponse toDetailResponse(UserModel user) {
-    RoleSimpleResponse roleResponse =
+    RoleSimpleResponse primaryRoleResponse =
         user.getRole() != null ? roleMapper.toSimpleResponse(user.getRole()) : null;
+
+    List<RoleSimpleResponse> allRolesResponse =
+        user.getRoles() != null
+            ? user.getRoles().stream().map(roleMapper::toSimpleResponse).toList()
+            : List.of();
 
     List<String> permissions =
         user.getAuthorities() != null
@@ -171,13 +198,14 @@ public class SuperAdminUserServiceImpl implements SuperAdminUserService {
 
     return SuperAdminUserDetailResponse.builder()
         .id(user.getId())
-        .uuid(user.getUuid())
+        .uuid(user.getUuid() != null ? user.getUuid().toString() : null)
         .username(user.getUsername())
         .email(user.getEmail())
         .fullName(user.getFullName())
         .userStatus(user.getUserStatus())
         .imageUrl(imageUrl)
-        .role(roleResponse)
+        .role(primaryRoleResponse)
+        .roles(allRolesResponse)
         .officerId(officerId)
         .officerCode(officerCode)
         .departmentName(departmentName)

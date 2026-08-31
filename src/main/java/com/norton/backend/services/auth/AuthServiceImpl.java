@@ -154,9 +154,7 @@ public class AuthServiceImpl implements AuthService {
       throw new AccessDeniedException("Access denied: Only administrators are allowed to log in.");
     }
     String roleCode =
-        user.getRole().getCode() != null
-            ? user.getRole().getCode()
-            : user.getRole().getRoleName();
+        user.getRole().getCode() != null ? user.getRole().getCode() : user.getRole().getRoleName();
 
     boolean isSuperAdmin =
         "ROLE_ADMIN".equalsIgnoreCase(roleCode) || "ADMIN".equalsIgnoreCase(roleCode);

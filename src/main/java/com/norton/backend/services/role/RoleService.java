@@ -26,4 +26,7 @@ public interface RoleService {
 
   Map<String, Object> syncRolePermissions(
       Long roleId, List<Long> permissionIds, UserModel currentUser);
+
+  RoleResponse syncRolePermissionsAndReturn(
+      Long roleId, List<Long> permissionIds, UserModel currentUser);
 }

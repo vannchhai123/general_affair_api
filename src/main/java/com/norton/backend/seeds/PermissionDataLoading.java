@@ -27,6 +27,14 @@ public class PermissionDataLoading implements CommandLineRunner {
   @Override
   public void run(String... args) {
 
+    PermissionModel allPermissions =
+        createPermission(
+            "ALL_PERMISSIONS", "Unrestricted master access across all platform services", "SYSTEM");
+    PermissionModel userView =
+        createPermission("USER_VIEW", "Browse administrative users and account directory", "USERS");
+    PermissionModel roleManage =
+        createPermission("ROLE_MANAGE", "Create, update, and delete role definitions", "RBAC");
+
     PermissionModel permissionView =
         createPermission("PERMISSION_VIEW", "View permissions", "Permission");
     PermissionModel permissionCreate =
@@ -175,6 +183,15 @@ public class PermissionDataLoading implements CommandLineRunner {
             documentCreate,
             documentUpdate,
             documentDelete);
+
+    createOrUpdateRole(
+        "ROLE_SUPER_ADMIN",
+        "អភិបាលជាន់ខ្ពស់",
+        "Super Administrator",
+        1,
+        true,
+        "Maximum authority to manage the entire platform",
+        superAdminPermissions);
 
     createOrUpdateRole(
         "ROLE_ADMIN",

@@ -72,60 +72,37 @@ public class OfficerDataLoading implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    // Clean up existing officers and non-default users in a database-agnostic way
-    try {
-      // Try PostgreSQL/MySQL style truncate cascade with identity sequence reset
-      jdbcTemplate.execute("TRUNCATE TABLE officers RESTART IDENTITY CASCADE");
-      jdbcTemplate.execute("TRUNCATE TABLE invitations RESTART IDENTITY CASCADE");
-    } catch (Exception e) {
-      // Fallback to H2 style truncate / set referential integrity false
+    // Only perform table cleanup on a completely blank database (first-time initial dev seed)
+    if (officerRepository.count() == 0) {
       try {
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
-        jdbcTemplate.execute("TRUNCATE TABLE qr_session_checkins");
-        jdbcTemplate.execute("TRUNCATE TABLE qr_session_logs");
-        jdbcTemplate.execute("TRUNCATE TABLE qr_sessions");
-        jdbcTemplate.execute("TRUNCATE TABLE attendance_sessions");
-        jdbcTemplate.execute("TRUNCATE TABLE attendance");
-        jdbcTemplate.execute("TRUNCATE TABLE document_logs");
-        jdbcTemplate.execute("TRUNCATE TABLE document_files");
-        jdbcTemplate.execute("TRUNCATE TABLE documents");
-        jdbcTemplate.execute("TRUNCATE TABLE invitation_participants");
-        jdbcTemplate.execute("TRUNCATE TABLE invitations");
-        jdbcTemplate.execute("TRUNCATE TABLE officer_permissions");
-        jdbcTemplate.execute("TRUNCATE TABLE officer_addresses");
-        jdbcTemplate.execute("TRUNCATE TABLE officers");
-        jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
-      } catch (Exception ex) {
-        // Fallback to sequential deletes in case referential integrity cannot be set
-        jdbcTemplate.execute("DELETE FROM qr_session_checkins");
-        jdbcTemplate.execute("DELETE FROM qr_session_logs");
-        jdbcTemplate.execute("DELETE FROM qr_sessions");
-        jdbcTemplate.execute("DELETE FROM attendance_sessions");
-        jdbcTemplate.execute("DELETE FROM attendance");
-        jdbcTemplate.execute("DELETE FROM document_logs");
-        jdbcTemplate.execute("DELETE FROM document_files");
-        jdbcTemplate.execute("DELETE FROM documents");
-        jdbcTemplate.execute("DELETE FROM invitation_participants");
-        jdbcTemplate.execute("DELETE FROM invitations");
-        jdbcTemplate.execute("DELETE FROM officer_permissions");
-        jdbcTemplate.execute("DELETE FROM officer_addresses");
-        jdbcTemplate.execute("DELETE FROM officers");
+        jdbcTemplate.execute("TRUNCATE TABLE officers RESTART IDENTITY CASCADE");
+        jdbcTemplate.execute("TRUNCATE TABLE invitations RESTART IDENTITY CASCADE");
+      } catch (Exception e) {
+        // Fallback to H2 style truncate / set referential integrity false
+        try {
+          jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
+          jdbcTemplate.execute("TRUNCATE TABLE qr_session_checkins");
+          jdbcTemplate.execute("TRUNCATE TABLE qr_session_logs");
+          jdbcTemplate.execute("TRUNCATE TABLE qr_sessions");
+          jdbcTemplate.execute("TRUNCATE TABLE attendance_sessions");
+          jdbcTemplate.execute("TRUNCATE TABLE attendance");
+          jdbcTemplate.execute("TRUNCATE TABLE document_logs");
+          jdbcTemplate.execute("TRUNCATE TABLE document_files");
+          jdbcTemplate.execute("TRUNCATE TABLE documents");
+          jdbcTemplate.execute("TRUNCATE TABLE invitation_participants");
+          jdbcTemplate.execute("TRUNCATE TABLE invitations");
+          jdbcTemplate.execute("TRUNCATE TABLE officer_permissions");
+          jdbcTemplate.execute("TRUNCATE TABLE officer_addresses");
+          jdbcTemplate.execute("TRUNCATE TABLE officers");
+          jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY TRUE");
+        } catch (Exception ex) {
+          // Ignored
+        }
       }
+    } else {
+      System.out.println(
+          "ℹ️ Existing officers found in database. Skipping table cleanup to preserve data.");
     }
-
-    try {
-      jdbcTemplate.execute("DELETE FROM audit_log");
-    } catch (Exception e) {
-      System.out.println("Audit log table not present or could not be cleared.");
-    }
-    try {
-      jdbcTemplate.execute("DELETE FROM reports");
-    } catch (Exception e) {
-      System.out.println("Reports table not present or could not be cleared.");
-    }
-
-    jdbcTemplate.execute(
-        "DELETE FROM users WHERE LOWER(username) NOT IN ('admin', 'headoffice', 'manager', 'kelly', 'vannchhai', 'banned')");
 
     Map<String, DepartmentModel> departmentsByCode = loadOrCreateDepartments();
     Map<String, PositionModel> positionsByCode = loadOrCreatePositions(departmentsByCode);

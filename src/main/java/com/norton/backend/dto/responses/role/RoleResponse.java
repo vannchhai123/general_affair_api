@@ -2,7 +2,6 @@ package com.norton.backend.dto.responses.role;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.norton.backend.dto.responses.permissions.PermissionResponse;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
