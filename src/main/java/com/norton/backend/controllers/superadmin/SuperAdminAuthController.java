@@ -40,7 +40,8 @@ public class SuperAdminAuthController {
   }
 
   @GetMapping("/me")
-  @PreAuthorize("hasRole('ADMIN') or hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
   public ResponseEntity<MeResponse> getProfile() {
     UserModel currentUser = securityUtils.getCurrentUser();
     return ResponseEntity.ok(superAdminAuthService.getSuperAdminProfile(currentUser));

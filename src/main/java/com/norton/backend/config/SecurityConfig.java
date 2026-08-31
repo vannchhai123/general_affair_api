@@ -71,10 +71,14 @@ public class SecurityConfig {
                     .requestMatchers(
                         AuthController.BASE_URL + "/login",
                         AuthController.BASE_URL + "/admin/login",
+                        AuthController.BASE_URL + "/super-admin/login",
                         AuthController.BASE_URL + "/refresh",
                         AuthController.BASE_URL + "/admin/refresh",
+                        AuthController.BASE_URL + "/super-admin/refresh",
                         "/api/v1/super-admin/auth/login",
                         "/api/v1/super-admin/auth/refresh",
+                        "/api/v1/super-admin/login",
+                        "/api/v1/super-admin/refresh",
                         AuthController.BASE_URL + "/forgot-password/verify-email",
                         AuthController.BASE_URL + "/forgot-password/verify-otp",
                         AuthController.BASE_URL + "/forgot-password/reset",
@@ -111,7 +115,11 @@ public class SecurityConfig {
   @Bean
   public AuthenticationEntryPoint authenticationEntryPoint() {
     return (request, response, authException) -> {
-      log.error("Unauthorized Access: {}", authException.getMessage());
+      log.error(
+          "Unauthorized Access to [{} {}]: {}",
+          request.getMethod(),
+          request.getRequestURI(),
+          authException.getMessage());
       response.setContentType("application/json");
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response
@@ -124,7 +132,11 @@ public class SecurityConfig {
   @Bean
   public AccessDeniedHandler accessDeniedHandler() {
     return (request, response, accessDeniedException) -> {
-      log.error("Access Denied: {}", accessDeniedException.getMessage());
+      log.error(
+          "Access Denied to [{} {}]: {}",
+          request.getMethod(),
+          request.getRequestURI(),
+          accessDeniedException.getMessage());
       response.setContentType("application/json");
       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
       response

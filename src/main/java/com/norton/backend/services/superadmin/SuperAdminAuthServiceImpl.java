@@ -84,26 +84,27 @@ public class SuperAdminAuthServiceImpl implements SuperAdminAuthService {
   }
 
   private void validateSuperAdminAccess(UserModel user) {
-    if (user == null || user.getRole() == null) {
+    if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
       throw new AccessDeniedException(
           "Access denied: Only Super Administrators are allowed to log in.");
     }
 
-    String roleCode =
-        user.getRole().getCode() != null ? user.getRole().getCode() : user.getRole().getRoleName();
+    boolean hasSuperAdminRole =
+        user.getRoles().stream()
+            .anyMatch(
+                r -> {
+                  String code = r.getCode() != null ? r.getCode() : r.getRoleName();
+                  Integer hierarchyLevel = r.getHierarchyLevel();
+                  return "ROLE_ADMIN".equalsIgnoreCase(code)
+                      || "ROLE_SUPER_ADMIN".equalsIgnoreCase(code)
+                      || (hierarchyLevel != null && hierarchyLevel == 1);
+                });
 
-    boolean isSuperAdminRole =
-        "ROLE_ADMIN".equalsIgnoreCase(roleCode) || "ROLE_SUPER_ADMIN".equalsIgnoreCase(roleCode);
-
-    Integer hierarchyLevel = user.getRole().getHierarchyLevel();
-    boolean isHierarchyLevel1 = hierarchyLevel != null && hierarchyLevel == 1;
-
-    if (!isSuperAdminRole && !isHierarchyLevel1) {
+    if (!hasSuperAdminRole) {
       log.warn(
-          "Denied Super Admin portal login attempt for user: username={}, role={}, hierarchyLevel={}",
+          "Denied Super Admin portal login attempt for user: username={}, roles={}",
           user.getUsername(),
-          roleCode,
-          hierarchyLevel);
+          user.getRoles());
       throw new AccessDeniedException(
           "Access denied: Super Admin Portal requires Hierarchy Level 1 (System Administrator) privileges.");
     }
