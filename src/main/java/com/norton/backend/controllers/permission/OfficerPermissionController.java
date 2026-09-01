@@ -20,6 +20,7 @@ public class OfficerPermissionController {
   public static final String BASE_URL = ("/api/v1/officer-permissions");
   private final OfficerPermissionService officerPermissionService;
   private final PermissionService permissionService;
+  private final com.norton.backend.services.superadmin.SuperAdminUserService superAdminUserService;
   private final SecurityUtils securityUtils;
 
   @GetMapping
@@ -40,6 +41,27 @@ public class OfficerPermissionController {
     OfficerPermissionResponse response = permissionService.create(request, grantedBy);
 
     return ResponseEntity.ok(response);
+  }
+
+  @GetMapping(value = {"/officers/{officerId}/access", "/officer/{officerId}/access"})
+  @PreAuthorize(
+      "hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_VIEW_PERMISSION) or hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+  public ResponseEntity<com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse>
+      getOfficerAccessDetails(@PathVariable Long officerId) {
+    return ResponseEntity.ok(superAdminUserService.getOfficerAccessDetails(officerId));
+  }
+
+  @PutMapping(value = {"/officers/{officerId}/access", "/officer/{officerId}/access"})
+  @PreAuthorize(
+      "hasAuthority(T(com.norton.backend.security.Permissions).OFFICER_ASSIGN_PERMISSION) or hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+  public ResponseEntity<com.norton.backend.dto.responses.superadmin.UserAccessResponse>
+      syncOfficerAccess(
+          @PathVariable Long officerId,
+          @Valid @RequestBody
+              com.norton.backend.dto.request.superadmin.SyncUserAccessRequest request) {
+    com.norton.backend.models.UserModel currentUser = securityUtils.getCurrentUser();
+    return ResponseEntity.ok(
+        superAdminUserService.syncOfficerAccess(officerId, request, currentUser));
   }
 
   @PutMapping("/officers/{officerId}/role")

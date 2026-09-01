@@ -29,4 +29,6 @@ public interface RoleService {
 
   RoleResponse syncRolePermissionsAndReturn(
       Long roleId, List<Long> permissionIds, UserModel currentUser);
+
+  List<com.norton.backend.dto.responses.role.AdminRoleDto> getAdminRoles();
 }

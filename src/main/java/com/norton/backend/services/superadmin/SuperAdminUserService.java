@@ -21,4 +21,20 @@ public interface SuperAdminUserService {
       Long id, AssignUserRoleRequest request, UserModel currentUser);
 
   void resetUserPassword(Long id, AdminResetPasswordRequest request, UserModel currentUser);
+
+  com.norton.backend.dto.responses.superadmin.UserAccessResponse syncUserAccess(
+      Long userId,
+      com.norton.backend.dto.request.superadmin.SyncUserAccessRequest request,
+      UserModel currentUser);
+
+  com.norton.backend.dto.responses.superadmin.UserAccessResponse syncOfficerAccess(
+      Long officerId,
+      com.norton.backend.dto.request.superadmin.SyncUserAccessRequest request,
+      UserModel currentUser);
+
+  com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse getUserAccessDetails(
+      Long userId);
+
+  com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse getOfficerAccessDetails(
+      Long officerId);
 }

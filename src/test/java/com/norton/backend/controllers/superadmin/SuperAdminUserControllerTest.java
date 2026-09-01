@@ -238,4 +238,101 @@ class SuperAdminUserControllerTest {
     verify(superAdminUserService)
         .resetUserPassword(eq(1L), any(AdminResetPasswordRequest.class), eq(mockAdminUser));
   }
+
+  @Test
+  void testSyncUserAccess_Success() {
+    com.norton.backend.dto.request.superadmin.SyncUserAccessRequest request =
+        com.norton.backend.dto.request.superadmin.SyncUserAccessRequest.builder()
+            .roleIds(List.of(3L, 5L))
+            .directPermissions(List.of("ATTENDANCE_EXPORT", "INVITATION_CREATE"))
+            .reason("Promoted to event coordinator")
+            .build();
+
+    com.norton.backend.dto.responses.superadmin.UserAccessResponse mockResponse =
+        com.norton.backend.dto.responses.superadmin.UserAccessResponse.builder()
+            .success(true)
+            .message("Officer roles and permissions updated successfully")
+            .data(
+                com.norton.backend.dto.responses.superadmin.UserAccessResponse.UserAccessData
+                    .builder()
+                    .officerId(12L)
+                    .userId(5L)
+                    .assignedRoles(
+                        List.of(
+                            com.norton.backend.dto.responses.superadmin.UserAccessResponse
+                                .RoleAccessDto.builder()
+                                .id(3L)
+                                .code("ROLE_OFFICER")
+                                .name("Officer")
+                                .nameKm("មន្ត្រី")
+                                .build()))
+                    .directPermissions(List.of("ATTENDANCE_EXPORT", "INVITATION_CREATE"))
+                    .effectivePermissions(
+                        List.of(
+                            "DASHBOARD_VIEW",
+                            "OFFICER_VIEW",
+                            "ATTENDANCE_EXPORT",
+                            "INVITATION_CREATE"))
+                    .updatedAt(Instant.now())
+                    .build())
+            .build();
+
+    when(securityUtils.getCurrentUser()).thenReturn(mockAdminUser);
+    when(superAdminUserService.syncUserAccess(
+            eq(5L),
+            any(com.norton.backend.dto.request.superadmin.SyncUserAccessRequest.class),
+            eq(mockAdminUser)))
+        .thenReturn(mockResponse);
+
+    ResponseEntity<com.norton.backend.dto.responses.superadmin.UserAccessResponse> response =
+        controller.syncUserAccess(5L, request);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().isSuccess());
+    assertEquals(
+        "Officer roles and permissions updated successfully", response.getBody().getMessage());
+    assertEquals(12L, response.getBody().getData().getOfficerId());
+    assertEquals(5L, response.getBody().getData().getUserId());
+    assertEquals(2, response.getBody().getData().getDirectPermissions().size());
+    assertEquals(4, response.getBody().getData().getEffectivePermissions().size());
+  }
+
+  @Test
+  void testGetUserAccessDetails_Success() {
+    com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse mockResponse =
+        com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse.builder()
+            .officerId(12L)
+            .userId(5L)
+            .fullName("Sok Vannak")
+            .assignedRoles(
+                List.of(
+                    com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse
+                        .AssignedRoleDetailDto.builder()
+                        .id(3L)
+                        .code("ROLE_OFFICER")
+                        .nameKm("មន្ត្រី")
+                        .permissions(List.of("ATTENDANCE_SCAN", "LEAVE_CREATE"))
+                        .build()))
+            .directPermissions(List.of("ATTENDANCE_EXPORT", "INVITATION_CREATE"))
+            .effectivePermissions(
+                List.of(
+                    "ATTENDANCE_SCAN", "LEAVE_CREATE", "ATTENDANCE_EXPORT", "INVITATION_CREATE"))
+            .build();
+
+    when(superAdminUserService.getUserAccessDetails(5L)).thenReturn(mockResponse);
+
+    ResponseEntity<com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse> response =
+        controller.getUserAccessDetails(5L);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals(12L, response.getBody().getOfficerId());
+    assertEquals(5L, response.getBody().getUserId());
+    assertEquals("Sok Vannak", response.getBody().getFullName());
+    assertEquals(1, response.getBody().getAssignedRoles().size());
+    assertEquals(2, response.getBody().getAssignedRoles().get(0).getPermissions().size());
+    assertEquals(2, response.getBody().getDirectPermissions().size());
+    assertEquals(4, response.getBody().getEffectivePermissions().size());
+  }
 }

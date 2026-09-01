@@ -28,4 +28,7 @@ public interface AuthService {
   Map<String, String> forgotPasswordVerifyOtp(ForgotPasswordVerifyOtpRequest request);
 
   Map<String, String> forgotPasswordReset(ForgotPasswordResetRequest request);
+
+  com.norton.backend.dto.responses.auth.AdminMeResponse getAdminMeProfile(
+      com.norton.backend.models.UserModel currentUser);
 }

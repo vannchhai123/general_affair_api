@@ -70,6 +70,26 @@ public class SuperAdminUserController {
     return ResponseEntity.ok(superAdminUserService.assignUserRole(id, request, currentUser));
   }
 
+  @GetMapping("/{id}/access")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', T(com.norton.backend.security.Permissions).OFFICER_VIEW_PERMISSION, T(com.norton.backend.security.Permissions).ROLE_VIEW)")
+  public ResponseEntity<com.norton.backend.dto.responses.superadmin.UserAccessDetailResponse>
+      getUserAccessDetails(@PathVariable Long id) {
+    return ResponseEntity.ok(superAdminUserService.getUserAccessDetails(id));
+  }
+
+  @PutMapping("/{id}/access")
+  @PreAuthorize(
+      "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', T(com.norton.backend.security.Permissions).OFFICER_ASSIGN_PERMISSION, T(com.norton.backend.security.Permissions).ROLE_ASSIGN_PERMISSION)")
+  public ResponseEntity<com.norton.backend.dto.responses.superadmin.UserAccessResponse>
+      syncUserAccess(
+          @PathVariable Long id,
+          @Valid @RequestBody
+              com.norton.backend.dto.request.superadmin.SyncUserAccessRequest request) {
+    UserModel currentUser = securityUtils.getCurrentUser();
+    return ResponseEntity.ok(superAdminUserService.syncUserAccess(id, request, currentUser));
+  }
+
   @PostMapping("/{id}/reset-password")
   @PreAuthorize(
       "hasAnyRole('ADMIN', 'SUPER_ADMIN') or hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")

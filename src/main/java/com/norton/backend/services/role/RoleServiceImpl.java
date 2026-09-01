@@ -273,4 +273,34 @@ public class RoleServiceImpl implements RoleService {
               + ")");
     }
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<com.norton.backend.dto.responses.role.AdminRoleDto> getAdminRoles() {
+    List<UserRoleModel> roles = userRoleRepository.findAllByOrderByHierarchyLevelAsc();
+    return roles.stream()
+        .map(
+            r -> {
+              List<String> perms =
+                  r.getPermissions() != null
+                      ? r.getPermissions().stream()
+                          .map(PermissionModel::getPermissionName)
+                          .filter(Objects::nonNull)
+                          .sorted()
+                          .toList()
+                      : List.of();
+              return com.norton.backend.dto.responses.role.AdminRoleDto.builder()
+                  .id(r.getId())
+                  .code(r.getRoleName())
+                  .name(
+                      r.getNameEn() != null
+                          ? r.getNameEn()
+                          : (r.getNameKm() != null ? r.getNameKm() : r.getRoleName()))
+                  .nameKm(r.getNameKm())
+                  .description(r.getDescription())
+                  .permissions(perms)
+                  .build();
+            })
+        .toList();
+  }
 }

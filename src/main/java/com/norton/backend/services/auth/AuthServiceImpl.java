@@ -7,6 +7,8 @@ import com.norton.backend.dto.request.ForgotPasswordVerifyOtpRequest;
 import com.norton.backend.dto.request.LoginRequest;
 import com.norton.backend.dto.responses.AuthResponse;
 import com.norton.backend.dto.responses.UserDto;
+import com.norton.backend.dto.responses.auth.AdminMeResponse;
+import com.norton.backend.dto.responses.auth.AdminMeResponse.AdminMeRoleDto;
 import com.norton.backend.dto.responses.officers.MeResponse;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.exceptions.ResourceNotFoundException;
@@ -21,8 +23,13 @@ import jakarta.transaction.Transactional;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -317,5 +324,80 @@ public class AuthServiceImpl implements AuthService {
     }
 
     return otpRecord;
+  }
+
+  @Override
+  @Transactional
+  public AdminMeResponse getAdminMeProfile(UserModel user) {
+    if (user == null) {
+      String username = SecurityContextHolder.getContext().getAuthentication().getName();
+      user =
+          userRepository
+              .findByUsername(username)
+              .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    }
+
+    String uuid = user.getUuid() != null ? user.getUuid().toString() : ("usr_" + user.getId());
+
+    String avatarUrl = user.getImageUrl();
+    if (avatarUrl == null && user.getOfficer() != null) {
+      avatarUrl = user.getOfficer().getImageUrl();
+    }
+
+    List<AdminMeRoleDto> roles =
+        user.getRoles() != null
+            ? user.getRoles().stream()
+                .sorted(
+                    Comparator.comparing(
+                        r -> r.getHierarchyLevel() != null ? r.getHierarchyLevel() : 99))
+                .map(
+                    r ->
+                        AdminMeRoleDto.builder()
+                            .id(r.getId())
+                            .code(r.getRoleName())
+                            .nameKm(r.getNameKm())
+                            .build())
+                .toList()
+            : List.of();
+
+    Set<String> effectivePerms = new LinkedHashSet<>();
+    if (user.getRoles() != null) {
+      user.getRoles().stream()
+          .sorted(
+              Comparator.comparing(r -> r.getHierarchyLevel() != null ? r.getHierarchyLevel() : 99))
+          .forEach(
+              r -> {
+                if (r.getPermissions() != null) {
+                  r.getPermissions()
+                      .forEach(
+                          p -> {
+                            if (p.getPermissionName() != null) {
+                              effectivePerms.add(p.getPermissionName());
+                            }
+                          });
+                }
+              });
+    }
+
+    if (user.getOfficer() != null && user.getOfficer().getOfficerPermissions() != null) {
+      user.getOfficer()
+          .getOfficerPermissions()
+          .forEach(
+              op -> {
+                if (op.getPermission() != null && op.getPermission().getPermissionName() != null) {
+                  effectivePerms.add(op.getPermission().getPermissionName());
+                }
+              });
+    }
+
+    return AdminMeResponse.builder()
+        .uuid(uuid)
+        .username(user.getUsername())
+        .fullName(user.getFullName())
+        .enabled(user.isEnabled())
+        .avatarUrl(avatarUrl)
+        .roles(roles)
+        .permissions(new ArrayList<>(effectivePerms))
+        .build();
   }
 }

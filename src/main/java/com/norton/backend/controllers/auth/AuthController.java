@@ -60,6 +60,11 @@ public class AuthController {
     return ResponseEntity.ok(authService.getMyProfile());
   }
 
+  @GetMapping({"/admin/me", "/admin-me"})
+  public ResponseEntity<com.norton.backend.dto.responses.auth.AdminMeResponse> adminMe() {
+    return ResponseEntity.ok(authService.getAdminMeProfile(null));
+  }
+
   @PostMapping("/change-password")
   public ResponseEntity<Map<String, String>> changePassword(
       @Valid @RequestBody ChangePasswordRequest request) {
