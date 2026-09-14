@@ -64,6 +64,17 @@ public class GlobalExceptionHandler {
     return ErrorResponse.of(HttpStatus.GONE, ex.getMessage(), request.getRequestURI());
   }
 
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  public ErrorResponse handleDataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+    log.warn("Database constraint violation: {}", ex.getMessage());
+    return ErrorResponse.of(
+        HttpStatus.CONFLICT,
+        "Cannot perform operation because this record is referenced by other resources (e.g., invitations, officers, or users).",
+        request.getRequestURI());
+  }
+
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public ErrorResponse handleGeneric(Exception ex, HttpServletRequest request) {

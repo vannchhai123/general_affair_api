@@ -14,6 +14,8 @@ import com.norton.backend.dto.responses.attendances.AttendanceScanSuccessRespons
 import com.norton.backend.dto.responses.attendances.AttendanceStatusResponse;
 import com.norton.backend.dto.responses.attendances.AttendanceSummaryResponse;
 import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
+import com.norton.backend.dto.responses.attendances.TodayAbsentOfficerResponse;
+import com.norton.backend.dto.responses.attendances.TodayPresentOfficerResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import com.norton.backend.exceptions.BadRequestException;
 import com.norton.backend.services.attendance.AttendanceLocationSettingService;
@@ -64,6 +66,35 @@ public class AttendanceController {
     return ResponseEntity.ok(
         attendanceService.getAllAttendance(
             page, size, search, date, preferOffice(office, department), status, viewMode));
+  }
+
+  @GetMapping("/today/present")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
+  public ResponseEntity<PageResponse<TodayPresentOfficerResponse>> getTodayPresentOfficers(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @RequestParam(defaultValue = "ALL") String status,
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) String department,
+      @RequestParam(required = false) String office,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "100") int size) {
+    return ResponseEntity.ok(
+        attendanceService.getTodayPresentOfficers(
+            date, status, search, preferOffice(office, department), page, size));
+  }
+
+  @GetMapping("/today/absent")
+  @PreAuthorize("hasAuthority(T(com.norton.backend.security.Permissions).ATTENDANCE_VIEW)")
+  public ResponseEntity<PageResponse<TodayAbsentOfficerResponse>> getTodayAbsentOfficers(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) String department,
+      @RequestParam(required = false) String office,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "100") int size) {
+    return ResponseEntity.ok(
+        attendanceService.getTodayAbsentOfficers(
+            date, search, preferOffice(office, department), page, size));
   }
 
   @GetMapping("/status")

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -193,4 +194,104 @@ public interface AttendanceRepository extends JpaRepository<AttendanceModel, Lon
    * attendance data.
    */
   void deleteByOfficerIdAndDate(Long officerId, LocalDate date);
+
+  @Query(
+      value =
+          """
+      SELECT a FROM Attendance a
+      JOIN FETCH a.officer o
+      LEFT JOIN FETCH o.office
+      LEFT JOIN FETCH o.position
+      LEFT JOIN FETCH a.status s
+      WHERE a.date = :date
+        AND (
+          a.checkIn IS NOT NULL
+          OR (
+            UPPER(COALESCE(s.code, s.name, '')) IN ('PRESENT', 'LATE')
+            AND NOT EXISTS (
+              SELECT 1 FROM LeaveRequestModel lr
+              WHERE lr.officer.id = o.id
+                AND lr.startDate <= :date
+                AND lr.endDate >= :date
+                AND UPPER(lr.status) = 'APPROVED'
+            )
+          )
+        )
+        AND (:officeScopeId IS NULL OR o.office.id = :officeScopeId)
+        AND (:department IS NULL OR :department = '' OR LOWER(o.office.name) LIKE LOWER(CONCAT('%', :department, '%')))
+        AND (
+          :statusCode = 'ALL'
+          OR (:statusCode = 'ON_TIME' AND (a.totalLateMin IS NULL OR a.totalLateMin = 0) AND UPPER(COALESCE(s.code, '')) <> 'LATE')
+          OR (:statusCode = 'LATE' AND (COALESCE(a.totalLateMin, 0) > 0 OR UPPER(COALESCE(s.code, '')) = 'LATE'))
+        )
+        AND (
+          :searchPattern IS NULL OR :searchPattern = ''
+          OR LOWER(o.officerCode) LIKE :searchPattern
+          OR LOWER(o.firstNameEn) LIKE :searchPattern
+          OR LOWER(o.lastNameEn) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameEn, ' ', o.lastNameEn)) LIKE :searchPattern
+          OR LOWER(o.firstNameKh) LIKE :searchPattern
+          OR LOWER(o.lastNameKh) LIKE :searchPattern
+          OR LOWER(CONCAT(o.lastNameKh, ' ', o.firstNameKh)) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameKh, ' ', o.lastNameKh)) LIKE :searchPattern
+          OR LOWER(COALESCE(o.phone, '')) LIKE :searchPattern
+        )
+      ORDER BY CASE WHEN a.checkIn IS NULL THEN 1 ELSE 0 END, a.checkIn ASC, a.id ASC
+      """,
+      countQuery =
+          """
+      SELECT COUNT(a) FROM Attendance a
+      JOIN a.officer o
+      LEFT JOIN a.status s
+      WHERE a.date = :date
+        AND (
+          a.checkIn IS NOT NULL
+          OR (
+            UPPER(COALESCE(s.code, s.name, '')) IN ('PRESENT', 'LATE')
+            AND NOT EXISTS (
+              SELECT 1 FROM LeaveRequestModel lr
+              WHERE lr.officer.id = o.id
+                AND lr.startDate <= :date
+                AND lr.endDate >= :date
+                AND UPPER(lr.status) = 'APPROVED'
+            )
+          )
+        )
+        AND (:officeScopeId IS NULL OR o.office.id = :officeScopeId)
+        AND (:department IS NULL OR :department = '' OR LOWER(o.office.name) LIKE LOWER(CONCAT('%', :department, '%')))
+        AND (
+          :statusCode = 'ALL'
+          OR (:statusCode = 'ON_TIME' AND (a.totalLateMin IS NULL OR a.totalLateMin = 0) AND UPPER(COALESCE(s.code, '')) <> 'LATE')
+          OR (:statusCode = 'LATE' AND (COALESCE(a.totalLateMin, 0) > 0 OR UPPER(COALESCE(s.code, '')) = 'LATE'))
+        )
+        AND (
+          :searchPattern IS NULL OR :searchPattern = ''
+          OR LOWER(o.officerCode) LIKE :searchPattern
+          OR LOWER(o.firstNameEn) LIKE :searchPattern
+          OR LOWER(o.lastNameEn) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameEn, ' ', o.lastNameEn)) LIKE :searchPattern
+          OR LOWER(o.firstNameKh) LIKE :searchPattern
+          OR LOWER(o.lastNameKh) LIKE :searchPattern
+          OR LOWER(CONCAT(o.lastNameKh, ' ', o.firstNameKh)) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameKh, ' ', o.lastNameKh)) LIKE :searchPattern
+          OR LOWER(COALESCE(o.phone, '')) LIKE :searchPattern
+        )
+      """)
+  Page<AttendanceModel> findTodayPresentOfficers(
+      @Param("date") LocalDate date,
+      @Param("statusCode") String statusCode,
+      @Param("officeScopeId") Long officeScopeId,
+      @Param("department") String department,
+      @Param("searchPattern") String searchPattern,
+      Pageable pageable);
+
+  @Query(
+      """
+      SELECT COUNT(a)
+      FROM Attendance a
+      LEFT JOIN a.status s
+      WHERE a.date = :date
+        AND (a.checkIn IS NOT NULL OR UPPER(COALESCE(s.code, s.name, '')) IN ('PRESENT', 'LATE'))
+      """)
+  long countPresentOfficersOnDate(@Param("date") LocalDate date);
 }

@@ -31,8 +31,25 @@ public class LeaveRequestDataLoading implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    if (leaveRequestRepository.count() > 0) {
-      log.info("Leave requests database already populated. Skipping seeding.");
+    List<LeaveRequestModel> existing = leaveRequestRepository.findAll();
+    if (!existing.isEmpty()) {
+      LocalDate today = LocalDate.now();
+      for (LeaveRequestModel lr : existing) {
+        if ("Approved".equalsIgnoreCase(lr.getStatus())
+            && lr.getEndDate() != null
+            && lr.getEndDate().isBefore(today)) {
+          lr.setStartDate(today.minusDays(1));
+          lr.setEndDate(today.plusDays(2));
+          lr.setTotalDays(4);
+          leaveRequestRepository.save(lr);
+          log.info(
+              "Auto-adjusted approved leave request #{} to overlap today ({} to {}) for dev testing.",
+              lr.getId(),
+              lr.getStartDate(),
+              lr.getEndDate());
+        }
+      }
+      log.info("Leave requests database already populated.");
       return;
     }
 
@@ -69,13 +86,13 @@ public class LeaveRequestDataLoading implements CommandLineRunner {
         LeaveRequestModel.builder()
             .officer(officer2)
             .leaveType(sickLeave)
-            .startDate(LocalDate.now().minusDays(3))
-            .endDate(LocalDate.now().minusDays(1))
-            .totalDays(3)
+            .startDate(LocalDate.now().minusDays(1))
+            .endDate(LocalDate.now().plusDays(2))
+            .totalDays(4)
             .reason("សុំច្បាប់ព្យាបាលជំងឺ (Medical & Sick Leave)")
             .status("Approved")
             .approvedByOfficer(officer1)
-            .approvedAt(LocalDateTime.now().minusDays(3))
+            .approvedAt(LocalDateTime.now().minusDays(1))
             .build();
 
     LeaveRequestModel leave3 =

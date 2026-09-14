@@ -13,11 +13,19 @@ import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceDailyDetailResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceMonthlyHistoryResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceTodayScanInfoResponse;
+import com.norton.backend.dto.responses.attendances.TodayAbsentOfficerResponse;
+import com.norton.backend.dto.responses.attendances.TodayPresentOfficerResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import java.time.LocalDate;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AttendanceService {
+
+  PageResponse<TodayPresentOfficerResponse> getTodayPresentOfficers(
+      LocalDate date, String status, String search, String department, int page, int size);
+
+  PageResponse<TodayAbsentOfficerResponse> getTodayAbsentOfficers(
+      LocalDate date, String search, String department, int page, int size);
 
   PageResponse<AttendanceResponse> getAllAttendance(
       int page,

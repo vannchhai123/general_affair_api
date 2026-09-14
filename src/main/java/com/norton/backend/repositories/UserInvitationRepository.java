@@ -14,4 +14,8 @@ public interface UserInvitationRepository extends JpaRepository<UserInvitationMo
   Optional<UserInvitationModel> findByEmail(String email);
 
   Optional<UserInvitationModel> findByToken(String token);
+
+  boolean existsByRoleId(Long roleId);
+
+  long countByRoleId(Long roleId);
 }

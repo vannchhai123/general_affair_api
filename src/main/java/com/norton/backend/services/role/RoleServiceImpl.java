@@ -13,6 +13,7 @@ import com.norton.backend.models.PermissionModel;
 import com.norton.backend.models.UserModel;
 import com.norton.backend.models.UserRoleModel;
 import com.norton.backend.repositories.PermissionRepository;
+import com.norton.backend.repositories.UserInvitationRepository;
 import com.norton.backend.repositories.UserRoleRepository;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RoleServiceImpl implements RoleService {
 
   private final UserRoleRepository userRoleRepository;
+  private final UserInvitationRepository userInvitationRepository;
   private final PermissionRepository permissionRepository;
   private final RoleMapper roleMapper;
 
@@ -148,6 +150,11 @@ public class RoleServiceImpl implements RoleService {
           "Cannot delete role that is currently assigned to "
               + role.getUsers().size()
               + " user(s)");
+    }
+
+    if (userInvitationRepository.existsByRoleId(id)) {
+      throw new ConflictException(
+          "Cannot delete role that is currently referenced by pending or past user invitation(s)");
     }
 
     role.getPermissions().clear();

@@ -29,10 +29,17 @@ public class DashboardServiceImpl implements DashboardService {
   @Override
   @Transactional(readOnly = true)
   public DashboardResponse getDashboard() {
+    java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Phnom_Penh");
+    LocalDate localToday = LocalDate.now(zoneId);
+
     long officersTotal = officerRepository.count();
     long officersActive = officerRepository.countByStatus(OfficerStatus.ACTIVE);
-    long officersOnLeave = officerRepository.countByStatus(OfficerStatus.ON_LEAVE);
     long officersInactive = officerRepository.countByStatus(OfficerStatus.INACTIVE);
+
+    // Officers on leave today (approved or pending leave request or ON_LEAVE status)
+    long officersOnLeaveToday = leaveRequestRepository.countOfficersOnLeaveOnDate(localToday);
+    long officersOnLeaveStatus = officerRepository.countByStatus(OfficerStatus.ON_LEAVE);
+    long officersOnLeave = Math.max(officersOnLeaveToday, officersOnLeaveStatus);
 
     // Fallbacks if empty
     if (officersTotal == 0) {
@@ -42,16 +49,14 @@ public class DashboardServiceImpl implements DashboardService {
       officersInactive = 10;
     }
 
-    long attendanceTotal = attendanceRepository.count();
-    long attendanceApproved = attendanceRepository.countByStatusCodeIgnoreCase("APPROVED");
-    long attendanceAbsent = attendanceRepository.countByStatusCodeIgnoreCase("ABSENT");
-    long attendancePending = attendanceRepository.countByStatusCodeIgnoreCase("PENDING");
-    if (attendanceTotal == 0) {
-      attendanceTotal = 110;
-      attendanceApproved = 90;
-      attendancePending = 10;
-      attendanceAbsent = 10;
-    }
+    // Today's attendance counts
+    long todayPresent = attendanceRepository.countPresentOfficersOnDate(localToday);
+    long todayAbsent = Math.max(0, officersActive - todayPresent - officersOnLeave);
+
+    long attendanceTotal = todayPresent + todayAbsent + officersOnLeave;
+    long attendanceApproved = todayPresent;
+    long attendanceAbsent = todayAbsent;
+    long attendancePending = 0;
 
     long invitationsTotal = 45;
     long invitationsActive = 30;
@@ -80,8 +85,6 @@ public class DashboardServiceImpl implements DashboardService {
 
     // Gender breakdown based on current month's attendance (more rich and always has database
     // records)
-    java.time.ZoneId zoneId = java.time.ZoneId.of("Asia/Phnom_Penh");
-    LocalDate localToday = LocalDate.now(zoneId);
     LocalDate startOfMonth = localToday.withDayOfMonth(1);
     LocalDate endOfMonth = localToday.withDayOfMonth(localToday.lengthOfMonth());
     List<AttendanceModel> monthlyAttendances =

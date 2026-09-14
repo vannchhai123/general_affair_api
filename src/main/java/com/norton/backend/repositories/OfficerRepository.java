@@ -187,4 +187,81 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
       @Param("searchPattern") String searchPattern,
       @Param("officeId") Long officeId,
       Pageable pageable);
+
+  @Query(
+      value =
+          """
+      SELECT o FROM OfficerModel o
+      JOIN FETCH o.office
+      JOIN FETCH o.position
+      WHERE o.status = com.norton.backend.enums.OfficerStatus.ACTIVE
+        AND (:officeScopeId IS NULL OR o.office.id = :officeScopeId)
+        AND (:department IS NULL OR :department = '' OR LOWER(o.office.name) LIKE LOWER(CONCAT('%', :department, '%')))
+        AND (
+          :searchPattern IS NULL OR :searchPattern = ''
+          OR LOWER(o.officerCode) LIKE :searchPattern
+          OR LOWER(o.firstNameEn) LIKE :searchPattern
+          OR LOWER(o.lastNameEn) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameEn, ' ', o.lastNameEn)) LIKE :searchPattern
+          OR LOWER(o.firstNameKh) LIKE :searchPattern
+          OR LOWER(o.lastNameKh) LIKE :searchPattern
+          OR LOWER(CONCAT(o.lastNameKh, ' ', o.firstNameKh)) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameKh, ' ', o.lastNameKh)) LIKE :searchPattern
+          OR LOWER(COALESCE(o.phone, '')) LIKE :searchPattern
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM Attendance a
+          LEFT JOIN a.status s
+          WHERE a.officer.id = o.id
+            AND a.date = :date
+            AND (a.checkIn IS NOT NULL OR UPPER(COALESCE(s.code, s.name, '')) IN ('PRESENT', 'APPROVED', 'LATE'))
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM LeaveRequestModel lr
+          WHERE lr.officer.id = o.id
+            AND lr.startDate <= :date
+            AND lr.endDate >= :date
+            AND UPPER(lr.status) IN ('APPROVED', 'PENDING')
+        )
+      ORDER BY o.officerCode ASC
+      """,
+      countQuery =
+          """
+      SELECT COUNT(o) FROM OfficerModel o
+      WHERE o.status = com.norton.backend.enums.OfficerStatus.ACTIVE
+        AND (:officeScopeId IS NULL OR o.office.id = :officeScopeId)
+        AND (:department IS NULL OR :department = '' OR LOWER(o.office.name) LIKE LOWER(CONCAT('%', :department, '%')))
+        AND (
+          :searchPattern IS NULL OR :searchPattern = ''
+          OR LOWER(o.officerCode) LIKE :searchPattern
+          OR LOWER(o.firstNameEn) LIKE :searchPattern
+          OR LOWER(o.lastNameEn) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameEn, ' ', o.lastNameEn)) LIKE :searchPattern
+          OR LOWER(o.firstNameKh) LIKE :searchPattern
+          OR LOWER(o.lastNameKh) LIKE :searchPattern
+          OR LOWER(CONCAT(o.lastNameKh, ' ', o.firstNameKh)) LIKE :searchPattern
+          OR LOWER(CONCAT(o.firstNameKh, ' ', o.lastNameKh)) LIKE :searchPattern
+          OR LOWER(COALESCE(o.phone, '')) LIKE :searchPattern
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM Attendance a
+          LEFT JOIN a.status s
+          WHERE a.officer.id = o.id
+            AND a.date = :date
+            AND (a.checkIn IS NOT NULL OR UPPER(COALESCE(s.code, s.name, '')) IN ('PRESENT', 'APPROVED', 'LATE'))
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM LeaveRequestModel lr
+          WHERE lr.officer.id = o.id
+            AND lr.startDate <= :date
+            AND lr.endDate >= :date
+            AND UPPER(lr.status) IN ('APPROVED', 'PENDING')
+        )
+      """)
+  Page<OfficerModel> findTodayAbsentOfficers(
+      @Param("date") java.time.LocalDate date,
+      @Param("officeScopeId") Long officeScopeId,
+      @Param("department") String department,
+      @Param("searchPattern") String searchPattern,
+      Pageable pageable);
 }

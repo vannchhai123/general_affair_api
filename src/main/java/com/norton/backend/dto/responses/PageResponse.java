@@ -30,4 +30,24 @@ public class PageResponse<T> {
   private boolean first;
   private boolean last;
   private boolean empty;
+
+  @JsonProperty("page")
+  public int getPageNumber() {
+    return page;
+  }
+
+  @JsonProperty("size")
+  public int getPageSize() {
+    return size;
+  }
+
+  @JsonProperty("totalElements")
+  public long getTotalElementsCount() {
+    return totalElements;
+  }
+
+  @JsonProperty("totalPages")
+  public int getTotalPagesCount() {
+    return totalPages;
+  }
 }

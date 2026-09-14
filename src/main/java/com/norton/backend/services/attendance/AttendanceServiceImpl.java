@@ -17,6 +17,8 @@ import com.norton.backend.dto.responses.attendances.CreateAttendanceResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceDailyDetailResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceMonthlyHistoryResponse;
 import com.norton.backend.dto.responses.attendances.OfficerAttendanceTodayScanInfoResponse;
+import com.norton.backend.dto.responses.attendances.TodayAbsentOfficerResponse;
+import com.norton.backend.dto.responses.attendances.TodayPresentOfficerResponse;
 import com.norton.backend.dto.responses.attendances.UpdateAttendanceResponse;
 import com.norton.backend.dto.responses.organization.DepartmentResponseDto;
 import com.norton.backend.exceptions.BadRequestException;
@@ -109,6 +111,127 @@ public class AttendanceServiceImpl implements AttendanceService {
 
   @Value("${attendance.scan.timezone:Asia/Phnom_Penh}")
   private String scanTimezone;
+
+  @Override
+  @Transactional(readOnly = true)
+  public PageResponse<TodayPresentOfficerResponse> getTodayPresentOfficers(
+      LocalDate date, String status, String search, String department, int page, int size) {
+    LocalDate targetDate = date != null ? date : LocalDate.now(resolveScanZoneId());
+    String normalizedStatus =
+        (status == null || status.isBlank()) ? "ALL" : status.trim().toUpperCase(Locale.ROOT);
+    Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+
+    Page<AttendanceModel> result =
+        attendanceRepository.findTodayPresentOfficers(
+            targetDate,
+            normalizedStatus,
+            officeAccessService.currentOfficeScopeIdOrNull(),
+            department != null ? department.trim() : null,
+            toSearchPattern(search),
+            pageable);
+
+    List<TodayPresentOfficerResponse> content =
+        result.getContent().stream()
+            .map(
+                att -> {
+                  OfficerModel officer = att.getOfficer();
+                  String statusStr =
+                      att.getStatus() != null
+                          ? (att.getStatus().getCode() != null
+                              ? att.getStatus().getCode()
+                              : att.getStatus().getName())
+                          : (att.getTotalLateMin() != null && att.getTotalLateMin() > 0
+                              ? "LATE"
+                              : "PRESENT");
+
+                  return TodayPresentOfficerResponse.builder()
+                      .id(att.getId())
+                      .officerId(officer != null ? officer.getId() : null)
+                      .officerCode(officer != null ? officer.getOfficerCode() : null)
+                      .firstNameKh(officer != null ? officer.getFirstNameKh() : null)
+                      .lastNameKh(officer != null ? officer.getLastNameKh() : null)
+                      .firstNameEn(officer != null ? officer.getFirstNameEn() : null)
+                      .lastNameEn(officer != null ? officer.getLastNameEn() : null)
+                      .department(
+                          officer != null && officer.getOffice() != null
+                              ? officer.getOffice().getName()
+                              : null)
+                      .position(
+                          officer != null && officer.getPosition() != null
+                              ? officer.getPosition().getName()
+                              : null)
+                      .phone(officer != null ? officer.getPhone() : null)
+                      .imageUrl(officer != null ? officer.getImageUrl() : null)
+                      .checkIn(att.getCheckIn())
+                      .checkOut(att.getCheckOut())
+                      .totalWorkMin(att.getTotalWorkMin() != null ? att.getTotalWorkMin() : 0)
+                      .totalLateMin(att.getTotalLateMin() != null ? att.getTotalLateMin() : 0)
+                      .status(statusStr)
+                      .build();
+                })
+            .collect(Collectors.toList());
+
+    return PageResponse.<TodayPresentOfficerResponse>builder()
+        .content(content)
+        .page(result.getNumber())
+        .size(result.getSize())
+        .totalElements(result.getTotalElements())
+        .totalPages(result.getTotalPages())
+        .first(result.isFirst())
+        .last(result.isLast())
+        .empty(result.isEmpty())
+        .build();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PageResponse<TodayAbsentOfficerResponse> getTodayAbsentOfficers(
+      LocalDate date, String search, String department, int page, int size) {
+    LocalDate targetDate = date != null ? date : LocalDate.now(resolveScanZoneId());
+    Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+
+    Page<OfficerModel> result =
+        officerRepository.findTodayAbsentOfficers(
+            targetDate,
+            officeAccessService.currentOfficeScopeIdOrNull(),
+            department != null ? department.trim() : null,
+            toSearchPattern(search),
+            pageable);
+
+    List<TodayAbsentOfficerResponse> content =
+        result.getContent().stream()
+            .map(
+                officer ->
+                    TodayAbsentOfficerResponse.builder()
+                        .id(officer.getId())
+                        .officerId(officer.getId())
+                        .officerCode(officer.getOfficerCode())
+                        .firstNameKh(officer.getFirstNameKh())
+                        .lastNameKh(officer.getLastNameKh())
+                        .firstNameEn(officer.getFirstNameEn())
+                        .lastNameEn(officer.getLastNameEn())
+                        .department(
+                            officer.getOffice() != null ? officer.getOffice().getName() : null)
+                        .position(
+                            officer.getPosition() != null ? officer.getPosition().getName() : null)
+                        .phone(officer.getPhone())
+                        .imageUrl(officer.getImageUrl())
+                        .date(targetDate)
+                        .status("ABSENT")
+                        .build())
+            .collect(Collectors.toList());
+
+    return PageResponse.<TodayAbsentOfficerResponse>builder()
+        .content(content)
+        .page(result.getNumber())
+        .size(result.getSize())
+        .totalElements(result.getTotalElements())
+        .totalPages(result.getTotalPages())
+        .first(result.isFirst())
+        .last(result.isLast())
+        .empty(result.isEmpty())
+        .build();
+  }
 
   @Override
   public PageResponse<AttendanceResponse> getAllAttendance(

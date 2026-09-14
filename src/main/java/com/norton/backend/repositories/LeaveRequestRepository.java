@@ -56,4 +56,14 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequestModel,
       @Param("officerId") Long officerId,
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate);
+
+  @Query(
+      """
+      SELECT COUNT(DISTINCT lr.officer.id)
+      FROM LeaveRequestModel lr
+      WHERE lr.startDate <= :date
+        AND lr.endDate >= :date
+        AND UPPER(lr.status) IN ('APPROVED', 'PENDING')
+      """)
+  long countOfficersOnLeaveOnDate(@Param("date") LocalDate date);
 }
