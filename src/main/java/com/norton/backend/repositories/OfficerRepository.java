@@ -221,7 +221,7 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
           WHERE lr.officer.id = o.id
             AND lr.startDate <= :date
             AND lr.endDate >= :date
-            AND UPPER(lr.status) IN ('APPROVED', 'PENDING')
+            AND UPPER(lr.status) = 'APPROVED'
         )
       ORDER BY o.officerCode ASC
       """,
@@ -255,7 +255,7 @@ public interface OfficerRepository extends JpaRepository<OfficerModel, Long> {
           WHERE lr.officer.id = o.id
             AND lr.startDate <= :date
             AND lr.endDate >= :date
-            AND UPPER(lr.status) IN ('APPROVED', 'PENDING')
+            AND UPPER(lr.status) = 'APPROVED'
         )
       """)
   Page<OfficerModel> findTodayAbsentOfficers(

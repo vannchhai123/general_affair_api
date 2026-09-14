@@ -63,7 +63,22 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequestModel,
       FROM LeaveRequestModel lr
       WHERE lr.startDate <= :date
         AND lr.endDate >= :date
-        AND UPPER(lr.status) IN ('APPROVED', 'PENDING')
+        AND UPPER(lr.status) = 'APPROVED'
       """)
-  long countOfficersOnLeaveOnDate(@Param("date") LocalDate date);
+  long countApprovedOfficersOnLeaveOnDate(@Param("date") LocalDate date);
+
+  @Query(
+      """
+      SELECT lr
+      FROM LeaveRequestModel lr
+      JOIN FETCH lr.officer o
+      LEFT JOIN FETCH o.office
+      LEFT JOIN FETCH o.position
+      LEFT JOIN FETCH lr.leaveType
+      WHERE lr.startDate <= :date
+        AND lr.endDate >= :date
+        AND UPPER(lr.status) = 'APPROVED'
+      ORDER BY lr.id DESC
+      """)
+  List<LeaveRequestModel> findTodayApprovedLeaves(@Param("date") LocalDate date);
 }

@@ -297,6 +297,22 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         .build();
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public long countTodayApprovedLeaves(LocalDate date) {
+    LocalDate targetDate = date != null ? date : LocalDate.now();
+    return leaveRequestRepository.countApprovedOfficersOnLeaveOnDate(targetDate);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<LeaveRequestResponse> getTodayApprovedLeaves(LocalDate date) {
+    LocalDate targetDate = date != null ? date : LocalDate.now();
+    return leaveRequestRepository.findTodayApprovedLeaves(targetDate).stream()
+        .map(this::mapToResponse)
+        .toList();
+  }
+
   private String normalizeStatus(String status) {
     if (status == null || status.isBlank()) {
       return "Pending";

@@ -5,8 +5,11 @@ import com.norton.backend.dto.request.leave.UpdateLeaveRequestRequest;
 import com.norton.backend.dto.responses.leave.LeaveRequestResponse;
 import com.norton.backend.dto.responses.leave.LeaveTypeResponse;
 import com.norton.backend.services.leave.LeaveRequestService;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +27,24 @@ public class LeaveRequestController {
   public ResponseEntity<List<LeaveRequestResponse>> getAllLeaveRequests() {
     List<LeaveRequestResponse> requests = leaveRequestService.getAllLeaveRequests();
     return ResponseEntity.ok(requests);
+  }
+
+  @GetMapping("/count/approved")
+  public ResponseEntity<Map<String, Object>> getTodayApprovedLeaveCount(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date) {
+    LocalDate targetDate = date != null ? date : LocalDate.now();
+    long count = leaveRequestService.countTodayApprovedLeaves(targetDate);
+    return ResponseEntity.ok(
+        Map.of("date", targetDate.toString(), "status", "APPROVED", "count", count));
+  }
+
+  @GetMapping("/today/approved")
+  public ResponseEntity<List<LeaveRequestResponse>> getTodayApprovedLeaves(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date) {
+    LocalDate targetDate = date != null ? date : LocalDate.now();
+    return ResponseEntity.ok(leaveRequestService.getTodayApprovedLeaves(targetDate));
   }
 
   @GetMapping("/types")

@@ -36,8 +36,9 @@ public class DashboardServiceImpl implements DashboardService {
     long officersActive = officerRepository.countByStatus(OfficerStatus.ACTIVE);
     long officersInactive = officerRepository.countByStatus(OfficerStatus.INACTIVE);
 
-    // Officers on leave today (approved or pending leave request or ON_LEAVE status)
-    long officersOnLeaveToday = leaveRequestRepository.countOfficersOnLeaveOnDate(localToday);
+    // Officers on approved leave today
+    long officersOnLeaveToday =
+        leaveRequestRepository.countApprovedOfficersOnLeaveOnDate(localToday);
     long officersOnLeaveStatus = officerRepository.countByStatus(OfficerStatus.ON_LEAVE);
     long officersOnLeave = Math.max(officersOnLeaveToday, officersOnLeaveStatus);
 

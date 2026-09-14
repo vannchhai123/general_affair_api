@@ -20,4 +20,8 @@ public interface LeaveRequestService {
   LeaveRequestResponse cancelLeaveRequest(Long id);
 
   List<LeaveTypeResponse> getLeaveTypes();
+
+  long countTodayApprovedLeaves(java.time.LocalDate date);
+
+  List<LeaveRequestResponse> getTodayApprovedLeaves(java.time.LocalDate date);
 }
