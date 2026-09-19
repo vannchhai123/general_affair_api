@@ -71,4 +71,4 @@ app:
     mail-from: ${MAIL_FROM:${MAIL_USERNAME:no-reply@general-affair.local}}
   file:
     upload-dir: ${APP_FILE_UPLOAD_DIR:uploads/images}
-    base-url: ${APP_FILE_BASE_URL:https://general-affair-system-production-af0c.up.railway.app/uploads}
+    base-url: ${APP_FILE_BASE_URL:https://general-affair-system-production-28a8.up.railway.app/uploads}
