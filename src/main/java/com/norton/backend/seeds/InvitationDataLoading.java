@@ -13,7 +13,6 @@ import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("officerDataLoading")
 @RequiredArgsConstructor
 @Order(9)
-@Profile("dev")
+// @Profile("dev")
 public class InvitationDataLoading implements CommandLineRunner {
 
   private final InvitationRepository invitationRepository;
