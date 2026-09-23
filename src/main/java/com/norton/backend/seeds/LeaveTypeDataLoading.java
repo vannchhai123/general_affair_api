@@ -6,7 +6,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component("leaveTypeDataLoading")
 @RequiredArgsConstructor
 @Order(11)
-@Profile("dev")
+// @Profile("dev")
 public class LeaveTypeDataLoading implements CommandLineRunner {
 
   private final LeaveTypeRepository leaveTypeRepository;
